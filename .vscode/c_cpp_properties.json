@@ -1,0 +1,21 @@
+{
+    "configurations": [
+        {
+            "cStandard": "c11",
+            "compilerPath": "/usr/local/bin/arm-none-eabi-g++",
+            "cppStandard": "c++17",
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/../DaisyExamples/libDaisy/**",
+                "${workspaceFolder}/../DaisyExamples/DaisySP/**"
+            ],
+            "name": "macOS"
+        }
+    ],
+    "version": 4
+}
