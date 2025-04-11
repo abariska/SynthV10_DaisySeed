@@ -2,7 +2,7 @@
 #ifndef SMALLREVERB_H
 #define SMALLREVERB_H
 
-#define DSY_SMALLREVERB_MAX_SIZE 16384 // Зменшений розмір буфера
+#define DSY_SMALLREVERB_MAX_SIZE 16384 // Reduced buffer size
 
 #ifndef PI
 #define PI 3.14159265358979323846f
@@ -71,7 +71,7 @@ class SmallReverb
         
         feedback_ = 0.97f;
         lpfreq_ = 10000.f;
-        dry_wet_ = 0.5f; // Початкове значення dry/wet (50% dry, 50% wet)
+        dry_wet_ = 0.5f; // Initial dry/wet value (50% dry, 50% wet)
         
         SetFeedback(feedback_);
         SetLpFreq(lpfreq_);
@@ -96,7 +96,7 @@ class SmallReverb
         leftout = delay_[0].filter_state + delay_[2].filter_state + delay_[4].filter_state + delay_[6].filter_state;
         rightout = delay_[1].filter_state + delay_[3].filter_state + delay_[5].filter_state + delay_[7].filter_state;
         
-        // Застосовуємо dry/wet мікс
+        // Apply dry/wet mix
         *out1 = (1.0f - dry_wet_) * in1 + dry_wet_ * leftout;
         *out2 = (1.0f - dry_wet_) * in2 + dry_wet_ * rightout;
         
@@ -153,7 +153,7 @@ class SmallReverb
     void SetDryWet(float amount)
     {
         dry_wet_ = amount;
-        // Обмежуємо значення в діапазоні [0.0, 1.0]
+        // Clamp value to range [0.0, 1.0]
         dry_wet_ = dry_wet_ < 0.0f ? 0.0f : dry_wet_;
         dry_wet_ = dry_wet_ > 1.0f ? 1.0f : dry_wet_;
     }
@@ -170,7 +170,7 @@ class SmallReverb
     SmallReverbDl delay_[8];
     float         delay_lines_[DSY_SMALLREVERB_MAX_SIZE];
     float         feedback_, lpfreq_, lpcoef_, sample_rate_;
-    float         dry_wet_; // Співвідношення dry/wet (0.0 = 100% dry, 1.0 = 100% wet)
+    float         dry_wet_; // Dry/wet ratio (0.0 = 100% dry, 1.0 = 100% wet)
 };
 } // namespace daisysp
 

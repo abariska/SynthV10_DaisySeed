@@ -29,11 +29,11 @@ class Enc_mcp
         pin_b_(pin_b),
         pin_sw_(pin_sw)
     {
-        // Встановлюємо початкові стани
+        // Set initial states
         inc_ = 0;
         a_ = b_ = 0xff;
         
-        // Ініціалізуємо кнопку
+        // Initialize button
         sw_.Init();
     }
     ~Enc_mcp() {}

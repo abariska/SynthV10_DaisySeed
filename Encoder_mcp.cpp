@@ -4,7 +4,7 @@ extern DaisySeed hw;
 
 void Enc_mcp::Debounce()
 {
-    // Оновлення не частіше ніж 1кГц
+    // Update no more than 1kHz
     uint32_t now = System::GetNow();
     updated_     = false;
 
@@ -13,12 +13,12 @@ void Enc_mcp::Debounce()
         last_update_ = now;
         updated_     = true;
 
-        // Зсув станів пінів для дебаунсу
+        // Shift pin states for debouncing
         a_ = (a_ << 1) | mcp.GetPin(pin_a_);
         b_ = (b_ << 1) | mcp.GetPin(pin_b_);
 
-        // Визначення напрямку обертання
-        inc_ = 0; // скидаємо inc_ спочатку
+        // Determine rotation direction
+        inc_ = 0; // reset inc_ first
         if((a_ & 0x03) == 0x02 && (b_ & 0x03) == 0x00)
         {
             inc_ = 1;
@@ -29,28 +29,28 @@ void Enc_mcp::Debounce()
         }
 
         if (inc_ != 0) {
-            // Визначаємо швидкість обертання
+            // Determine rotation speed
             uint32_t time_diff = now - last_increment_time_;
             
             int    speed_factor_;  
-            // Оновлюємо множник швидкості
-            if (time_diff < 100) {  // Швидке обертання
+            // Update speed multiplier
+            if (time_diff < 100) {  // Fast rotation
                 speed_factor_ = 5;
-            } else if (time_diff < 70) {  // Дуже швидке обертання
+            } else if (time_diff < 70) {  // Very fast rotation
                 speed_factor_ = 10;
-            } else if (time_diff < 50) {  // Дуже швидке обертання
+            } else if (time_diff < 50) {  // Ultra fast rotation
                 speed_factor_ = 100;
-            } else {  // Повільне обертання
+            } else {  // Slow rotation
                 speed_factor_ = 1;
             }
             
-            // Оновлюємо час останньої зміни
+            // Update last change time
             last_increment_time_ = now;
             
-            // Застосовуємо множник швидкості
+            // Apply speed multiplier
             inc_ *=  speed_factor_;
         }
-        // Оновлюємо стан кнопки
+        // Update button state
         sw_.Update(now);
 
         // hw.PrintLine("Encoder: %d", test_int + inc_);
