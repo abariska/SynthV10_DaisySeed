@@ -1,14 +1,14 @@
 #include "Parameters.h"
-#include "daisysp.h" // Додаємо для використання констант
+#include "daisysp.h" // Add for using constants
 
 using namespace daisysp;
 
-// Визначення глобальної змінної params
+// Definition of global variable params
 SynthParams params;
 
-// Ініціалізація параметрів - стара версія замінена новою у файлі Parameters.h
+// Parameters initialization - old version replaced with new one in Parameters.h
 void InitSynthParams() {
-    // Ініціалізація шаблону голосу
+    // Voice template initialization
     params.voice.osc[0].active = true;
     params.voice.osc[1].active = false;
     params.voice.osc[2].active = false;
@@ -30,7 +30,7 @@ void InitSynthParams() {
     params.voice.adsr.release = 0.5f;
     params.voice.adsr.retrigger = false;
     
-    // Ініціалізація глобального LFO
+    // Global LFO initialization
     params.lfo.freq = 0.5f;
     params.lfo.amp = 0.0f;
     params.lfo.waveform = 0;
@@ -40,14 +40,14 @@ void InitSynthParams() {
     params.global.isUnison = false;
     params.global.tuning = 0.0f;
     
-    // Ініціалізація ефектів
+    // Effects initialization
     InitEffectParams();
 }
 
 void InitEffectParams() {
-    // Ініціалізуємо параметри для кожного блоку ефектів
+    // Initialize parameters for each effect block
     for (int e = 0; e < 2; e++) {
-        // Загальні налаштування блоку ефектів
+        // General effect block settings
         params.effectUnits[e].isActive = false;
         params.effectUnits[e].activeEffect = EFFECT_NONE;
         
@@ -78,33 +78,33 @@ void InitEffectParams() {
     }
 }
 
-// Функція для встановлення активного ефекту
+// Function to set active effect
 void SetActiveEffect(int unitIndex, EffectType effectType) {
-    // Переконуємося, що індекс в межах допустимого діапазону
+    // Make sure index is within valid range
     if (unitIndex < 0 || unitIndex >= 2) return;
     
-    // Встановлюємо активний ефект
+    // Set active effect
     params.effectUnits[unitIndex].activeEffect = effectType;
     
-    // Оновлюємо стан активності окремих ефектів у структурі params
-    // Це забезпечує узгодженість між activeEffect та індивідуальними isActive
+    // Update individual effect active states in params structure
+    // This ensures consistency between activeEffect and individual isActive flags
     params.effectUnits[unitIndex].overdrive.isActive = (effectType == EFFECT_OVERDRIVE);
     params.effectUnits[unitIndex].chorus.isActive = (effectType == EFFECT_CHORUS);
     params.effectUnits[unitIndex].compressor.isActive = (effectType == EFFECT_COMPRESSOR);
     params.effectUnits[unitIndex].reverb.isActive = (effectType == EFFECT_REVERB);
 }
 
-// Оновлення параметрів
+// Update parameters
 // void UpdateParams(Synth& synth, Effects& effects) {
-//     // Нічого не робимо, щоб уникнути проблем з неповними типами
-//     // Оновлення об'єктів з параметрів відбувається напряму в SynthV10.cpp
+//     // Do nothing to avoid incomplete type issues
+//     // Objects are updated directly from parameters in SynthV10.cpp
 // }
 
-// // Заглушки для функцій збереження/завантаження пресетів
+// // Stubs for preset save/load functions
 // void SavePreset(uint8_t presetNumber) {
-//     // Тут буде код для збереження пресету
+//     // Code for saving preset will be here
 // }
 
 // void LoadPreset(uint8_t presetNumber) {
-//     // Тут буде код для завантаження пресету
+//     // Code for loading preset will be here
 // } 

@@ -16,13 +16,13 @@ using namespace daisysp;
 struct SynthParams;
 extern SynthParams params;
 
-// LFO виноситься як глобальний для всіх голосів
+// LFO is declared as global for all voices
 extern BlOsc Lfo;
 extern float lfoValue;
 
 const uint8_t NUM_VOICES = 3;
 
-// Оголошення функцій
+// Declaration of functions
 void InitLfo(float samplerate);
 void ProcessLfo();
 void HandleNoteOn(uint8_t midi_note, uint8_t midi_vel);

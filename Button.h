@@ -5,9 +5,9 @@
 
 class Button_mcp {
 private:
-    Mcp23017& mcp;        // Посилання на контролер MCP23017
-    int pin;              // Номер піну на MCP23017
-    bool inverted;        // Прапорець інверсії логіки
+    Mcp23017& mcp;        // Reference to MCP23017 controller
+    int pin;              // Pin number on MCP23017
+    bool inverted;        // Logic inversion flag
     
     uint32_t last_update_;
     bool updated_;
@@ -15,46 +15,46 @@ private:
     float rising_edge_time_;
     
 public:
-    // Конструктор з призначенням піну MCP23017 та можливістю інверсії
+    // Constructor with MCP23017 pin assignment and inversion capability
     Button_mcp(Mcp23017& mcp_ref, int pinValue, bool invert = false);
     
-    // Ініціалізація кнопки
+    // Button initialization
     void Init();
     
-    // Оновлення параметрів кнопки
+    // Update button parameters
     void UpdateParams(int pinValue, bool invert);
     
-    // Метод для дебаунсингу кнопки (окремий, як в libDaisy)
+    // Button debouncing method (separate, as in libDaisy)
     void Debounce();
     
-    // Оновлення стану кнопки - викликає Debounce() для сумісності
+    // Update button state - calls Debounce() for compatibility
     void Update(unsigned long currentTime);
     
-    // Перевірка, чи була кнопка щойно натиснута (фронт наростання)
+    // Check if button was just pressed (rising edge)
     bool RisingEdge() const;
     
-    // Перевірка, чи була кнопка щойно відпущена (фронт спадання)
+    // Check if button was just released (falling edge)
     bool FallingEdge() const;
     
-    // Перевірка, чи натиснута кнопка
+    // Check if button is pressed
     bool IsPressed() const;
     
-    // Перевірка, чи була кнопка щойно натиснута (для сумісності)
+    // Check if button was just pressed (for compatibility)
     bool WasPressed() const;
     
-    // Перевірка, чи була кнопка щойно відпущена (для сумісності)
+    // Check if button was just released (for compatibility)
     bool WasReleased() const;
     
-    // Перевірка, чи відбулося довге натискання
+    // Check if button is long pressed
     bool IsLongPressed() const;
     
-    // Отримати час натискання кнопки в мілісекундах
+    // Get button press time in milliseconds
     float TimeHeldMs() const;
     
-    // Отримати поточний необроблений стан кнопки
+    // Get current raw button state
     bool RawState();
     
-    // Отримати поточне значення state_ для діагностики
+    // Get current state_ value for diagnostics
     uint8_t GetState() const { return state_; }
 };
 

@@ -1,28 +1,28 @@
 #include "Voice.h"
 
-// Визначення глобальних змінних
+// Definition of global variables
 BlOsc lfo;
 float lfoValue = 0.0f;
 Adsr mainADSR;
 VoiceUnit voice[NUM_VOICES];
 
-// Визначення функцій
+// Function definitions
 void InitLfo(float samplerate) {
     lfo.Init(samplerate);
 }
 
 void ProcessLfo() {
-    // Застосовуємо параметри з шаблону
+    // Apply parameters from template
     lfo.SetFreq(params.lfo.freq);
     lfo.SetWaveform(params.lfo.waveform);
     lfo.SetAmp(params.lfo.amp);
     lfo.SetPw(params.lfo.pw);
     
-    // Обробляємо LFO і зберігаємо значення в глобальну змінну
+    // Process LFO and store value in global variable
     lfoValue = lfo.Process();
 }
 
-// Реалізація методів VoiceUnit
+// Implementation of VoiceUnit methods
 void VoiceUnit::Init(float samplerate, int blocksize) {
     isVoiceActive = false; 
     isGated = false;
@@ -46,14 +46,14 @@ void HandleNoteOn(uint8_t midi_note, uint8_t midi_vel) {
     if (params.global.isMono) {
         voice[0].NoteOn(midi_note, midi_vel, current_time);
     } else {
-        // Шукаємо вільний голос
+        // Find a free voice
         for (size_t i = 0; i < NUM_VOICES; i++) {
             if (!voice[i].isVoiceActive) {
                 voice[i].NoteOn(midi_note, midi_vel, current_time);   
                 return;
             }
         }
-        // Якщо вільних немає, знаходимо найстаріший
+        // If none are free, find the oldest
         uint8_t oldest_index = 0;
         uint32_t oldest_timestamp = UINT32_MAX;
         for (size_t i = 0; i < NUM_VOICES; i++) {
@@ -69,7 +69,7 @@ void HandleNoteOn(uint8_t midi_note, uint8_t midi_vel) {
 
 void HandleNoteOff(uint8_t midi_note) {
     if (params.global.isMono) {
-        // В моно режимі перевіряємо, чи це та сама нота, що зараз активна
+        // In mono mode, check if it's the same note that's currently active
         if (voice[0].isVoiceActive && voice[0].note == midi_note) {
             voice[0].NoteOff();
         }
@@ -97,10 +97,10 @@ void VoiceUnit::NoteOff(){
 }
 
 float VoiceUnit::CalculateFrequency(uint8_t midi_note, int pitch, int detune) {
-    // MIDI нота 69 (A4) відповідає частоті 440 Гц
-    // Додаємо зсув по полутонах (кожен півтон - це 1 MIDI нота)
+    // MIDI note 69 (A4) corresponds to 440 Hz
+    // Add semitone shift (each semitone is 1 MIDI note)
     float freq = 440.0f * pow(2.0f, ((midi_note + pitch) - 69) / 12.0f);
-    freq *= pow(2.0f, (detune * 0.01f));  // detune в центах
+    freq *= pow(2.0f, (detune * 0.01f));  // detune in cents
     
     return freq;
 }
@@ -115,13 +115,13 @@ float VoiceUnit::Process(){
 
     float sig = 0.0f;
 
-    // Оновлюємо параметри осциляторів
+    // Update oscillator parameters
     for (size_t i = 0; i < OSC_NUM; i++) {
-        // Оновлюємо параметри з шаблону
+        // Update parameters from template
         osc[i].SetWaveform(params.voice.osc[i].waveform);
         osc[i].SetPw(params.voice.osc[i].pw);
         
-        // Розраховуємо фінальну частоту
+        // Calculate final frequency
         float final_freq = CalculateFrequency(
             note,
             params.voice.osc[i].pitch,
@@ -130,7 +130,7 @@ float VoiceUnit::Process(){
         osc[i].SetFreq(final_freq);
         osc[i].SetAmp(params.voice.osc[i].amp * CalculateVelocity(velocity));
         
-        // Обробляємо тільки активні осцилятори
+        // Process only active oscillators
         if (params.voice.osc[i].active) {
             sig += osc[i].Process();
         }
@@ -141,7 +141,7 @@ float VoiceUnit::Process(){
     flt.SetRes(params.voice.filter.resonance);
     sig = flt.Process(sig);
     
-    // Застосовуємо ADSR
+    // Apply ADSR
     adsrMain.SetAttackTime(params.voice.adsr.attack, 0.1f);
     adsrMain.SetDecayTime(params.voice.adsr.decay);
     adsrMain.SetSustainLevel(params.voice.adsr.sustain);

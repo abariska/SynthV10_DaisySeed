@@ -5,12 +5,12 @@
 #include <cstdint>
 #include "daisysp.h"
 
-// Потрібно для структур масивів
+// Required for array structures
 #define OSC_NUM 3
 
 using namespace daisysp;
 
-// Перелік типів ефектів
+// Enumeration of effect types
 enum EffectType {
     EFFECT_NONE,
     EFFECT_OVERDRIVE,
@@ -19,53 +19,53 @@ enum EffectType {
     EFFECT_REVERB
 };
 
-// Структура параметрів ефекту Overdrive
+// Structure for Overdrive effect parameters
 struct OverdriveParams {
-    float drive;          // Рівень драйву
-    bool isActive;        // Чи активний ефект
+    float drive;          // Drive level
+    bool isActive;        // Is the effect active
 };
 
-// Структура параметрів ефекту Chorus
+// Structure for Chorus effect parameters
 struct ChorusParams {
-    float lfoFreq;        // Частота LFO
-    float lfoDepth;       // Глибина LFO
-    float delay;          // Затримка
-    float feedback;       // Зворотній зв'язок
-    float pan;            // Панорама
-    bool isActive;        // Чи активний ефект
+    float lfoFreq;        // LFO frequency
+    float lfoDepth;       // LFO depth
+    float delay;          // Delay
+    float feedback;       // Feedback
+    float pan;            // Pan
+    bool isActive;        // Is the effect active
 };
 
-// Структура параметрів ефекту Compressor
+// Structure for Compressor effect parameters
 struct CompressorParams {
-    float attack;         // Час атаки
-    float release;        // Час релізу
-    float threshold;      // Поріг
-    float ratio;          // Співвідношення
-    float makeup;         // Підсилення
-    bool isActive;        // Чи активний ефект
+    float attack;         // Attack time
+    float release;        // Release time
+    float threshold;      // Threshold
+    float ratio;          // Ratio
+    float makeup;         // Makeup gain
+    bool isActive;        // Is the effect active
 };
 
-// Структура параметрів ефекту Reverb
+// Structure for Reverb effect parameters
 struct ReverbParams {
-    float dryWet;         // Баланс сухого/мокрого сигналу
-    float feedback;       // Зворотній зв'язок
-    float lpFreq;         // Частота фільтра низьких частот
-    bool isActive;        // Чи активний ефект
+    float dryWet;         // Dry/Wet balance
+    float feedback;       // Feedback
+    float lpFreq;         // Low-pass filter frequency
+    bool isActive;        // Is the effect active
 };
 
-// Структура параметрів блоку ефектів
+// Structure for effect unit parameters
 struct EffectUnitParams {
-    OverdriveParams overdrive;     // Параметри Overdrive
-    ChorusParams chorus;           // Параметри Chorus
-    CompressorParams compressor;   // Параметри Compressor
-    ReverbParams reverb;           // Параметри Reverb
-    bool isActive;                 // Чи активний блок ефектів
-    EffectType activeEffect;       // Який ефект активний зараз
+    OverdriveParams overdrive;     // Overdrive parameters
+    ChorusParams chorus;           // Chorus parameters
+    CompressorParams compressor;   // Compressor parameters
+    ReverbParams reverb;           // Reverb parameters
+    bool isActive;                 // Is the effect unit active
+    EffectType activeEffect;       // Currently active effect
 };
 
-// Структура для збереження параметрів синтезатора
+// Structure for storing synthesizer parameters
 struct SynthParams {
-    // Один голос-шаблон із усіма налаштуваннями
+    // Single voice template with all settings
     struct {
         struct {
             int waveform;
@@ -90,9 +90,9 @@ struct SynthParams {
             float release;
             bool retrigger;
         } adsr;
-    } voice;  // Один голос-шаблон
+    } voice;  // Single voice template
     
-    // Глобальний LFO
+    // Global LFO
     struct {
         float freq;
         float amp;
@@ -109,24 +109,24 @@ struct SynthParams {
     EffectUnitParams effectUnits[2];
 };
 
-// Глобальна змінна для доступу до параметрів
+// Global variable for accessing parameters
 extern SynthParams params;
 
 // Forward declarations
 struct Synth;
 struct Effects;
 
-// Функції для ініціалізації параметрів
+// Functions for initializing parameters
 void InitSynthParams();
 void InitEffectParams();
 
-// Функції для оновлення параметрів
+// Functions for updating parameters
 void UpdateParams(Synth& synth, Effects& effects);
 
-// Функція для встановлення активного ефекту
+// Function to set active effect
 void SetActiveEffect(int unitIndex, EffectType effectType);
 
-// Функція для отримання назви ефекту у вигляді рядка
+// Function to get effect name as a string
 inline const char* GetEffectName(EffectType effect) {
     switch (effect) {
         case EFFECT_NONE:        return " - ";
@@ -138,14 +138,14 @@ inline const char* GetEffectName(EffectType effect) {
     }
 }
 
-// Функція для перемикання активності блоку ефектів
+// Function to toggle effect unit active state
 inline void ToggleEffectUnitActive(int unitIndex) {
     if (unitIndex >= 0 && unitIndex < 2) {
         params.effectUnits[unitIndex].isActive = !params.effectUnits[unitIndex].isActive;
     }
 }
 
-// Функції для збереження/завантаження пресетів
+// Functions for saving/loading presets
 void SavePreset(uint8_t presetNumber);
 void LoadPreset(uint8_t presetNumber);
 

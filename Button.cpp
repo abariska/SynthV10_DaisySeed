@@ -1,10 +1,10 @@
 #include "Button.h"
 
-// Використання глобальної змінної hw з daisy_seed.h
+// Using global variable hw from daisy_seed.h
 // using namespace daisy;
 // extern DaisySeed hw;
 
-// Конструктор з можливістю інверсії
+// Constructor with inversion capability
 Button_mcp::Button_mcp(Mcp23017& mcp_ref, int pinValue, bool invert) 
     : mcp(mcp_ref), pin(pinValue), inverted(invert) {
     state_ = 0;
@@ -13,73 +13,73 @@ Button_mcp::Button_mcp(Mcp23017& mcp_ref, int pinValue, bool invert)
     rising_edge_time_ = 0.0f;
 }
 
-// Ініціалізація кнопки
+// Button initialization
 void Button_mcp::Init() {
-    // Ініціалізація кнопки
+    // Initialize button
     state_ = 0;
     updated_ = false;
     last_update_ = 0;
     rising_edge_time_ = 0.0f;
 }
 
-// Метод для дебаунсингу кнопки (окремий, як в libDaisy)
+// Button debouncing method (separate, as in libDaisy)
 void Button_mcp::Debounce() {
     bool new_val = mcp.ReadPin(pin);
     
-    // Інвертуємо значення якщо потрібно
+    // Invert value if needed
     if (inverted) {
         new_val = !new_val;
     }
     
-    // Зсуваємо стан вліво і додаємо новий біт
+    // Shift state left and add new bit
     state_ = (state_ << 1) | (new_val ? 1 : 0);
 }
 
-// Оновлення стану кнопки - викликає Debounce() для сумісності
+// Update button state - calls Debounce() for compatibility
 void Button_mcp::Update(unsigned long currentTime) {
-    if (currentTime - last_update_ >= 1) { // 1ms інтервал
+    if (currentTime - last_update_ >= 1) { // 1ms interval
         Debounce();
         last_update_ = currentTime;
         updated_ = true;
     }
 }
 
-// Перевірка, чи була кнопка щойно натиснута (фронт наростання)
+// Check if button was just pressed (rising edge)
 bool Button_mcp::RisingEdge() const {
-    return (state_ & 0x03) == 0x02; // Перевіряємо тільки останні 2 біти
+    return (state_ & 0x03) == 0x02; // Check only last 2 bits
 }
 
-// Перевірка, чи була кнопка щойно відпущена (фронт спадання)
+// Check if button was just released (falling edge)
 bool Button_mcp::FallingEdge() const {
-    return (state_ & 0x03) == 0x01; // Перевіряємо тільки останні 2 біти
+    return (state_ & 0x03) == 0x01; // Check only last 2 bits
 }
 
-// Перевірка, чи натиснута кнопка
+// Check if button is pressed
 bool Button_mcp::IsPressed() const {
-    return (state_ & 0x03) == 0x03; // Перевіряємо тільки останні 2 біти
+    return (state_ & 0x03) == 0x03; // Check only last 2 bits
 }
 
-// Перевірка, чи була кнопка щойно натиснута
+// Check if button was just pressed
 bool Button_mcp::WasPressed() const {
     return RisingEdge();
 }
 
-// Перевірка, чи була кнопка щойно відпущена
+// Check if button was just released
 bool Button_mcp::WasReleased() const {
     return FallingEdge();
 }
 
-// Перевірка, чи відбулося довге натискання
+// Check if button is long pressed
 bool Button_mcp::IsLongPressed() const {
     return IsPressed() && TimeHeldMs() > 1000.0f;
 }
 
-// Отримати час натискання кнопки в мілісекундах
+// Get button press time in milliseconds
 float Button_mcp::TimeHeldMs() const {
     return rising_edge_time_;
 }
 
-// Отримати поточний необроблений стан кнопки
+// Get current raw button state
 bool Button_mcp::RawState() {
     bool raw = mcp.ReadPin(pin);
     return inverted ? !raw : raw;
@@ -88,7 +88,7 @@ bool Button_mcp::RawState() {
 void Button_mcp::UpdateParams(int pinValue, bool invert) {
     pin = pinValue;
     inverted = invert;
-    Init();  // Переініціалізуємо кнопку з новими параметрами
+    Init();  // Reinitialize button with new parameters
 }
 
 

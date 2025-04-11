@@ -19,7 +19,7 @@
 using namespace daisy;
 using namespace daisysp;
 
-// Глобальні об'єкти
+// Global objects
 extern OledDisplay<SSD130x4WireSpi128x64Driver> display;
 extern Synth synth;
 extern Effects effects;
@@ -51,7 +51,7 @@ Enc_mcp encoder_3(mcp_2, ENC_3_A, ENC_3_B, ENC_3_SW, true);
 Enc_mcp encoder_4(mcp_2, ENC_4_A, ENC_4_B, ENC_4_SW, true);
 Enc_mcp encoder_dial(mcp_2, ENC_DIAL_A, ENC_DIAL_B, ENC_DIAL_SW, true);
 
-// Прототипи функцій
+// Function prototypes
 void DisplayView(void* data);
 void TimerDisplay();
 void ProcessButtons();
@@ -80,27 +80,26 @@ void UpdateEncoders(){
 }
 
 float MapValue(float current_value, int increment, float minVal, float maxVal) {
-    // Визначаємо сенсітівіті в залежності від типу значення
+    // Determine sensitivity based on value type
     float sensitivity;
     if (minVal == 0.0f && maxVal == 1.0f) {
-        sensitivity = 0.01f;  // Для нормалізованих значень (0-1)
+        sensitivity = 0.01f;  // For normalized values (0-1)
     } else if (minVal == -1.0f && maxVal == 1.0f) {
-        sensitivity = 0.01f;  // Для значень в діапазоні (-1,1)
+        sensitivity = 0.01f;  // For values in range (-1,1)
     } else {
-        sensitivity = 1.0f;   // Для інших значень
+        sensitivity = 1.0f;   // For other values
     }
-
 
     float new_value = current_value + (increment * sensitivity);
     
-    // Нормалізуємо значення між 0 та 1
+    // Normalize value between 0 and 1
     if (new_value > maxVal) {
         new_value = maxVal;
     } else if (new_value < minVal) {
         new_value = minVal;
     }
     
-    // Повертаємо значення в оригінальному діапазоні
+    // Return value in original range
     return new_value;
 }
 

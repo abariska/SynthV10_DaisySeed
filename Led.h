@@ -5,41 +5,41 @@
 
 class Led_mcp {
 private:
-    Mcp23017& mcp;       // Посилання на контролер MCP23017
-    int pin;             // Номер піну на MCP23017
-    bool state;          // Поточний стан LED (увімкнено/вимкнено)
-    bool inverted;       // Інверсія логіки LED
+    Mcp23017& mcp;       // Reference to MCP23017 controller
+    int pin;             // Pin number on MCP23017
+    bool state;          // Current LED state (on/off)
+    bool inverted;       // LED logic inversion
     
 public:
-    // Конструктор з призначенням піну MCP23017
+    // Constructor with MCP23017 pin assignment
     Led_mcp(Mcp23017& mcp, int pin, bool inverted = false)
         : mcp(mcp), pin(pin), state(false), inverted(inverted) {}
     
-    // Увімкнути LED
+    // Turn LED on
     void On() {
         mcp.WritePin(pin, inverted ? 0 : 1);
         state = true;
     }
     
-    // Вимкнути LED
+    // Turn LED off
     void Off() {
         mcp.WritePin(pin, inverted ? 1 : 0);
         state = false;
     }
     
-    // Переключити стан LED
+    // Toggle LED state
     void Toggle() {
         state = !state;
         mcp.WritePin(pin, inverted ? !state : state);
     }
     
-    // Встановити стан LED
+    // Set LED state
     void SetState(bool newState) {
         state = newState;
         mcp.WritePin(pin, inverted ? !state : state);
     }
     
-    // Отримати поточний стан LED
+    // Get current LED state
     bool GetState() const {
         return state;
     }

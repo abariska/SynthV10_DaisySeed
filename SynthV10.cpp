@@ -76,7 +76,7 @@ int main(void)
         ProcessEncoders();
         ProcessLeds(); 
 
-        // MIDI обробка
+        // MIDI processing
         midi.Listen();
         while(midi.HasEvents())
         {
@@ -84,7 +84,7 @@ int main(void)
             HandleMidiMessage(msg);
     }
         // hw.PrintLine("Loop end %d", System::GetNow());
-        // System::Delay(100);  // Додаємо затримку для кращого виведення
+        // System::Delay(100);  // Add delay for better output
 
         // if (button_lfo.IsPressed()) {
         //     synth.HandleNoteOn(440.0f, 1.0f);

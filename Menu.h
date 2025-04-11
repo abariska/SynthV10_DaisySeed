@@ -55,44 +55,44 @@ inline void DrawMainLines()
 } 
 
 inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y, FontDef font, bool color) {
-    // Обчислення довжини тексту (кількість символів)
+    // Calculate text length (number of characters)
     int textLength = 0;
     for (const char* c = text; *c != '\0'; c++) {
         textLength++;
     }
     
-    // Визначаємо ширину символу в залежності від шрифту
+    // Determine character width based on font
     int charWidth = 0;
     if (font.data == Font_6x8.data) {
-        charWidth = 6;  // Для шрифту 6x8
+        charWidth = 6;  // For font 6x8
     } else if (font.data == Font_7x10.data) {
-        charWidth = 7;  // Для шрифту 7x10
+        charWidth = 7;  // For font 7x10
     } else {
-        charWidth = 8;  // Для інших шрифтів
+        charWidth = 8;  // For other fonts
     }
     
     int textWidth = textLength * charWidth;
     
-    // Обчислення x-координати для центрування
+    // Calculate x-coordinate for centering
     uint8_t middleX = x1 + (x2 - x1) / 2;
     uint8_t startX = middleX - (textWidth / 2);
     
-    // Корекція, якщо текст виходить за межі
+    // Correction if text goes beyond boundaries
     if (startX < x1) startX = x1;
     if (startX + textWidth > x2) startX = x2 - textWidth;
     
-    // Вивід тексту
+    // Output text
     display.SetCursor(startX, y);
     display.WriteString(text, font, color);
 }
 
-// Функція для безпечного форматування рядків
+// Function for safe string formatting
 inline void safe_sprintf(char* buffer, size_t buffer_size, const char* format, ...) {
     va_list args;
     va_start(args, format);
     vsnprintf(buffer, buffer_size - 1, format, args);
     va_end(args);
-    buffer[buffer_size - 1] = '\0'; // Забезпечуємо нуль-термінатор
+    buffer[buffer_size - 1] = '\0'; // Ensure null terminator
 }
 
 inline void DrawMainMenu()
@@ -127,7 +127,7 @@ inline void DrawMainMenu()
     sprintf(cpu_load_value, "%.1f%%", cpu_avg_load * 100);
     display.WriteString(cpu_load_value, Font_7x10, true);
 
-    // Відображення параметрів з структури params
+    // Display parameters from params structure
     display.SetCursor(6, 32);
     // safe_sprintf(encoder_1_param, PARAM_NAME_LENGTH, "Cut");
     sprintf(encoder_1_param, "Cut");
@@ -228,20 +228,20 @@ inline void DrawMenusParameters(
 
 
 inline void DrawEffectsMenu() {
-    // Горизонтальна лінія під заголовком
+    // Horizontal line under header
     display.DrawLine(0, 20, 127, 20, true);
     
-    // Вертикальні лінії для стовпців
+    // Vertical lines for columns
     display.DrawLine(15, 20, 15, 63, true);
     display.DrawLine(90, 20, 90, 63, true);
     
-    // Горизонтальна лінія між рядками
+    // Horizontal line between rows
     display.DrawLine(0, 40, 127, 40, true);
 
     display.SetCursor(5, 15);
     display.WriteString("Effects", Font_7x10, true);
     
-    // Дані для першого юніта
+    // Data for first unit
     display.SetCursor(5, 30);
     display.WriteString("1", Font_7x10, true);
     
@@ -354,10 +354,10 @@ inline void DrawEffectUnit(int unit_number) {
 }
 
 void DrawMenu() {
-    // Очищаємо дисплей перед відображенням нового меню
+    // Clear display before showing new menu
     display.Fill(false);
     
-    // Відображаємо різні сторінки залежно від вибраного меню
+    // Display different pages depending on selected menu
     switch (currentPage) {
 
         case MAIN_PAGE:
@@ -490,7 +490,7 @@ void DrawMenu() {
             break;
             
         case MTX_PAGE:
-            // Модуляційна матриця
+            // Modulation matrix
             display.SetCursor(5, 15);
             display.WriteString("Modulation", Font_7x10, true);
             
@@ -502,25 +502,25 @@ void DrawMenu() {
             break;
             
         case SETTINGS_PAGE:
-            // Налаштування
+            // Settings
             display.SetCursor(5, 15);
             display.WriteString("Settings", Font_7x10, true);
             break;
             
         case STORE_PAGE:
-            // Збереження програми
+            // Store program
             display.SetCursor(5, 15);
             display.WriteString("Store Program", Font_7x10, true);
             break;
             
         case LOAD_PAGE  :
-            // Завантаження програми
+            // Load program
             display.SetCursor(5, 15);
             display.WriteString("Load Program", Font_7x10, true);
             break;
     }
     
-    // Оновлюємо дисплей
+    // Update display
     display.Update();
 }
 

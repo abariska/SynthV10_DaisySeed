@@ -9,11 +9,11 @@
 using namespace daisy;
 using namespace daisysp;
 
-// Зовнішні оголошення
+// External declarations
 extern Synth synth;
 extern MidiUsbHandler midi;
 
-// MIDI функції
+// MIDI functions
 void HandleMidiMessage(MidiEvent m);
 // void MidiControlChange(uint8_t control, uint8_t value);
 // void MidiProgramChange(uint8_t program);

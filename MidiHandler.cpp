@@ -4,18 +4,18 @@
 extern DaisySeed hw;
 
 void MidiInit() {
-    // MIDI налаштування
+    // MIDI configuration
     MidiUsbHandler::Config midi_cfg;
     midi_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
     midi.Init(midi_cfg);
 }
 
-// Конвертація MIDI ноти в частоту
+// Convert MIDI note to frequency
 float mtof(uint8_t midi_note) {
     return 440.0f * powf(2.0f, (midi_note - 69.0f) / 12.0f);
 }
 
-// Обробка MIDI повідомлень
+// Handle MIDI messages
 void HandleMidiMessage(MidiEvent m) {
     switch(m.type) {
         case NoteOn:
@@ -34,12 +34,12 @@ void HandleMidiMessage(MidiEvent m) {
     // hw.PrintLine("Midi message: %d\n", m.type);
 }
 
-// // Обробка Control Change
+// // Handle Control Change
 // void MidiControlChange(uint8_t control, uint8_t value) {
-//     // TODO: Реалізувати обробку Control Change
+//     // TODO: Implement Control Change handling
 // }
 
-// // Обробка Program Change
+// // Handle Program Change
 // void MidiProgramChange(uint8_t program) {
-//     // TODO: Реалізувати обробку Program Change
+//     // TODO: Implement Program Change handling
 // } 

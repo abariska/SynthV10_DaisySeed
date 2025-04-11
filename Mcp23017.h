@@ -44,7 +44,7 @@ using Mcp23017 = daisy::Mcp23X17<daisy::Mcp23017Transport>;
 extern Mcp23017 mcp_1;
 extern Mcp23017 mcp_2;
 
-// Функції ініціалізації
+// Initialization functions
 void InitMcp();
 
 #endif
