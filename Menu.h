@@ -12,6 +12,7 @@
 
 using namespace daisy;
 
+extern SynthParams params;
 extern MyOledDisplay display;
 extern CpuLoadMeter cpu_load;
 enum MenuPage {

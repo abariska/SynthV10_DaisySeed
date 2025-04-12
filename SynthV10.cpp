@@ -10,6 +10,7 @@ MidiUsbHandler midi;
 CpuLoadMeter cpu_load;
 extern Mcp23017 mcp_1;
 extern Mcp23017 mcp_2;
+LoopUpdate loopUpdate;
 
 int test_int = 0;
 
@@ -23,16 +24,9 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
         // float sig_after_fxL, sig_after_fxR;
         float mix = 0.0f;
 
-        if (params.global.isMono) {
             for (int i = 0; i < NUM_VOICES; i++) {
-                mix += voice[i].Process();
-            }
-        } else {
-            for (int i = 0; i < NUM_VOICES; i++) {
-                if (voice[i].isVoiceActive) {
-                    mix += voice[i].Process();
-                }
-            }
+            voice[i].UpdateParams(params, effectParams, i);
+            mix += voice[i].Process();
         }
 
         // effects.Process(synth.current_signal, synth.current_signal, &sig_after_fxL, &sig_after_fxR);
@@ -68,29 +62,40 @@ int main(void)
     hw.StartAudio(AudioCallback);
 
     TimerDisplay();
+    loopUpdate = MAIN_LOOP;
 
     while (1)
     {
-        // hw.PrintLine("Loop start %d", System::GetNow());
-        mcp_1.Read();
-        mcp_2.Read();
-        ProcessButtons();
-        ProcessEncoders();
-        ProcessLeds(); 
-
-        // MIDI processing
         midi.Listen();
         while(midi.HasEvents())
         {
             auto msg = midi.PopEvent();
             HandleMidiMessage(msg);
-    }
-        // hw.PrintLine("Loop end %d", System::GetNow());
-        // System::Delay(100);  // Add delay for better output
-
-        // if (button_lfo.IsPressed()) {
-        //     synth.HandleNoteOn(440.0f, 1.0f);
-        // }
+        }
+        switch (loopUpdate) {
+            case MAIN_LOOP:
+                mcp_1.Read();
+                mcp_2.Read();
+                loopUpdate = BUTTON_LOOP;
+                break;
+            case ENCODER_LOOP:
+                ProcessEncoders();
+                loopUpdate = BUTTON_LOOP;
+                break;
+            case BUTTON_LOOP:
+                ProcessButtons();
+                loopUpdate = LED_LOOP;
+                break;
+            case LED_LOOP:
+                ProcessLeds();
+                loopUpdate = ENCODER_LOOP;
+                break;
+            case DISPLAY_LOOP:
+                DrawMenu();
+                loopUpdate = MAIN_LOOP;
+                break;
+        
+        }
     }
 }
 

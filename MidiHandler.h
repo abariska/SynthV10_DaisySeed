@@ -10,8 +10,8 @@ using namespace daisy;
 using namespace daisysp;
 
 // External declarations
-extern Synth synth;
 extern MidiUsbHandler midi;
+extern SynthParams params;
 
 // MIDI functions
 void HandleMidiMessage(MidiEvent m);

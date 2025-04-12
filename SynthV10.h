@@ -21,8 +21,8 @@ using namespace daisysp;
 
 // Global objects
 extern OledDisplay<SSD130x4WireSpi128x64Driver> display;
-extern Synth synth;
-extern Effects effects;
+extern SynthParams params;
+extern EffectUnitParams effectParams;
 extern VoiceUnit voice[NUM_VOICES];
 extern MidiUsbHandler midi;
 extern CpuLoadMeter cpu_load;
@@ -102,5 +102,13 @@ float MapValue(float current_value, int increment, float minVal, float maxVal) {
     // Return value in original range
     return new_value;
 }
+
+    enum LoopUpdate {
+        MAIN_LOOP,
+        BUTTON_LOOP,
+        ENCODER_LOOP,
+        LED_LOOP,
+        DISPLAY_LOOP
+    };
 
 #endif

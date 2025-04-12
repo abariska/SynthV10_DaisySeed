@@ -111,17 +111,14 @@ struct SynthParams {
 
 // Global variable for accessing parameters
 extern SynthParams params;
-
-// Forward declarations
-struct Synth;
-struct Effects;
+extern EffectUnitParams effectParams;
 
 // Functions for initializing parameters
 void InitSynthParams();
 void InitEffectParams();
 
 // Functions for updating parameters
-void UpdateParams(Synth& synth, Effects& effects);
+void UpdateParams(SynthParams& synthParams, EffectUnitParams& effectParams, size_t voiceIndex);
 
 // Function to set active effect
 void SetActiveEffect(int unitIndex, EffectType effectType);

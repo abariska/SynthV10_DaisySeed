@@ -12,8 +12,6 @@
 using namespace daisy;  
 using namespace daisysp;
 
-// Forward declaration
-struct SynthParams;
 extern SynthParams params;
 
 // LFO is declared as global for all voices
@@ -39,6 +37,7 @@ struct VoiceUnit
     uint8_t note;
     uint8_t velocity;
     uint32_t timestamp;
+    size_t voiceIndex;
 
     void Init(float samplerate, int blocksize);
     void NoteOn(uint8_t midi_note, uint8_t midi_vel, uint32_t time);
@@ -46,6 +45,7 @@ struct VoiceUnit
     float CalculateFrequency(uint8_t midi_note, int pitch, int detune);
     float CalculateVelocity(uint8_t velocity);
     float Process();
+    void UpdateParams(SynthParams& synthParams, EffectUnitParams& effectParams, size_t voiceIndex);
 };
 
 

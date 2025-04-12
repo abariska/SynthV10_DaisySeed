@@ -10,9 +10,6 @@
 using namespace daisy;
 using namespace daisysp;
 
-// Forward declaration
-struct SynthParams;
-extern SynthParams params;
 enum EffectType;
 
 struct EffectUnit {

@@ -115,47 +115,62 @@ float VoiceUnit::Process(){
 
     float sig = 0.0f;
 
-    // Update oscillator parameters
     for (size_t i = 0; i < OSC_NUM; i++) {
-        // Update parameters from template
-        osc[i].SetWaveform(params.voice.osc[i].waveform);
-        osc[i].SetPw(params.voice.osc[i].pw);
-        
-        // Calculate final frequency
-        float final_freq = CalculateFrequency(
-            note,
-            params.voice.osc[i].pitch,
-            params.voice.osc[i].detune
-        );
-        osc[i].SetFreq(final_freq);
-        osc[i].SetAmp(params.voice.osc[i].amp * CalculateVelocity(velocity));
-        
-        // Process only active oscillators
-        if (params.voice.osc[i].active) {
-            sig += osc[i].Process();
-        }
+    // Process only active oscillators
+    if (params.voice.osc[i].active) {
+        sig += osc[i].Process();
+    }
     }
     sig /= OSC_NUM;
-    
-    flt.SetFreq(params.voice.filter.cutoff);
-    flt.SetRes(params.voice.filter.resonance);
     sig = flt.Process(sig);
-    
-    // Apply ADSR
-    adsrMain.SetAttackTime(params.voice.adsr.attack, 0.1f);
-    adsrMain.SetDecayTime(params.voice.adsr.decay);
-    adsrMain.SetSustainLevel(params.voice.adsr.sustain);
-    adsrMain.SetReleaseTime(params.voice.adsr.release);
-
-    if (isGated && params.voice.adsr.retrigger) {
-        adsrMain.Retrigger(true);
-    }
-    
     float env = adsrMain.Process(isGated);
     sig *= env;
 
-        return sig;
+    return sig;
+
     }
 
+void VoiceUnit::UpdateParams(SynthParams& synthParams, EffectUnitParams& effectParams, size_t voiceIndex) {
 
+    VoiceUnit& voiceUnit = voice[voiceIndex];
+    // Update oscillator parameters
+    for (size_t i = 0; i < OSC_NUM; i++) {
+        // Update parameters from template
+        voiceUnit.osc[i].SetWaveform(params.voice.osc[i].waveform);
+        voiceUnit.osc[i].SetPw(params.voice.osc[i].pw);
+        
+        // Calculate final frequency
+        float final_freq = voiceUnit.CalculateFrequency(
+            voiceUnit.note,
+            params.voice.osc[i].pitch,
+            params.voice.osc[i].detune
+        );
+        voiceUnit.osc[i].SetFreq(final_freq);
+        voiceUnit.osc[i].SetAmp(params.voice.osc[i].amp * voiceUnit.CalculateVelocity(voiceUnit.velocity));
+    }
+    
+    voiceUnit.flt.SetFreq(params.voice.filter.cutoff);
+    voiceUnit.flt.SetRes(params.voice.filter.resonance);
+    
+    // Apply ADSR
+    voiceUnit.adsrMain.SetAttackTime(params.voice.adsr.attack, 0.1f);
+    voiceUnit.adsrMain.SetDecayTime(params.voice.adsr.decay);
+    voiceUnit.adsrMain.SetSustainLevel(params.voice.adsr.sustain);
+    voiceUnit.adsrMain.SetReleaseTime(params.voice.adsr.release);
+
+    if (voiceUnit.isGated && params.voice.adsr.retrigger) {
+        voiceUnit.adsrMain.Retrigger(true);
+    }
+    
+    // Global LFO initialization
+    params.lfo.freq = 0.5f;
+    params.lfo.amp = 0.0f;
+    params.lfo.waveform = 0;
+    params.lfo.pw = 0.5f;
+
+    params.global.isMono = false;
+    params.global.isUnison = false;
+    params.global.tuning = 0.0f;
+    
+}
 

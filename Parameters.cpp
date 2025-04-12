@@ -3,8 +3,9 @@
 
 using namespace daisysp;
 
-// Definition of global variable params
 SynthParams params;
+EffectUnitParams effectParams;
+
 
 // Parameters initialization - old version replaced with new one in Parameters.h
 void InitSynthParams() {
@@ -36,7 +37,7 @@ void InitSynthParams() {
     params.lfo.waveform = 0;
     params.lfo.pw = 0.5f;
 
-    params.global.isMono = true;
+    params.global.isMono = false;
     params.global.isUnison = false;
     params.global.tuning = 0.0f;
     
@@ -94,11 +95,6 @@ void SetActiveEffect(int unitIndex, EffectType effectType) {
     params.effectUnits[unitIndex].reverb.isActive = (effectType == EFFECT_REVERB);
 }
 
-// Update parameters
-// void UpdateParams(Synth& synth, Effects& effects) {
-//     // Do nothing to avoid incomplete type issues
-//     // Objects are updated directly from parameters in SynthV10.cpp
-// }
 
 // // Stubs for preset save/load functions
 // void SavePreset(uint8_t presetNumber) {
