@@ -1,5 +1,6 @@
 #include "Mcp23017.h"
 #include "daisy_seed.h"
+#include <unordered_map>
 
 using namespace daisy;
 extern DaisySeed hw;
@@ -20,15 +21,20 @@ void InitMcp1() {
 void SetMcp_1_Ports() {
 
     // mcp_1.PortMode(MCPPort::B, 0, 0, 0);
-    // // mcp_1.PortMode(MCPPort::A, 1, 1, 1);
+    
     
 
-    // mcp_1.PinMode(LED_OSC_1, MCPMode::OUTPUT, 0);
-    // mcp_1.PinMode(LED_OSC_2, MCPMode::OUTPUT, 0);
-    // mcp_1.PinMode(LED_OSC_3, MCPMode::OUTPUT, 0);
-    // mcp_1.PinMode(LED_FX, MCPMode::OUTPUT, 0);
-    // mcp_1.PinMode(LED_MIDI, MCPMode::OUTPUT, 0);
-    // mcp_1.PinMode(LED_OUT, MCPMode::OUTPUT, 0);
+    mcp_1.PinMode(11, MCPMode::OUTPUT, 1);
+    mcp_1.PinMode(12, MCPMode::OUTPUT, 1);
+    mcp_1.PinMode(13, MCPMode::OUTPUT, 1);
+    mcp_1.PinMode(14, MCPMode::OUTPUT, 1);
+    mcp_1.PinMode(15, MCPMode::OUTPUT, 1);
+     mcp_1.PinMode(8, MCPMode::INPUT_PULLUP, 1);
+    mcp_1.PinMode(9, MCPMode::INPUT_PULLUP, 0);
+    mcp_1.PinMode(10, MCPMode::INPUT_PULLUP, 1);
+
+
+    // mcp_1.PortMode(MCPPort::A, 1, 1, 1);
 
     mcp_1.PinMode(0, MCPMode::INPUT_PULLUP, 1);
     mcp_1.PinMode(1, MCPMode::INPUT_PULLUP, 1);
@@ -38,18 +44,8 @@ void SetMcp_1_Ports() {
     mcp_1.PinMode(5, MCPMode::INPUT_PULLUP, 1);
     mcp_1.PinMode(6, MCPMode::INPUT_PULLUP, 1);
     mcp_1.PinMode(7, MCPMode::INPUT_PULLUP, 1);
-    mcp_1.PinMode(8, MCPMode::INPUT_PULLUP, 1);
-    mcp_1.PinMode(9, MCPMode::INPUT_PULLUP, 1);
-    mcp_1.PinMode(10, MCPMode::INPUT_PULLUP, 1);
-    mcp_1.PinMode(11, MCPMode::OUTPUT, 0);
-    mcp_1.PinMode(12, MCPMode::OUTPUT, 0);
-    mcp_1.PinMode(13, MCPMode::OUTPUT, 0);
-    mcp_1.PinMode(14, MCPMode::OUTPUT, 0);
-    mcp_1.PinMode(15, MCPMode::OUTPUT, 0);
-    // mcp_1.PortMode(MCPPort::B, 0, 0, 0);
+   
 
-    
-    
 }
 
 void InitMcp2() {
@@ -89,4 +85,7 @@ void InitMcp() {
     InitMcp2();
     SetMcp_2_Ports();
 }
-
+void LedToggle (bool state, uint8_t output_pin, bool invert) {
+    bool current_state = state ? 1 : 0;
+    mcp_1.WritePin(output_pin, current_state);
+}
