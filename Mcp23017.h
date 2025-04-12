@@ -18,12 +18,7 @@ using Mcp23017 = daisy::Mcp23X17<daisy::Mcp23017Transport>;
 #define BUTTON_FX 0
 #define BUTTON_SHIFT 9
 #define BUTTON_BACK 8
-#define LED_OSC_1 13
-#define LED_OSC_2 14
-#define LED_OSC_3 15
-#define LED_FX 12
-#define LED_MIDI 11
-#define LED_OUT 10
+
 // MCP2 
 #define ENC_1_SW 7
 #define ENC_1_B 6

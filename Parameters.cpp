@@ -21,7 +21,7 @@ void InitSynthParams() {
         params.voice.osc[o].detune = 0;
     }
     
-    params.voice.filter.cutoff = 1000.0f;
+    params.voice.filter.cutoff = 10000.0f;
     params.voice.filter.resonance = 0.0f;
     
     params.voice.adsr.attack = 0.01f;
@@ -36,7 +36,7 @@ void InitSynthParams() {
     params.lfo.waveform = 0;
     params.lfo.pw = 0.5f;
 
-    params.global.isMono = true;
+    params.global.isMono = false;
     params.global.isUnison = false;
     params.global.tuning = 0.0f;
     

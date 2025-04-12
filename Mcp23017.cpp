@@ -19,33 +19,22 @@ void InitMcp1() {
     mcp_1.Init(mcp_1_Config);
 }
 void SetMcp_1_Ports() {
-
-    // mcp_1.PortMode(MCPPort::B, 0, 0, 0);
-    
-    
-
-    mcp_1.PinMode(11, MCPMode::OUTPUT, 1);
-    mcp_1.PinMode(12, MCPMode::OUTPUT, 1);
-    mcp_1.PinMode(13, MCPMode::OUTPUT, 1);
-    mcp_1.PinMode(14, MCPMode::OUTPUT, 1);
-    mcp_1.PinMode(15, MCPMode::OUTPUT, 1);
-     mcp_1.PinMode(8, MCPMode::INPUT_PULLUP, 1);
-    mcp_1.PinMode(9, MCPMode::INPUT_PULLUP, 0);
-    mcp_1.PinMode(10, MCPMode::INPUT_PULLUP, 1);
-
-
-    // mcp_1.PortMode(MCPPort::A, 1, 1, 1);
-
     mcp_1.PinMode(0, MCPMode::INPUT_PULLUP, 1);
     mcp_1.PinMode(1, MCPMode::INPUT_PULLUP, 1);
     mcp_1.PinMode(2, MCPMode::INPUT_PULLUP, 1);
     mcp_1.PinMode(3, MCPMode::INPUT_PULLUP, 1);
     mcp_1.PinMode(4, MCPMode::INPUT_PULLUP, 1);
-    mcp_1.PinMode(5, MCPMode::INPUT_PULLUP, 1);
+    mcp_1.PinMode(5, MCPMode::INPUT_PULLUP, 1); 
     mcp_1.PinMode(6, MCPMode::INPUT_PULLUP, 1);
     mcp_1.PinMode(7, MCPMode::INPUT_PULLUP, 1);
-   
-
+    mcp_1.PinMode(8, MCPMode::INPUT_PULLUP, 1);
+    mcp_1.PinMode(9, MCPMode::INPUT_PULLUP, 1);
+    mcp_1.PinMode(10, MCPMode::INPUT_PULLUP, 1);
+    mcp_1.PinMode(11, MCPMode::INPUT_PULLUP, 1);
+    mcp_1.PinMode(12, MCPMode::INPUT_PULLUP, 1);
+    mcp_1.PinMode(13, MCPMode::INPUT_PULLUP, 1);
+    mcp_1.PinMode(14, MCPMode::INPUT_PULLUP, 1);
+    mcp_1.PinMode(15, MCPMode::INPUT_PULLUP, 1);
 }
 
 void InitMcp2() {
@@ -60,7 +49,6 @@ void InitMcp2() {
 }    
 
 void SetMcp_2_Ports() {
-
     mcp_2.PinMode(0, MCPMode::INPUT_PULLUP, 1);
     mcp_2.PinMode(1, MCPMode::INPUT_PULLUP, 1);
     mcp_2.PinMode(2, MCPMode::INPUT_PULLUP, 1);
@@ -76,7 +64,7 @@ void SetMcp_2_Ports() {
     mcp_2.PinMode(12, MCPMode::INPUT_PULLUP, 1);
     mcp_2.PinMode(13, MCPMode::INPUT_PULLUP, 1);
     mcp_2.PinMode(14, MCPMode::INPUT_PULLUP, 1);
-    mcp_2.PinMode(15, MCPMode::INPUT_PULLUP, 1);  
+    mcp_2.PinMode(15, MCPMode::INPUT_PULLUP, 1);
 }
 
 void InitMcp() {

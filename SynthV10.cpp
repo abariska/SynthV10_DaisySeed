@@ -20,25 +20,18 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
     cpu_load.OnBlockStart();
     for(size_t i = 0; i < size; i += 2)
     {
-        // float sig_after_fxL, sig_after_fxR;
+        float sig_after_fxL, sig_after_fxR;
         float mix = 0.0f;
 
-        if (params.global.isMono) {
-            for (int i = 0; i < NUM_VOICES; i++) {
-                mix += voice[i].Process();
-            }
-        } else {
-            for (int i = 0; i < NUM_VOICES; i++) {
-                if (voice[i].isVoiceActive) {
-                    mix += voice[i].Process();
-                }
-            }
-        }
+        for (int i = 0; i < NUM_VOICES; i++) {
+            mix += voice[i].Process();
+        }   
+        mix /= NUM_VOICES;
 
-        // effects.Process(synth.current_signal, synth.current_signal, &sig_after_fxL, &sig_after_fxR);
+        effects.Process(mix, mix, &sig_after_fxL, &sig_after_fxR);
 
-        out[i] = mix;
-        out[i + 1] = mix;
+        out[i] = sig_after_fxL;
+        out[i + 1] = sig_after_fxR;
     }
     cpu_load.OnBlockEnd();  
 }
@@ -56,6 +49,7 @@ int main(void)
 
     Display_Init();
     InitMcp();
+    InitLeds();
     MidiInit();
     InitSynthParams();
 
@@ -417,10 +411,16 @@ void ProcessEncoders() {
 }
 
 void ProcessLeds() {
-    LedToggle(params.voice.osc[0].active, LED_OSC_1, true);
-    LedToggle(params.voice.osc[1].active, LED_OSC_2, true);
-    LedToggle(params.voice.osc[2].active, LED_OSC_3, true);
-    LedToggle(params.effectUnits[0].isActive || params.effectUnits[1].isActive, LED_FX, true);
+    led_osc_1.Write(params.voice.osc[0].active);
+    led_osc_2.Write(params.voice.osc[1].active);
+    led_osc_3.Write(params.voice.osc[2].active);
+    led_fx_1.Write(params.effectUnits[0].isActive);
+    led_fx_2.Write(params.effectUnits[1].isActive);
+    led_midi.Write(voice[1].isGated);
+    led_out.Write(voice[2].isGated);
+    voice_1.Write(voice[0].isGated);
+    voice_2.Write(voice[1].isGated);
+    voice_3.Write(voice[2].isGated);
 }
 
 void DisplayView(void* data) {
