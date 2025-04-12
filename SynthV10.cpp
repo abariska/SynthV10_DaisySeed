@@ -8,6 +8,8 @@ Effects effects;
 TimerHandle tim_display;
 MidiUsbHandler midi;
 CpuLoadMeter cpu_load;
+extern Mcp23017 mcp_1;
+extern Mcp23017 mcp_2;
 
 int test_int = 0;
 
@@ -98,10 +100,8 @@ void ProcessButtons() {
 
     bool shift_pressed = button_shift.IsPressed();
 
-    if (button_osc_1.RisingEdge()) {
-        currentPage = MenuPage::OSCILLATOR_1_PAGE;  
-    }
-    if (shift_pressed) {
+    
+    if (shift_pressed) {    
         if (button_osc_1.RisingEdge()) {
             params.voice.osc[0].active = !params.voice.osc[0].active;
         }
@@ -112,7 +112,9 @@ void ProcessButtons() {
             params.voice.osc[2].active = !params.voice.osc[2].active;
         }
     }
-
+    if (button_osc_1.RisingEdge()) {
+        currentPage = MenuPage::OSCILLATOR_1_PAGE;  
+    }
     if (button_osc_2.RisingEdge()) {
         currentPage = MenuPage::OSCILLATOR_2_PAGE;
     }
@@ -415,11 +417,10 @@ void ProcessEncoders() {
 }
 
 void ProcessLeds() {
-    led_osc_1.SetState(params.voice.osc[0].active);
-    led_osc_2.SetState(params.voice.osc[1].active);
-    led_osc_3.SetState(params.voice.osc[2].active);
-    led_fx.SetState(params.effectUnits[0].isActive || params.effectUnits[1].isActive);
-    led_midi.SetState(midi.HasEvents());
+    LedToggle(params.voice.osc[0].active, LED_OSC_1, true);
+    LedToggle(params.voice.osc[1].active, LED_OSC_2, true);
+    LedToggle(params.voice.osc[2].active, LED_OSC_3, true);
+    LedToggle(params.effectUnits[0].isActive || params.effectUnits[1].isActive, LED_FX, true);
 }
 
 void DisplayView(void* data) {
