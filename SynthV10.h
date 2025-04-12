@@ -7,7 +7,6 @@
 #include "daisysp-lgpl.h"
 #include "Parameters.h"
 #include "Mcp23017.h"
-#include "Led.h"
 #include "Button.h"
 #include "Encoder_mcp.h"
 #include "Voice.h"
