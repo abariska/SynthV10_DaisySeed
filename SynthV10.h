@@ -68,9 +68,6 @@ GPIO led_out;
 GPIO voice_1;
 GPIO voice_2;
 GPIO voice_3;
-GPIO voice_4;
-GPIO voice_5;
-GPIO voice_6;
 
 void InitLeds(){
     led_osc_1.Init(LED_OSC_1, GPIO::Mode::OUTPUT);
@@ -82,9 +79,6 @@ void InitLeds(){
     voice_1.Init(VOICE_1, GPIO::Mode::OUTPUT);
     voice_2.Init(VOICE_2, GPIO::Mode::OUTPUT);
     voice_3.Init(VOICE_3, GPIO::Mode::OUTPUT);
-    voice_4.Init(VOICE_4, GPIO::Mode::OUTPUT);
-    voice_5.Init(VOICE_5, GPIO::Mode::OUTPUT);
-    voice_6.Init(VOICE_6, GPIO::Mode::OUTPUT);
 }
 
 // Function prototypes
@@ -115,16 +109,7 @@ void UpdateEncoders(){
     encoder_dial.Debounce();
 }
 
-float MapValue(float current_value, int increment, float minVal, float maxVal) {
-    // Determine sensitivity based on value type
-    float sensitivity;
-    if (minVal == 0.0f && maxVal == 1.0f) {
-        sensitivity = 0.01f;  // For normalized values (0-1)
-    } else if (minVal == -1.0f && maxVal == 1.0f) {
-        sensitivity = 0.01f;  // For values in range (-1,1)
-    } else {
-        sensitivity = 1.0f;   // For other values
-    }
+float MapValue(float current_value, int increment, float minVal, float maxVal, float sensitivity) {
 
     float new_value = current_value + (increment * sensitivity);
     

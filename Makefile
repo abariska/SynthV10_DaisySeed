@@ -6,6 +6,7 @@ CPP_SOURCES = SynthV10.cpp DisplayOLED.cpp Mcp23017.cpp Parameters.cpp Button.cp
 
 USE_DAISYSP_LGPL=1
 LDFLAGS += -u _printf_float
+APP_TYPE = BOOT_NONE
 
 # Library Locations
 LIBDAISY_DIR = ../DaisyExamples/libDaisy

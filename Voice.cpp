@@ -64,6 +64,7 @@ void HandleNoteOn(uint8_t midi_note, uint8_t midi_vel) {
             }
         }
         voice[oldest_index].NoteOn(midi_note, midi_vel, current_time);
+
     }
 }
 
@@ -83,12 +84,12 @@ void HandleNoteOff(uint8_t midi_note) {
 }
 void VoiceUnit::NoteOn(uint8_t midi_note, uint8_t midi_vel, uint32_t time){
 
-            note = midi_note;
+        note = midi_note;
         velocity = midi_vel;
         timestamp = time;
         isVoiceActive = true;
         isGated = true;
-        // adsrMain.Retrigger(true);
+        adsrMain.Retrigger(true);
     }
 
 void VoiceUnit::NoteOff(){
@@ -100,7 +101,7 @@ float VoiceUnit::CalculateFrequency(uint8_t midi_note, int pitch, int detune) {
     // MIDI note 69 (A4) corresponds to 440 Hz
     // Add semitone shift (each semitone is 1 MIDI note)
     float freq = 440.0f * pow(2.0f, ((midi_note + pitch) - 69) / 12.0f);
-    freq *= pow(2.0f, (detune * 0.01f));  // detune in cents
+    freq *= pow(2.0f, (detune));  // detune in cents
     
     return freq;
 }

@@ -34,12 +34,11 @@ void Enc_mcp::Debounce()
             
             int    speed_factor_;  
             // Update speed multiplier
-            if (time_diff < 100) {  // Fast rotation
+            if (time_diff < 150) {  // Fast rotation
                 speed_factor_ = 5;
             } else if (time_diff < 70) {  // Very fast rotation
+                // speed_factor_ = 10;
                 speed_factor_ = 10;
-            } else if (time_diff < 50) {  // Ultra fast rotation
-                speed_factor_ = 100;
             } else {  // Slow rotation
                 speed_factor_ = 1;
             }

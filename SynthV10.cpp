@@ -155,25 +155,29 @@ void ProcessEncoders() {
             params.voice.filter.cutoff,
             encoder_inc_1,
             50.0f,
-            15000.0f
+            15000.0f,
+            10.0f
         );
         params.voice.filter.resonance = MapValue(
             params.voice.filter.resonance,
             encoder_inc_2,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         params.voice.adsr.attack = MapValue(
             params.voice.adsr.attack,
             encoder_inc_3,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         params.voice.adsr.decay = MapValue(
             params.voice.adsr.decay,
             encoder_inc_4,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         break;
         case OSCILLATOR_1_PAGE:
@@ -181,77 +185,89 @@ void ProcessEncoders() {
             params.voice.osc[0].waveform,
             encoder_inc_1,
             0.0f,
-            3.0f
+            3.0f,
+            1.0f
         );
         params.voice.osc[0].pitch = MapValue(
             params.voice.osc[0].pitch,
             encoder_inc_2,
-            -36,
-            36
+            -36.0f,
+            36.0f,
+            1.0f
         );
         params.voice.osc[0].detune = MapValue(
             params.voice.osc[0].detune,
             encoder_inc_3,
             -0.50f,
-            0.50f
+            0.50f,
+            0.01f
         );
         params.voice.osc[0].amp = MapValue(
             params.voice.osc[0].amp,
             encoder_inc_4,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         break;
         case OSCILLATOR_2_PAGE:  
         params.voice.osc[1].waveform = MapValue(
             params.voice.osc[1].waveform,
             encoder_inc_1,
-            0,
-            4
+            0.0f,
+            4.0f,
+            1.0f
         );
         params.voice.osc[1].pitch = MapValue(
             params.voice.osc[1].pitch,
             encoder_inc_2,
-            -36,
-            36
+            -36.0f,
+            36.0f,
+            1.0f
         );
         params.voice.osc[1].detune = MapValue(
             params.voice.osc[1].detune,
             encoder_inc_3,
             -0.50f,
-            0.50f
+            0.50f,
+            0.01f
         );
         params.voice.osc[1].amp = MapValue(
             params.voice.osc[1].amp,
             encoder_inc_4,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         break;
         case OSCILLATOR_3_PAGE:
         params.voice.osc[2].waveform = MapValue(
             params.voice.osc[2].waveform,
             encoder_inc_1,
-            0,
-            4
+            0.0f,
+            4.0f,
+            1.0f
         );
         params.voice.osc[2].pitch = MapValue(
             params.voice.osc[2].pitch,
             encoder_inc_2,
-            -36,
-            36
+            -36.0f,
+            36.0f,
+            1.0f
         );
         params.voice.osc[2].detune = MapValue(
             params.voice.osc[2].detune,
             encoder_inc_3,
             -0.50f,
-            0.50f
+            0.50f,
+            0.01f
         );
         params.voice.osc[2].amp = MapValue(
             params.voice.osc[2].amp,
             encoder_inc_4,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         break;
         case AMPLIFIER_PAGE:
@@ -259,25 +275,29 @@ void ProcessEncoders() {
             params.voice.adsr.attack,
             encoder_inc_1,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         params.voice.adsr.decay = MapValue(
             params.voice.adsr.decay,
             encoder_inc_2,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         params.voice.adsr.sustain = MapValue(
             params.voice.adsr.sustain,
             encoder_inc_3,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         params.voice.adsr.release = MapValue(
             params.voice.adsr.release,
             encoder_inc_4,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         break;
         case FILTER_PAGE:
@@ -285,33 +305,38 @@ void ProcessEncoders() {
             params.voice.filter.cutoff,
             encoder_inc_1,
             50.0f,
-            15000.0f
+            15000.0f,
+            10.0f
         );
         params.voice.filter.resonance = MapValue(
             params.voice.filter.resonance,
             encoder_inc_2,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         break;
         case LFO_PAGE:
         params.lfo.waveform = MapValue(
             params.lfo.waveform,
             encoder_inc_1,
-            0,
-            3
+            0.0f,
+            3.0f,
+            1.0f
         );
         params.lfo.freq = MapValue(
             params.lfo.freq,
             encoder_inc_2,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
         params.lfo.amp = MapValue(
             params.lfo.amp,
             encoder_inc_3,
             0.0f,
-            1.0f
+            1.0f,
+            0.01f
         );
 
         break;
@@ -322,7 +347,8 @@ void ProcessEncoders() {
                 params.effectUnits[0].overdrive.drive,
                 encoder_inc_1,
                 0.0f,
-                1.0f
+                1.0f,
+                0.01f
             );
             break;
         case CHORUS_PAGE:
@@ -330,25 +356,29 @@ void ProcessEncoders() {
                 params.effectUnits[0].chorus.lfoFreq,
                 encoder_inc_1,
                 0.0f,
-                1.0f
+                1.0f,
+                0.01f
             );
             params.effectUnits[0].chorus.lfoDepth = MapValue(
                 params.effectUnits[0].chorus.lfoDepth,
                 encoder_inc_2,
                 0.0f,
-                1.0f
+                1.0f,
+                0.01f
             );
             params.effectUnits[0].chorus.feedback = MapValue(
                 params.effectUnits[0].chorus.feedback,
                 encoder_inc_3,
                 0.0f,
-                1.0f
+                1.0f,
+                0.01f
             );
             params.effectUnits[0].chorus.pan = MapValue(
                 params.effectUnits[0].chorus.pan,
                 encoder_inc_4,
                 0.0f,
-                1.0f
+                1.0f,
+                0.01f
             );
             break;
         case COMPRESSOR_PAGE:
@@ -356,25 +386,29 @@ void ProcessEncoders() {
                 params.effectUnits[0].compressor.attack,
                 encoder_inc_1,
                 0.0f,
-                1.0f
+                1.0f,
+                0.01f
             );
             params.effectUnits[0].compressor.release = MapValue(
                 params.effectUnits[0].compressor.release,
                 encoder_inc_2,
                 0.0f,
-                1.0f
+                1.0f,
+                0.01f
             );
             params.effectUnits[0].compressor.threshold = MapValue(
                 params.effectUnits[0].compressor.threshold,
                 encoder_inc_3,
                 0.0f,
-                1.0f
+                1.0f,
+                0.01f
             );
             params.effectUnits[0].compressor.ratio = MapValue(
                 params.effectUnits[0].compressor.ratio,
                 encoder_inc_4,
                 1.0f,
-                10.0f
+                10.0f,
+                1.0f
             );
             break;
         case REVERB_PAGE:
@@ -382,19 +416,22 @@ void ProcessEncoders() {
                 params.effectUnits[0].reverb.dryWet,
                 encoder_inc_1,
                 0.0f,
-                1.0f
+                1.0f,
+                0.01f
             );
             params.effectUnits[0].reverb.feedback = MapValue(
                 params.effectUnits[0].reverb.feedback,
                 encoder_inc_2,
                 0.0f,
-                1.0f
+                1.0f,
+                0.01f
             );
             params.effectUnits[0].reverb.lpFreq = MapValue(
                 params.effectUnits[0].reverb.lpFreq,
                 encoder_inc_3,
                 0.0f,
-                5000.0f
+                5000.0f,
+                10.0f
             );
             break;
         case MTX_PAGE:
