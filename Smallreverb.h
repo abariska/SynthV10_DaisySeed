@@ -42,7 +42,7 @@ class SmallReverb
         
         sample_rate_ = sample_rate;
         
-        for(int i = 0; i < 8; i++)
+        for(size_t i = 0; i < 8; i++)
         {
             if(i < 4)
             {
@@ -64,7 +64,7 @@ class SmallReverb
             delay_[i].read_pos_frac_inc = 0;
         }
         
-        for(int i = 0; i < DSY_SMALLREVERB_MAX_SIZE; i++)
+        for(size_t i = 0; i < DSY_SMALLREVERB_MAX_SIZE; i++)
         {
             delay_lines_[i] = 0.f;
         }
@@ -101,7 +101,7 @@ class SmallReverb
         *out2 = (1.0f - dry_wet_) * in2 + dry_wet_ * rightout;
         
         // Update delays
-        for(int i = 0; i < 8; i++)
+        for(size_t i = 0; i < 8; i++)
         {
             int write_pos = delay_[i].write_pos;
             float val;

@@ -10,72 +10,21 @@
 
 using namespace daisysp;
 
-// Enumeration of effect types
-enum EffectType {
-    EFFECT_NONE,
-    EFFECT_OVERDRIVE,
-    EFFECT_CHORUS,
-    EFFECT_COMPRESSOR,
-    EFFECT_REVERB
-};
 
-// Structure for Overdrive effect parameters
-struct OverdriveParams {
-    float drive;          // Drive level
-    bool isActive;        // Is the effect active
-};
-
-// Structure for Chorus effect parameters
-struct ChorusParams {
-    float lfoFreq;        // LFO frequency
-    float lfoDepth;       // LFO depth
-    float delay;          // Delay
-    float feedback;       // Feedback
-    float pan;            // Pan
-    bool isActive;        // Is the effect active
-};
-
-// Structure for Compressor effect parameters
-struct CompressorParams {
-    float attack;         // Attack time
-    float release;        // Release time
-    float threshold;      // Threshold
-    float ratio;          // Ratio
-    float makeup;         // Makeup gain
-    bool isActive;        // Is the effect active
-};
-
-// Structure for Reverb effect parameters
-struct ReverbParams {
-    float dryWet;         // Dry/Wet balance
-    float feedback;       // Feedback
-    float lpFreq;         // Low-pass filter frequency
-    bool isActive;        // Is the effect active
-};
-
-// Structure for effect unit parameters
-struct EffectUnitParams {
-    OverdriveParams overdrive;     // Overdrive parameters
-    ChorusParams chorus;           // Chorus parameters
-    CompressorParams compressor;   // Compressor parameters
-    ReverbParams reverb;           // Reverb parameters
-    bool isActive;                 // Is the effect unit active
-    EffectType activeEffect;       // Currently active effect
-};
 
 // Structure for storing synthesizer parameters
 struct SynthParams {
     // Single voice template with all settings
     struct {
         struct {
-            int waveform;
+            float waveform;
             float pw;
             float amp;
-            int pitch;
+            float pitch;
             float detune;
-            bool active;
             float freq; 
             float pan; 
+            bool active;
         } osc[OSC_NUM];
         
         struct {
@@ -95,9 +44,8 @@ struct SynthParams {
     // Global LFO
     struct {
         float freq;
-        float amp;
-        int waveform;
-        float pw;
+        float depth;
+        float waveform;
     } lfo;
 
     struct {
@@ -106,47 +54,52 @@ struct SynthParams {
         bool isUnison;
     } global;
 
-    EffectUnitParams effectUnits[2];
+    // Structure for Overdrive effect parameters
+    struct {
+        float drive;          // Drive level
+        bool isActive;        // Is the effect active
+    } overdriveParams;
+
+    // Structure for Chorus effect parameters
+    struct {
+        float freq;        // LFO frequency
+        float depth;       // LFO depth
+        float delay;          // Delay
+        float feedback;       // Feedback
+        float pan;            // Pan
+        bool isActive;        // Is the effect active
+    } chorusParams;
+
+    // Structure for Compressor effect parameters
+    struct {
+        float attack;         // Attack time
+        float release;        // Release time
+        float threshold;      // Threshold
+        float ratio;          // Ratio
+        float makeup;         // Makeup gain
+        bool isActive;        // Is the effect active
+    } compressorParams;
+
+    // Structure for Reverb effect parameters
+    struct {
+        float dryWet;         // Dry/Wet balance
+        float feedback;       // Feedback
+        float lpFreq;         // Low-pass filter frequency
+        bool isActive;        // Is the effect active
+    } reverbParams;
+
+
 };
 
 // Global variable for accessing parameters
 extern SynthParams params;
 
-// Forward declarations
-struct Synth;
-struct Effects;
-
 // Functions for initializing parameters
 void InitSynthParams();
 void InitEffectParams();
 
-// Functions for updating parameters
-void UpdateParams(Synth& synth, Effects& effects);
-
-// Function to set active effect
-void SetActiveEffect(int unitIndex, EffectType effectType);
-
-// Function to get effect name as a string
-inline const char* GetEffectName(EffectType effect) {
-    switch (effect) {
-        case EFFECT_NONE:        return " - ";
-        case EFFECT_OVERDRIVE:   return "Overdrive";
-        case EFFECT_CHORUS:      return "Chorus";
-        case EFFECT_COMPRESSOR:  return "Compressor";
-        case EFFECT_REVERB:      return "Reverb";
-        default:          return "Unknown";
-    }
-}
-
-// Function to toggle effect unit active state
-inline void ToggleEffectUnitActive(int unitIndex) {
-    if (unitIndex >= 0 && unitIndex < 2) {
-        params.effectUnits[unitIndex].isActive = !params.effectUnits[unitIndex].isActive;
-    }
-}
-
 // Functions for saving/loading presets
-void SavePreset(uint8_t presetNumber);
-void LoadPreset(uint8_t presetNumber);
+// void SavePreset(uint8_t presetNumber);
+// void LoadPreset(uint8_t presetNumber);
 
 #endif // PARAMETERS_H

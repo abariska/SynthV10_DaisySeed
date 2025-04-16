@@ -12,19 +12,16 @@
 using namespace daisy;  
 using namespace daisysp;
 
-// Forward declaration
-struct SynthParams;
 extern SynthParams params;
 
 // LFO is declared as global for all voices
-extern BlOsc Lfo;
-extern float lfoValue;
+extern BlOsc lfo;
 
 const uint8_t NUM_VOICES = 3;
 
 // Declaration of functions
 void InitLfo(float samplerate);
-void ProcessLfo();
+float ProcessLfo();
 void HandleNoteOn(uint8_t midi_note, uint8_t midi_vel);
 void HandleNoteOff(uint8_t midi_note);
 

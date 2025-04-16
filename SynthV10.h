@@ -35,11 +35,11 @@ using namespace daisysp;
 
 // Global objects
 extern OledDisplay<SSD130x4WireSpi128x64Driver> display;
-extern Synth synth;
-extern Effects effects;
 extern VoiceUnit voice[NUM_VOICES];
 extern MidiUsbHandler midi;
 extern CpuLoadMeter cpu_load;
+extern FXSlot effectSlot[2];
+extern SynthParams params;
 
 Button_mcp button_osc_1(mcp_1, BUTTON_OSC_1, true);
 Button_mcp button_osc_2(mcp_1, BUTTON_OSC_2, true);
@@ -85,7 +85,6 @@ void InitLeds(){
 void DisplayView(void* data);
 void TimerDisplay();
 void ProcessButtons();
-void ProcessEncoders();
 void ProcessLeds();
 
 void UpdateButtons(){
@@ -99,29 +98,6 @@ void UpdateButtons(){
     button_lfo.Update(System::GetTick());
     button_mtx.Update(System::GetTick());
     button_shift.Update(System::GetTick());
-}
-
-void UpdateEncoders(){
-    encoder_1.Debounce();
-    encoder_2.Debounce();
-    encoder_3.Debounce();
-    encoder_4.Debounce();
-    encoder_dial.Debounce();
-}
-
-float MapValue(float current_value, int increment, float minVal, float maxVal, float sensitivity) {
-
-    float new_value = current_value + (increment * sensitivity);
-    
-    // Normalize value between 0 and 1
-    if (new_value > maxVal) {
-        new_value = maxVal;
-    } else if (new_value < minVal) {
-        new_value = minVal;
-    }
-    
-    // Return value in original range
-    return new_value;
 }
 
 #endif

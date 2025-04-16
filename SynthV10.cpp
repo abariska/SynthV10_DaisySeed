@@ -4,12 +4,14 @@
 using namespace daisy;
 
 DaisySeed hw;
-Effects effects;
+
 TimerHandle tim_display;
 MidiUsbHandler midi;
 CpuLoadMeter cpu_load;
 extern Mcp23017 mcp_1;
 extern Mcp23017 mcp_2;
+extern SynthParams params;
+
 
 int test_int = 0;
 
@@ -23,13 +25,14 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
         float sig_after_fxL, sig_after_fxR;
         float mix = 0.0f;
 
-        for (int i = 0; i < NUM_VOICES; i++) {
+        for (size_t i = 0; i < NUM_VOICES; i++) {
             mix += voice[i].Process();
         }   
         mix /= NUM_VOICES;
 
-        effects.Process(mix, mix, &sig_after_fxL, &sig_after_fxR);
-
+        for (size_t i = 0; i < 2; i++) {
+            ProcessEffects(effectSlot[i], mix, sig_after_fxL, sig_after_fxR);
+        }
         out[i] = sig_after_fxL;
         out[i + 1] = sig_after_fxR;
     }
@@ -54,10 +57,7 @@ int main(void)
     InitSynthParams();
 
     InitLfo(samplerate);
-    for (int i = 0; i < NUM_VOICES; i++) {
-        voice[i].Init(samplerate, blocksize);
-    }
-    effects.Init(samplerate);
+    EffectsInit(samplerate);
 
     hw.StartAudio(AudioCallback);
 
@@ -69,8 +69,8 @@ int main(void)
         mcp_1.Read();
         mcp_2.Read();
         ProcessButtons();
-        ProcessEncoders();
         ProcessLeds(); 
+        UpdateParamsWithEncoders();
 
         // MIDI processing
         midi.Listen();
@@ -86,6 +86,13 @@ int main(void)
         //     synth.HandleNoteOn(440.0f, 1.0f);
         // }
     }
+}
+
+void SetPage(MenuPage newPage) {
+    currentPage = newPage;
+    
+    UpdateDisplayParameters(); // оновлення allParams перед оновленням слотів
+    AssignParamsForPage(newPage); // прив'язка параметрів до слотів
 }
 
 void ProcessButtons() {
@@ -107,30 +114,30 @@ void ProcessButtons() {
         }
     }
     if (button_osc_1.RisingEdge()) {
-        currentPage = MenuPage::OSCILLATOR_1_PAGE;  
+        SetPage(MenuPage::OSCILLATOR_1_PAGE);  
     }
     if (button_osc_2.RisingEdge()) {
-        currentPage = MenuPage::OSCILLATOR_2_PAGE;
+        SetPage(MenuPage::OSCILLATOR_2_PAGE);
     }
     if (button_osc_3.RisingEdge()) {
-        currentPage = MenuPage::OSCILLATOR_3_PAGE;
+        SetPage(MenuPage::OSCILLATOR_3_PAGE);
     }   
     if (button_flt.RisingEdge()) {
-        currentPage = MenuPage::FILTER_PAGE;
+        SetPage(MenuPage::FILTER_PAGE);
     }
     if (button_amp.RisingEdge()) {
-        currentPage = MenuPage::AMPLIFIER_PAGE; 
+        SetPage(MenuPage::AMPLIFIER_PAGE); 
     }
-    if (button_fx.RisingEdge()) {
-        currentPage = MenuPage::FX_PAGE;
-        params.effectUnits[0].isActive = !params.effectUnits[0].isActive;
-    }
+    // if (button_fx.RisingEdge()) {
+    //     SetPage(MenuPage::FX_PAGE);
+    //     params.effectUnits[0].isActive = !params.effectUnits[0].isActive;
+    // }
     if (button_lfo.RisingEdge()) {
-        // currentPage = MenuPage::LFO_PAGE;
+        currentPage = MenuPage::LFO_PAGE;
     }
-    if (button_mtx.RisingEdge()) {
-        currentPage = MenuPage::MTX_PAGE;
-    }
+    // if (button_mtx.RisingEdge()) {
+    //     SetPage(MenuPage::MTX_PAGE);
+    // }
     // if (button_settings.RisingEdge()) {
     //     currentPage = MenuPage::SETTINGS_PAGE;
     // }
@@ -139,320 +146,12 @@ void ProcessButtons() {
     }
 }
 
-void ProcessEncoders() {
-    
-    UpdateEncoders();
-    
-    int encoder_inc_1 = encoder_1.Increment();
-    int encoder_inc_2 = encoder_2.Increment();
-    int encoder_inc_3 = encoder_3.Increment();
-    int encoder_inc_4 = encoder_4.Increment();
-    // int encoder_inc_dial = encoder_dial.Increment();
-
-    switch (currentPage) {
-        case MAIN_PAGE:
-        params.voice.filter.cutoff = MapValue(
-            params.voice.filter.cutoff,
-            encoder_inc_1,
-            50.0f,
-            15000.0f,
-            10.0f
-        );
-        params.voice.filter.resonance = MapValue(
-            params.voice.filter.resonance,
-            encoder_inc_2,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        params.voice.adsr.attack = MapValue(
-            params.voice.adsr.attack,
-            encoder_inc_3,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        params.voice.adsr.decay = MapValue(
-            params.voice.adsr.decay,
-            encoder_inc_4,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        break;
-        case OSCILLATOR_1_PAGE:
-        params.voice.osc[0].waveform = MapValue(
-            params.voice.osc[0].waveform,
-            encoder_inc_1,
-            0.0f,
-            3.0f,
-            1.0f
-        );
-        params.voice.osc[0].pitch = MapValue(
-            params.voice.osc[0].pitch,
-            encoder_inc_2,
-            -36.0f,
-            36.0f,
-            1.0f
-        );
-        params.voice.osc[0].detune = MapValue(
-            params.voice.osc[0].detune,
-            encoder_inc_3,
-            -0.50f,
-            0.50f,
-            0.01f
-        );
-        params.voice.osc[0].amp = MapValue(
-            params.voice.osc[0].amp,
-            encoder_inc_4,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        break;
-        case OSCILLATOR_2_PAGE:  
-        params.voice.osc[1].waveform = MapValue(
-            params.voice.osc[1].waveform,
-            encoder_inc_1,
-            0.0f,
-            4.0f,
-            1.0f
-        );
-        params.voice.osc[1].pitch = MapValue(
-            params.voice.osc[1].pitch,
-            encoder_inc_2,
-            -36.0f,
-            36.0f,
-            1.0f
-        );
-        params.voice.osc[1].detune = MapValue(
-            params.voice.osc[1].detune,
-            encoder_inc_3,
-            -0.50f,
-            0.50f,
-            0.01f
-        );
-        params.voice.osc[1].amp = MapValue(
-            params.voice.osc[1].amp,
-            encoder_inc_4,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        break;
-        case OSCILLATOR_3_PAGE:
-        params.voice.osc[2].waveform = MapValue(
-            params.voice.osc[2].waveform,
-            encoder_inc_1,
-            0.0f,
-            4.0f,
-            1.0f
-        );
-        params.voice.osc[2].pitch = MapValue(
-            params.voice.osc[2].pitch,
-            encoder_inc_2,
-            -36.0f,
-            36.0f,
-            1.0f
-        );
-        params.voice.osc[2].detune = MapValue(
-            params.voice.osc[2].detune,
-            encoder_inc_3,
-            -0.50f,
-            0.50f,
-            0.01f
-        );
-        params.voice.osc[2].amp = MapValue(
-            params.voice.osc[2].amp,
-            encoder_inc_4,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        break;
-        case AMPLIFIER_PAGE:
-        params.voice.adsr.attack = MapValue(
-            params.voice.adsr.attack,
-            encoder_inc_1,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        params.voice.adsr.decay = MapValue(
-            params.voice.adsr.decay,
-            encoder_inc_2,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        params.voice.adsr.sustain = MapValue(
-            params.voice.adsr.sustain,
-            encoder_inc_3,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        params.voice.adsr.release = MapValue(
-            params.voice.adsr.release,
-            encoder_inc_4,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        break;
-        case FILTER_PAGE:
-        params.voice.filter.cutoff = MapValue(
-            params.voice.filter.cutoff,
-            encoder_inc_1,
-            50.0f,
-            15000.0f,
-            10.0f
-        );
-        params.voice.filter.resonance = MapValue(
-            params.voice.filter.resonance,
-            encoder_inc_2,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        break;
-        case LFO_PAGE:
-        params.lfo.waveform = MapValue(
-            params.lfo.waveform,
-            encoder_inc_1,
-            0.0f,
-            3.0f,
-            1.0f
-        );
-        params.lfo.freq = MapValue(
-            params.lfo.freq,
-            encoder_inc_2,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-        params.lfo.amp = MapValue(
-            params.lfo.amp,
-            encoder_inc_3,
-            0.0f,
-            1.0f,
-            0.01f
-        );
-
-        break;
-        case FX_PAGE:
-            break;
-        case OVERDRIVE_PAGE:
-            params.effectUnits[0].overdrive.drive = MapValue(
-                params.effectUnits[0].overdrive.drive,
-                encoder_inc_1,
-                0.0f,
-                1.0f,
-                0.01f
-            );
-            break;
-        case CHORUS_PAGE:
-            params.effectUnits[0].chorus.lfoFreq = MapValue(
-                params.effectUnits[0].chorus.lfoFreq,
-                encoder_inc_1,
-                0.0f,
-                1.0f,
-                0.01f
-            );
-            params.effectUnits[0].chorus.lfoDepth = MapValue(
-                params.effectUnits[0].chorus.lfoDepth,
-                encoder_inc_2,
-                0.0f,
-                1.0f,
-                0.01f
-            );
-            params.effectUnits[0].chorus.feedback = MapValue(
-                params.effectUnits[0].chorus.feedback,
-                encoder_inc_3,
-                0.0f,
-                1.0f,
-                0.01f
-            );
-            params.effectUnits[0].chorus.pan = MapValue(
-                params.effectUnits[0].chorus.pan,
-                encoder_inc_4,
-                0.0f,
-                1.0f,
-                0.01f
-            );
-            break;
-        case COMPRESSOR_PAGE:
-            params.effectUnits[0].compressor.attack = MapValue(
-                params.effectUnits[0].compressor.attack,
-                encoder_inc_1,
-                0.0f,
-                1.0f,
-                0.01f
-            );
-            params.effectUnits[0].compressor.release = MapValue(
-                params.effectUnits[0].compressor.release,
-                encoder_inc_2,
-                0.0f,
-                1.0f,
-                0.01f
-            );
-            params.effectUnits[0].compressor.threshold = MapValue(
-                params.effectUnits[0].compressor.threshold,
-                encoder_inc_3,
-                0.0f,
-                1.0f,
-                0.01f
-            );
-            params.effectUnits[0].compressor.ratio = MapValue(
-                params.effectUnits[0].compressor.ratio,
-                encoder_inc_4,
-                1.0f,
-                10.0f,
-                1.0f
-            );
-            break;
-        case REVERB_PAGE:
-            params.effectUnits[0].reverb.dryWet = MapValue(
-                params.effectUnits[0].reverb.dryWet,
-                encoder_inc_1,
-                0.0f,
-                1.0f,
-                0.01f
-            );
-            params.effectUnits[0].reverb.feedback = MapValue(
-                params.effectUnits[0].reverb.feedback,
-                encoder_inc_2,
-                0.0f,
-                1.0f,
-                0.01f
-            );
-            params.effectUnits[0].reverb.lpFreq = MapValue(
-                params.effectUnits[0].reverb.lpFreq,
-                encoder_inc_3,
-                0.0f,
-                5000.0f,
-                10.0f
-            );
-            break;
-        case MTX_PAGE:
-            break;
-        case SETTINGS_PAGE:
-        break;
-        case STORE_PAGE:
-        break;
-        case LOAD_PAGE:
-        break;
-        default:
-        break;
-    }
-}
-
 void ProcessLeds() {
     led_osc_1.Write(params.voice.osc[0].active);
     led_osc_2.Write(params.voice.osc[1].active);
     led_osc_3.Write(params.voice.osc[2].active);
-    led_fx_1.Write(params.effectUnits[0].isActive);
-    led_fx_2.Write(params.effectUnits[1].isActive);
+    led_fx_1.Write(effectSlot[0].isActive);
+    led_fx_2.Write(effectSlot[1].isActive);
     led_midi.Write(voice[1].isGated);
     led_out.Write(voice[2].isGated);
     voice_1.Write(voice[0].isGated);

@@ -2,7 +2,6 @@
 
 // Definition of global variables
 BlOsc lfo;
-float lfoValue = 0.0f;
 Adsr mainADSR;
 VoiceUnit voice[NUM_VOICES];
 
@@ -11,15 +10,15 @@ void InitLfo(float samplerate) {
     lfo.Init(samplerate);
 }
 
-void ProcessLfo() {
+float ProcessLfo() {
     // Apply parameters from template
     lfo.SetFreq(params.lfo.freq);
     lfo.SetWaveform(params.lfo.waveform);
-    lfo.SetAmp(params.lfo.amp);
-    lfo.SetPw(params.lfo.pw);
+    lfo.SetAmp(params.lfo.depth);
     
     // Process LFO and store value in global variable
-    lfoValue = lfo.Process();
+    float lfoValue = lfo.Process();
+    return lfoValue;
 }
 
 // Implementation of VoiceUnit methods

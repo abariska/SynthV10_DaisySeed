@@ -4,6 +4,7 @@
 #include "DisplayOLED.h"
 #include "Voice.h"
 #include "Parameters.h"
+#include "Effects.h"
 
 #define PROGRAM_NAME_LENGTH 12
 #define PROGRAM_NUMBER_LENGTH 4
@@ -14,6 +15,12 @@ using namespace daisy;
 
 extern MyOledDisplay display;
 extern CpuLoadMeter cpu_load;
+extern Enc_mcp encoder_1;
+extern Enc_mcp encoder_2;
+extern Enc_mcp encoder_3;
+extern Enc_mcp encoder_4;
+extern SynthParams params;
+
 enum MenuPage {
     MAIN_PAGE,
     OSCILLATOR_1_PAGE,
@@ -35,14 +42,117 @@ enum MenuPage {
 
 MenuPage currentPage = MAIN_PAGE;
 
+enum ParamUnitName {
+    OSC_WAVEFORM_1,
+    OSC_PITCH_1,
+    OSC_DETUNE_1,
+    OSC_AMP_1,
+    OSC_WAVEFORM_2,
+    OSC_PITCH_2,
+    OSC_DETUNE_2,
+    OSC_AMP_2,
+    OSC_WAVEFORM_3,
+    OSC_PITCH_3,
+    OSC_DETUNE_3,
+    OSC_AMP_3,
+    ADSR_ATTACK,
+    ADSR_DECAY,
+    ADSR_SUSTAIN,
+    ADSR_RELEASE,
+    FILTER_CUTOFF,
+    FILTER_RESONANCE,
+    LFO_WAVEFORM,
+    LFO_FREQ,
+    LFO_DEPTH,
+    EFFECT_OVERDRIVE_DRIVE,
+    EFFECT_CHORUS_FREQ,
+    EFFECT_CHORUS_DEPTH,
+    EFFECT_CHORUS_FBK,
+    EFFECT_CHORUS_PAN,
+    EFFECT_COMPRESSOR_ATTACK,
+    EFFECT_COMPRESSOR_RELEASE,
+    EFFECT_COMPRESSOR_THRESHOLD,
+    EFFECT_COMPRESSOR_RATIO,
+    EFFECT_REVERB_DRYWET,
+    EFFECT_REVERB_FBK,
+    EFFECT_REVERB_LPFREQ,
+    NONE
+};
+
+struct ParamUnitData{
+    float* target_param;
+    const char* label;
+    float min;
+    float max;
+    float sensitivity;
+} allParams[ParamUnitName::NONE + 1];
+
+struct ParamSlot {
+    ParamUnitName assignedParam;
+} slots[4 + 1];
+
+void UpdateDisplayParameters();
+
+inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y, FontDef font, bool color);
+    
+void UpdateParamsWithEncoders() {
+
+    encoder_1.Debounce();
+    encoder_2.Debounce();
+    encoder_3.Debounce();
+    encoder_4.Debounce();
+
+    int encoderIncs[4]{
+    encoder_1.Increment(),
+    encoder_2.Increment(),
+    encoder_3.Increment(),
+    encoder_4.Increment()
+    };
+
+    const uint8_t cursorX[4] = {6, 41, 72, 104};
+    const uint8_t xStart[4]  = {0, 32, 64, 96};
+    const uint8_t xEnd[4]    = {32, 64, 96, 127};
+    const uint8_t yLabel = 32;
+    const uint8_t yValue = 50;
+
+    for (size_t i = 0; i < 4; i++) {
+        ParamUnitName paramID = slots[i].assignedParam;
+
+        if (paramID == NONE) continue; // слот пустий
+
+        ParamUnitData& param_unit = allParams[paramID];
+
+        if (param_unit.target_param != nullptr) {
+
+            *param_unit.target_param += encoderIncs[i] * param_unit.sensitivity;
+
+            if (*param_unit.target_param > param_unit.max) {
+                *param_unit.target_param = param_unit.max;
+            } else if (*param_unit.target_param < param_unit.min) {
+                *param_unit.target_param = param_unit.min;
+            }
+
+            char valStr[16];
+            sprintf(valStr, "%.2f", *param_unit.target_param);
+
+            display.SetCursor(cursorX[i], yLabel);
+            display.WriteString(param_unit.label, Font_6x8, true);
+            
+            display.SetCursor(cursorX[i], yValue);
+            DisplayCentered(valStr, xStart[i], xEnd[i], yValue, Font_6x8, true);
+        }
+    }
+}
+
 inline void DrawMainLines()
 {
-    for (int raw = 0; raw < DISPLAY_HEIGHT; raw++)
+    for (size_t raw = 0; raw < DISPLAY_HEIGHT; raw++)
     {
-        for (int column = 0; column < DISPLAY_WIDTH; column += 2)
+        for (size_t column = 0; column < DISPLAY_WIDTH; column += 2)
         {
             if (raw == 20)
-                display.DrawLine(0, 24, 127, 24, true);
+                for (size_t i = 0; i < 127; i += 2)
+                    display.DrawPixel(i, raw, true);
             else if (raw > 24 && raw % 2 == 0)
             {
                 display.DrawPixel(32, raw, true);
@@ -53,6 +163,486 @@ inline void DrawMainLines()
         }
     }
 } 
+
+inline void DrawMainMenu()
+{
+    char prog_num[PROGRAM_NUMBER_LENGTH];
+    char prog_name[PROGRAM_NAME_LENGTH];
+
+    char cpu_load_value[PARAM_VALUE_LENGTH];
+    float cpu_avg_load = cpu_load.GetAvgCpuLoad();
+
+    DrawMainLines();
+    
+    display.SetCursor(5, 5);
+    // safe_sprintf(prog_num, PROGRAM_NUMBER_LENGTH, "%03d", 1);
+    sprintf(prog_num, "%03d", 1);
+    display.WriteString(prog_num, Font_7x10, true);
+
+    display.SetCursor(35, 5);
+    // safe_sprintf(prog_name, PROGRAM_NAME_LENGTH, "Program");
+    sprintf(prog_name, "Program");
+    display.WriteString(prog_name, Font_7x10, true);
+
+    display.SetCursor(100, 5);
+    sprintf(cpu_load_value, "%.1f%%", cpu_avg_load * 100);
+    display.WriteString(cpu_load_value, Font_7x10, true);
+
+    slots[1].assignedParam = FILTER_CUTOFF;
+    slots[2].assignedParam = FILTER_RESONANCE;
+    slots[3].assignedParam = ADSR_ATTACK;
+    slots[4].assignedParam = ADSR_DECAY;
+
+}
+
+void AssignParamsForPage(MenuPage page) {
+    switch (page) {
+        case MAIN_PAGE:
+            slots[0].assignedParam = FILTER_CUTOFF;
+            slots[1].assignedParam = FILTER_RESONANCE;
+            slots[2].assignedParam = ADSR_ATTACK;
+            slots[3].assignedParam = ADSR_DECAY;
+            break;
+        case OSCILLATOR_1_PAGE:
+            slots[0].assignedParam = OSC_WAVEFORM_1;
+            slots[1].assignedParam = OSC_PITCH_1;
+            slots[2].assignedParam = OSC_DETUNE_1;
+            slots[3].assignedParam = OSC_AMP_1;
+            break;      
+        case OSCILLATOR_2_PAGE:
+            slots[0].assignedParam = OSC_WAVEFORM_2;
+            slots[1].assignedParam = OSC_PITCH_2;
+            slots[2].assignedParam = OSC_DETUNE_2;
+            slots[3].assignedParam = OSC_AMP_2;
+            break;  
+        case OSCILLATOR_3_PAGE:
+            slots[0].assignedParam = OSC_WAVEFORM_3;
+            slots[1].assignedParam = OSC_PITCH_3;
+            slots[2].assignedParam = OSC_DETUNE_3;
+            slots[3].assignedParam = OSC_AMP_3;
+            break;  
+        case AMPLIFIER_PAGE:
+            slots[0].assignedParam = ADSR_ATTACK;
+            slots[1].assignedParam = ADSR_DECAY;
+            slots[2].assignedParam = ADSR_SUSTAIN;
+            slots[3].assignedParam = ADSR_RELEASE;
+            break;  
+        case FILTER_PAGE:
+            slots[0].assignedParam = FILTER_CUTOFF;
+            slots[1].assignedParam = FILTER_RESONANCE;
+            break;  
+        case LFO_PAGE:
+            slots[0].assignedParam = LFO_WAVEFORM;
+            slots[1].assignedParam = LFO_FREQ;
+            slots[2].assignedParam = LFO_DEPTH;
+            break;
+        default: 
+            slots[0].assignedParam = NONE;
+            slots[1].assignedParam = NONE;
+            slots[2].assignedParam = NONE;
+            slots[3].assignedParam = NONE;
+            break;
+    }
+}
+
+void DrawParamPage(const char* page_name, ParamUnitName p0, ParamUnitName p1, ParamUnitName p2, ParamUnitName p3) {
+    DrawMainLines();
+    display.SetCursor(5, 15);
+    DisplayCentered(page_name, 0, 127, 15, Font_7x10, true);
+    slots[0].assignedParam = p0;
+    slots[1].assignedParam = p1;
+    slots[2].assignedParam = p2;
+    slots[3].assignedParam = p3;
+    UpdateParamsWithEncoders();
+}
+
+void DrawEffectsMenu() {
+    // Horizontal line under header
+    display.DrawLine(0, 20, 127, 20, true);
+
+    display.SetCursor(5, 15);
+    display.WriteString("Effects", Font_7x10, true);
+    
+    // Vertical lines for columns
+    display.DrawLine(15, 20, 15, 63, true);
+    display.DrawLine(90, 20, 90, 63, true);
+    
+    // Horizontal line between rows
+    display.DrawLine(0, 40, 127, 40, true);
+    
+    // Data for first unit
+    display.SetCursor(5, 30);
+    display.WriteString("1", Font_7x10, true);
+
+    // Data for first unit
+    display.SetCursor(5, 50);
+    display.WriteString("2", Font_7x10, true);
+
+    for (size_t i = 0; i < 2; i++)
+    {
+        EffectName selected = effectSlot[i].selectedEffect;
+        const int y = (i == 0) ? 30 : 50;
+
+        if (selected != EFFECT_NONE)
+        {
+            display.SetCursor(25, y);
+            display.WriteString(effectLabels[selected], Font_7x10, true);
+            display.SetCursor(100, y);
+            display.WriteString(effectSlot[i].isActive ? "On" : "Off", Font_7x10, true);
+        }
+        else
+        {
+            display.SetCursor(25, y);
+            display.WriteString(" - ", Font_7x10, true);
+            display.SetCursor(100, y);
+            display.WriteString(" - ", Font_7x10, true);
+        }
+    }
+}
+
+void DrawMenu() {
+    // Clear display before showing new menu
+    display.Fill(false);
+    
+    // Display different pages depending on selected menu
+    switch (currentPage) {
+
+        case MAIN_PAGE:
+            DrawMainMenu();
+            break;
+            
+        case OSCILLATOR_1_PAGE:
+
+            DrawParamPage("Oscillator 1", 
+            OSC_WAVEFORM_1, OSC_PITCH_1, OSC_DETUNE_1, OSC_AMP_1);
+            break;  
+
+        case OSCILLATOR_2_PAGE:
+
+            DrawParamPage("Oscillator 2", 
+            OSC_WAVEFORM_2, OSC_PITCH_2, OSC_DETUNE_2, OSC_AMP_2);
+            break;
+
+        case OSCILLATOR_3_PAGE:
+
+            DrawParamPage("Oscillator 3", 
+            OSC_WAVEFORM_3, OSC_PITCH_3, OSC_DETUNE_3, OSC_AMP_3);
+            break;  
+            
+        case AMPLIFIER_PAGE:
+
+            DrawParamPage("Amplifier", 
+            ADSR_ATTACK, ADSR_DECAY, ADSR_SUSTAIN, ADSR_RELEASE);
+            break;          
+
+        case FILTER_PAGE:
+
+            DrawParamPage("Filter", 
+            FILTER_CUTOFF, FILTER_RESONANCE, NONE, NONE);
+            break;  
+
+        case LFO_PAGE:
+
+            DrawParamPage("LFO", 
+            LFO_WAVEFORM, LFO_FREQ, LFO_DEPTH, NONE);
+            break;  
+            
+        case FX_PAGE:
+            DrawEffectsMenu();
+            break;
+
+        case OVERDRIVE_PAGE:
+            DrawParamPage("Overdrive", 
+            EFFECT_OVERDRIVE_DRIVE, NONE, NONE, NONE);
+            break;
+
+        case CHORUS_PAGE:
+            DrawParamPage("Chorus", 
+            EFFECT_CHORUS_FREQ, EFFECT_CHORUS_DEPTH, EFFECT_CHORUS_FBK, EFFECT_CHORUS_PAN);
+            break;
+
+        case COMPRESSOR_PAGE:
+            DrawParamPage("Compressor", 
+            EFFECT_COMPRESSOR_ATTACK, EFFECT_COMPRESSOR_RELEASE, EFFECT_COMPRESSOR_THRESHOLD, EFFECT_COMPRESSOR_RATIO);
+            break;
+
+        case REVERB_PAGE:
+            DrawParamPage("Reverb", 
+            EFFECT_REVERB_DRYWET, EFFECT_REVERB_FBK, EFFECT_REVERB_LPFREQ, NONE);
+            break;
+            
+        case MTX_PAGE:
+            break;
+            
+        case SETTINGS_PAGE:
+            break;
+            
+        case STORE_PAGE:
+            break;
+            
+        case LOAD_PAGE  :
+            break;
+    }    
+    display.Update();
+}
+
+void UpdateDisplayParameters(){
+
+    allParams[OSC_WAVEFORM_1] = { 
+        .target_param = &params.voice.osc[0].waveform, 
+        .label = "Wav", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };  
+
+    allParams[OSC_PITCH_1] = { 
+        .target_param = &params.voice.osc[0].pitch, 
+        .label = "Sem", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+
+    allParams[OSC_DETUNE_1] = { 
+        .target_param = &params.voice.osc[0].detune, 
+        .label = "Det", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+
+    allParams[OSC_AMP_1] = { 
+        .target_param = &params.voice.osc[0].amp, 
+        .label = "Amp", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+
+    allParams[OSC_WAVEFORM_2] = {   
+        .target_param = &params.voice.osc[1].waveform, 
+        .label = "Wav", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+
+    allParams[OSC_PITCH_2] = { 
+        .target_param = &params.voice.osc[1].pitch, 
+        .label = "Sem", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+
+    allParams[OSC_DETUNE_2] = { 
+        .target_param = &params.voice.osc[1].detune, 
+        .label = "Det", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+
+    allParams[OSC_AMP_2] = { 
+        .target_param = &params.voice.osc[1].amp, 
+        .label = "Amp", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+
+    allParams[OSC_WAVEFORM_3] = { 
+        .target_param = &params.voice.osc[2].waveform, 
+        .label = "Wav", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+
+    allParams[OSC_PITCH_3] = { 
+        .target_param = &params.voice.osc[2].pitch, 
+        .label = "Sem", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+
+    allParams[OSC_DETUNE_3] = { 
+        .target_param = &params.voice.osc[2].detune, 
+        .label = "Det", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+
+    allParams[OSC_AMP_3] = { 
+        .target_param = &params.voice.osc[2].amp, 
+        .label = "Amp", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+
+    allParams[ADSR_ATTACK] = { 
+        .target_param = &params.voice.adsr.attack, 
+        .label = "Att", 
+        .min = 0.0f, 
+        .max = 10.0f, 
+        .sensitivity = 0.01f 
+    };
+
+    allParams[ADSR_DECAY] = { 
+        .target_param = &params.voice.adsr.decay, 
+        .label = "Dec", 
+        .min = 0.0f, 
+        .max = 10.0f, 
+        .sensitivity = 0.01f 
+    };
+
+    allParams[ADSR_SUSTAIN] = { 
+        .target_param = &params.voice.adsr.sustain, 
+        .label = "Sus", 
+        .min = 0.0f, 
+        .max = 1.0f, 
+        .sensitivity = 0.01f 
+    };
+
+    allParams[ADSR_RELEASE] = { 
+        .target_param = &params.voice.adsr.release, 
+        .label = "Rel", 
+        .min = 0.0f, 
+        .max = 10.0f, 
+        .sensitivity = 0.01f 
+    };
+
+    allParams[FILTER_CUTOFF] = { 
+        .target_param = &params.voice.filter.cutoff, 
+        .label = "Cut", 
+        .min = 50.0f, 
+        .max = 15000.0f,  
+        .sensitivity = 10.0f 
+    };
+    allParams[FILTER_RESONANCE] = { 
+        .target_param = &params.voice.filter.resonance, 
+        .label = "Res", 
+        .min = 0.0f, 
+        .max = 1.0f, 
+        .sensitivity = 0.01f 
+    };          
+    allParams[LFO_WAVEFORM] = { 
+        .target_param = &params.lfo.waveform, 
+        .label = "Wav", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[LFO_FREQ] = { 
+        .target_param = &params.lfo.freq, 
+        .label = "Frq", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[LFO_DEPTH] = { 
+        .target_param = &params.lfo.depth, 
+        .label = "Amp", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[EFFECT_OVERDRIVE_DRIVE] = { 
+        .target_param = &params.overdriveParams.drive, 
+        .label = "Drv", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[EFFECT_CHORUS_FREQ] = { 
+        .target_param = &params.chorusParams.freq, 
+        .label = "Frq", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };      
+    allParams[EFFECT_CHORUS_DEPTH] = { 
+        .target_param = &params.chorusParams.depth, 
+        .label = "Amp", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[EFFECT_CHORUS_FBK] = { 
+        .target_param = &params.chorusParams.feedback, 
+        .label = "Fbk", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[EFFECT_CHORUS_PAN] = { 
+        .target_param = &params.chorusParams.pan, 
+        .label = "Pan", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[EFFECT_COMPRESSOR_ATTACK] = { 
+        .target_param = &params.compressorParams.attack, 
+        .label = "Att", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[EFFECT_COMPRESSOR_RELEASE] = { 
+        .target_param = &params.compressorParams.release, 
+        .label = "Rel", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[EFFECT_COMPRESSOR_THRESHOLD] = { 
+        .target_param = &params.compressorParams.threshold, 
+        .label = "Thr", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[EFFECT_COMPRESSOR_RATIO] = { 
+        .target_param = &params.compressorParams.ratio, 
+        .label = "Rat", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[EFFECT_REVERB_DRYWET] = { 
+        .target_param = &params.reverbParams.dryWet, 
+        .label = "D/W", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[EFFECT_REVERB_FBK] = { 
+        .target_param = &params.reverbParams.feedback, 
+        .label = "Fbk", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[EFFECT_REVERB_LPFREQ] = { 
+        .target_param = &params.reverbParams.lpFreq, 
+        .label = "LPF", 
+        .min = 0.0f, 
+        .max = 1.0f,  
+        .sensitivity = 0.01f 
+    };
+    allParams[NONE] = { 
+        .target_param = nullptr, 
+        .label = " - ", 
+        .min = 0.0f, 
+        .max = 0.0f,  
+        .sensitivity = 0.0f 
+    };
+}
 
 inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y, FontDef font, bool color) {
     // Calculate text length (number of characters)
@@ -85,443 +675,4 @@ inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y,
     display.SetCursor(startX, y);
     display.WriteString(text, font, color);
 }
-
-// Function for safe string formatting
-inline void safe_sprintf(char* buffer, size_t buffer_size, const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    vsnprintf(buffer, buffer_size - 1, format, args);
-    va_end(args);
-    buffer[buffer_size - 1] = '\0'; // Ensure null terminator
-}
-
-inline void DrawMainMenu()
-{
-    char prog_num[PROGRAM_NUMBER_LENGTH];
-    char prog_name[PROGRAM_NAME_LENGTH];
-    char encoder_1_param[PARAM_NAME_LENGTH];
-    char encoder_1_value[PARAM_VALUE_LENGTH];
-    char encoder_2_param[PARAM_NAME_LENGTH];
-    char encoder_2_value[PARAM_VALUE_LENGTH];
-    char encoder_3_param[PARAM_NAME_LENGTH];
-    char encoder_3_value[PARAM_VALUE_LENGTH];
-    char encoder_4_param[PARAM_NAME_LENGTH];
-    char encoder_4_value[PARAM_VALUE_LENGTH];
-
-    char cpu_load_value[PARAM_VALUE_LENGTH];
-    float cpu_avg_load = cpu_load.GetAvgCpuLoad();
-
-    DrawMainLines();
-    
-    display.SetCursor(5, 5);
-    // safe_sprintf(prog_num, PROGRAM_NUMBER_LENGTH, "%03d", 1);
-    sprintf(prog_num, "%03d", 1);
-    display.WriteString(prog_num, Font_7x10, true);
-
-    display.SetCursor(35, 5);
-    // safe_sprintf(prog_name, PROGRAM_NAME_LENGTH, "Program");
-    sprintf(prog_name, "Program");
-    display.WriteString(prog_name, Font_7x10, true);
-
-    display.SetCursor(100, 5);
-    sprintf(cpu_load_value, "%.1f%%", cpu_avg_load * 100);
-    display.WriteString(cpu_load_value, Font_7x10, true);
-
-    // Display parameters from params structure
-    display.SetCursor(6, 32);
-    // safe_sprintf(encoder_1_param, PARAM_NAME_LENGTH, "Cut");
-    sprintf(encoder_1_param, "Cut");
-    display.WriteString(encoder_1_param, Font_6x8, true);
-
-    display.SetCursor(6, 50);
-    // safe_sprintf(encoder_1_value, PARAM_VALUE_LENGTH, expected_format_1, params.voice.filter.cutoff);
-    sprintf(encoder_1_value, "%d", static_cast<int>(params.voice.filter.cutoff));
-    DisplayCentered(encoder_1_value, 0, 32, 50, Font_6x8, true);
-
-    display.SetCursor(41, 32);
-    // safe_sprintf(encoder_2_param, PARAM_NAME_LENGTH, "Res");
-    sprintf(encoder_2_param, "Res");
-    display.WriteString(encoder_2_param, Font_6x8, true);
-
-    display.SetCursor(41, 50);
-    // safe_sprintf(encoder_2_value, PARAM_VALUE_LENGTH, expected_format_2, params.voice.filter.resonance);
-    sprintf(encoder_2_value, "%d", static_cast<int>(params.voice.filter.resonance * 100));
-    DisplayCentered(encoder_2_value, 32, 64, 50, Font_6x8, true);
-
-    display.SetCursor(72, 32);
-    // safe_sprintf(encoder_3_param, PARAM_NAME_LENGTH, "Att");
-    sprintf(encoder_3_param, "Att");
-    display.WriteString(encoder_3_param, Font_6x8, true);
-
-    display.SetCursor(72, 50);
-    // safe_sprintf(encoder_3_value, PARAM_VALUE_LENGTH, expected_format_3, params.voice.adsr.attack);
-    sprintf(encoder_3_value, "%d", static_cast<int>(params.voice.adsr.attack * 100));
-    DisplayCentered(encoder_3_value, 64, 96, 50, Font_6x8, true);
-
-    display.SetCursor(104, 32);
-    // safe_sprintf(encoder_4_param, PARAM_NAME_LENGTH, "Dec");
-    sprintf(encoder_4_param, "Dec");
-    display.WriteString(encoder_4_param, Font_6x8, true);
-
-    display.SetCursor(104, 50);
-    // safe_sprintf(encoder_4_value, PARAM_VALUE_LENGTH, expected_format_4, params.voice.adsr.decay);
-    sprintf(encoder_4_value, "%d", static_cast<int>(params.voice.adsr.decay * 100));
-    DisplayCentered(encoder_4_value, 96, 127, 50, Font_6x8, true);
-    
-    display.Update();
-}
-
-inline void DrawMenusParameters(
-    const char* menu_name, 
-    const char* param_for_enc_1,
-    const char* param_for_enc_2,
-    const char* param_for_enc_3,
-    const char* param_for_enc_4,
-    int value_for_enc_1, 
-    int value_for_enc_2, 
-    int value_for_enc_3, 
-    int value_for_enc_4,
-    bool value_for_top_right_corner)
-{
-    char enc_1_value[PARAM_VALUE_LENGTH];
-    char enc_2_value[PARAM_VALUE_LENGTH];
-    char enc_3_value[PARAM_VALUE_LENGTH];
-    char enc_4_value[PARAM_VALUE_LENGTH];
-    char top_right_corner_value[PARAM_VALUE_LENGTH];
-
-    display.SetCursor(6, 6);
-    display.WriteString(menu_name, Font_7x10, true);
-
-    if (currentPage == OSCILLATOR_1_PAGE || currentPage == OSCILLATOR_2_PAGE || currentPage == OSCILLATOR_3_PAGE) {
-        display.SetCursor(104, 6);
-        safe_sprintf(top_right_corner_value, PARAM_VALUE_LENGTH, "%s", value_for_top_right_corner ? "ON" : "OFF");
-        display.WriteString(top_right_corner_value, Font_7x10, true);
-    }
-    display.SetCursor(6, 32);
-    display.WriteString(param_for_enc_1, Font_6x8, true);
-
-    display.SetCursor(6, 50);
-    safe_sprintf(enc_1_value, PARAM_VALUE_LENGTH, "%d", value_for_enc_1);
-    DisplayCentered(enc_1_value, 0, 32, 50, Font_6x8, true);
-
-    display.SetCursor(41, 32);
-    display.WriteString(param_for_enc_2, Font_6x8, true);
-
-    display.SetCursor(41, 50);
-    safe_sprintf(enc_2_value, PARAM_VALUE_LENGTH, "%d", value_for_enc_2);
-    DisplayCentered(enc_2_value, 32, 64, 50, Font_6x8, true);
-
-    display.SetCursor(72, 32);
-    display.WriteString(param_for_enc_3, Font_6x8, true);
-
-    display.SetCursor(72, 50);
-    safe_sprintf(enc_3_value, PARAM_VALUE_LENGTH, "%d", value_for_enc_3);
-    DisplayCentered(enc_3_value, 64, 96, 50, Font_6x8, true);
-
-    display.SetCursor(104, 32);
-    display.WriteString(param_for_enc_4, Font_6x8, true);
-
-    display.SetCursor(104, 50);
-    safe_sprintf(enc_4_value, PARAM_VALUE_LENGTH, "%d", value_for_enc_4);
-    DisplayCentered(enc_4_value, 96, 127, 50, Font_6x8, true);
-}
-
-
-inline void DrawEffectsMenu() {
-    // Horizontal line under header
-    display.DrawLine(0, 20, 127, 20, true);
-    
-    // Vertical lines for columns
-    display.DrawLine(15, 20, 15, 63, true);
-    display.DrawLine(90, 20, 90, 63, true);
-    
-    // Horizontal line between rows
-    display.DrawLine(0, 40, 127, 40, true);
-
-    display.SetCursor(5, 15);
-    display.WriteString("Effects", Font_7x10, true);
-    
-    // Data for first unit
-    display.SetCursor(5, 30);
-    display.WriteString("1", Font_7x10, true);
-    
-    
-    if (params.effectUnits[0].activeEffect != EFFECT_NONE) {
-        display.SetCursor(25, 30);
-        display.WriteString(GetEffectName(params.effectUnits[0].activeEffect), Font_7x10, true);
-        display.SetCursor(100, 30);
-        display.WriteString(params.effectUnits[0].isActive ? "On" : "Off", Font_7x10, true);
-    } else {
-        display.SetCursor(25, 30);
-        display.WriteString(" - ", Font_7x10, true);
-        display.SetCursor(100, 30);
-        display.WriteString(" - ", Font_7x10, true);
-    }
-    
-    if (params.effectUnits[1].activeEffect != EFFECT_NONE) {
-        display.SetCursor(5, 50);
-        display.WriteString("2", Font_7x10, true);
-        display.SetCursor(25, 50);
-        display.WriteString(GetEffectName(params.effectUnits[1].activeEffect), Font_7x10, true);
-        display.SetCursor(100, 50);
-        display.WriteString(params.effectUnits[1].isActive ? "On" : "Off", Font_7x10, true);
-    } else {
-        display.SetCursor(5, 50);
-        display.WriteString("2", Font_7x10, true);
-        display.SetCursor(25, 50);
-        display.WriteString(" - ", Font_7x10, true);
-        display.SetCursor(100, 50);
-        display.WriteString(" - ", Font_7x10, true);
-    }
-}
-
-inline void DrawEffectUnit(int unit_number) {
-    switch (params.effectUnits[unit_number].activeEffect)
-    {
-    case EFFECT_OVERDRIVE:
-        DrawMenusParameters(
-            "Overdrive",
-            "Drive",
-            " - ",
-            " - ",
-            " - ",
-            params.effectUnits[unit_number].overdrive.drive,
-            0,
-            0,
-            0,
-            params.effectUnits[unit_number].overdrive.isActive
-        );
-        break;
-    case EFFECT_CHORUS:
-        DrawMenusParameters(
-            "Chorus",
-            "Freq",
-            "Amp",
-            "Fbck",
-            "Pan",
-            params.effectUnits[unit_number].chorus.lfoFreq,
-            params.effectUnits[unit_number].chorus.lfoDepth,
-            params.effectUnits[unit_number].chorus.feedback,
-            params.effectUnits[unit_number].chorus.pan,
-            params.effectUnits[unit_number].chorus.isActive
-        );
-        break;
-    case EFFECT_COMPRESSOR:
-        DrawMenusParameters(
-            "Compressor",
-            "Att",
-            "Rel",
-            "Thr",
-            "Ratio",
-            params.effectUnits[unit_number].compressor.attack,
-            params.effectUnits[unit_number].compressor.release,
-            params.effectUnits[unit_number].compressor.threshold,
-            params.effectUnits[unit_number].compressor.ratio,
-            params.effectUnits[unit_number].compressor.isActive
-        );
-        break;
-    case EFFECT_REVERB:
-        DrawMenusParameters(
-            "Reverb",
-            "Dry",
-            "Fbck",
-            "Lp",
-            " - ",
-            params.effectUnits[unit_number].reverb.dryWet,
-            params.effectUnits[unit_number].reverb.feedback,
-            params.effectUnits[unit_number].reverb.lpFreq,
-            0,
-            params.effectUnits[unit_number].reverb.isActive
-        );
-        break;
-    case EFFECT_NONE:
-        DrawMenusParameters(
-            " - ",
-            " - ",
-            " - ",
-            " - ",
-            " - ",
-            0,
-            0,
-            0,
-            0,
-            false
-        );
-        break;
-    default:
-        break;
-    }
-}
-
-void DrawMenu() {
-    // Clear display before showing new menu
-    display.Fill(false);
-    
-    // Display different pages depending on selected menu
-    switch (currentPage) {
-
-        case MAIN_PAGE:
-            DrawMainMenu();
-            break;
-            
-        case OSCILLATOR_1_PAGE:
-            DrawMainLines();
-            DrawMenusParameters(
-                "Oscillator 1",
-                "Wav",
-                "Oct",
-                "Tun",
-                "Amp",
-                (params.voice.osc[0].waveform),
-                (params.voice.osc[0].pitch),
-                static_cast<int>(params.voice.osc[0].detune * 100),
-                static_cast<int>(params.voice.osc[0].amp * 100),
-                params.voice.osc[0].active
-            );
-            break;
-
-        case OSCILLATOR_2_PAGE:
-
-            DrawMainLines();        
-
-            DrawMenusParameters(
-                "Oscillator 2",
-                "Wav",
-                "Oct",
-                "Tun",
-                "Amp",
-                (params.voice.osc[1].waveform),
-                (params.voice.osc[1].pitch),
-                static_cast<int>(params.voice.osc[1].detune * 100),
-                static_cast<int>(params.voice.osc[1].amp * 100),
-                (params.voice.osc[1].active)
-            );
-            break;
-
-        case OSCILLATOR_3_PAGE:
-
-            DrawMainLines();
-
-            DrawMenusParameters(
-                "Oscillator 3",
-                "Wav",
-                "Oct",
-                "Tun",
-                "Amp",
-                (params.voice.osc[2].waveform),
-                (params.voice.osc[2].pitch),
-                static_cast<int>(params.voice.osc[2].detune * 100),
-                static_cast<int>(params.voice.osc[2].amp * 100),
-                params.voice.osc[2].active
-            );
-            break;
-            
-        case AMPLIFIER_PAGE:
-
-            DrawMainLines();
-
-            DrawMenusParameters(
-                "Amplifier",
-                "Att",
-                "Dec",
-                "Sus",
-                "Rel",
-                static_cast<int>(params.voice.adsr.attack * 100),
-                static_cast<int>(params.voice.adsr.decay * 100),
-                static_cast<int>(params.voice.adsr.sustain * 100),
-                static_cast<int>(params.voice.adsr.release * 100),
-                false
-            );  
-            break;
-
-        case FILTER_PAGE:
-
-            DrawMainLines();
-
-            DrawMenusParameters(
-                "Filter",
-                "Cut",
-                "Res",
-                " - ",
-                " - ",
-                static_cast<int>(params.voice.filter.cutoff * 100),
-                static_cast<int>(params.voice.filter.resonance * 100),
-                0,
-                0,
-                false
-            );
-            break;  
-        case LFO_PAGE:
-
-            DrawMainLines();
-
-            DrawMenusParameters(
-                "LFO",
-                "Wav",
-                "Frq",
-                "Amp",    
-                " - ",
-                (params.lfo.waveform),
-                (params.lfo.freq),
-                static_cast<int>(params.lfo.amp * 100),
-                0,      
-                false
-            );  
-            break;
-            
-        case FX_PAGE:
-            DrawEffectsMenu();
-            break;
-
-        case OVERDRIVE_PAGE:
-            DrawEffectUnit(0);
-            break;
-
-        case CHORUS_PAGE:
-            DrawEffectUnit(1);
-            break;
-
-        case COMPRESSOR_PAGE:
-            DrawEffectUnit(2);
-            break;
-
-        case REVERB_PAGE:
-            DrawEffectUnit(3);
-            break;
-            
-        case MTX_PAGE:
-            // Modulation matrix
-            display.SetCursor(5, 15);
-            display.WriteString("Modulation", Font_7x10, true);
-            
-            display.SetCursor(5, 30);
-            display.WriteString("Source -> Dest", Font_7x10, true);
-            
-            display.SetCursor(5, 45);
-            display.WriteString("Amt: 0.50", Font_7x10, true);
-            break;
-            
-        case SETTINGS_PAGE:
-            // Settings
-            display.SetCursor(5, 15);
-            display.WriteString("Settings", Font_7x10, true);
-            break;
-            
-        case STORE_PAGE:
-            // Store program
-            display.SetCursor(5, 15);
-            display.WriteString("Store Program", Font_7x10, true);
-            break;
-            
-        case LOAD_PAGE  :
-            // Load program
-            display.SetCursor(5, 15);
-            display.WriteString("Load Program", Font_7x10, true);
-            break;
-    }
-    
-    // Update display
-    display.Update();
-}
-
 #endif
