@@ -1,7 +1,11 @@
 #include "Voice.h"
 
 // Definition of global variables
+<<<<<<< HEAD
 
+=======
+Oscillator lfo;
+>>>>>>> d515f3e (lfo_osc_changed_2)
 Adsr mainADSR;
 
 VoiceUnit voice[NUM_VOICES];
@@ -15,6 +19,11 @@ float ProcessLfo() {
     // Apply parameters from template
     lfo.SetFreq(params.lfo.freq);
     lfo.SetWaveform(params.lfo.waveform);
+<<<<<<< HEAD
+=======
+    lfo.SetAmp(params.lfo.amp);
+    return lfo.Process();
+>>>>>>> d515f3e (lfo_osc_changed_2)
 }
 
 // Implementation of VoiceUnit methods
@@ -156,4 +165,5 @@ float VoiceUnit::Process(){
     }
 
 
-
+Oscillator lfo;
+Adsr mainADSR;
