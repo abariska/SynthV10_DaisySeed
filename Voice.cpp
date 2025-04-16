@@ -1,9 +1,9 @@
 #include "Voice.h"
 
 // Definition of global variables
-BlOsc lfo;
-float lfoValue = 0.0f;
+Oscillator lfo;
 Adsr mainADSR;
+
 VoiceUnit voice[NUM_VOICES];
 
 // Function definitions
@@ -16,10 +16,6 @@ void ProcessLfo() {
     lfo.SetFreq(params.lfo.freq);
     lfo.SetWaveform(params.lfo.waveform);
     lfo.SetAmp(params.lfo.amp);
-    lfo.SetPw(params.lfo.pw);
-    
-    // Process LFO and store value in global variable
-    lfoValue = lfo.Process();
 }
 
 // Implementation of VoiceUnit methods
