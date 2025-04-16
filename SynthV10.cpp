@@ -23,10 +23,7 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
         float sig_after_fxL, sig_after_fxR;
         float mix = 0.0f;
 
-        for (int i = 0; i < NUM_VOICES; i++) {
-            mix += voice[i].Process();
-        }   
-        mix /= NUM_VOICES;
+        mix += voice.Process();
 
         effects.Process(mix, mix, &sig_after_fxL, &sig_after_fxR);
 
@@ -54,9 +51,7 @@ int main(void)
     InitSynthParams();
 
     InitLfo(samplerate);
-    for (int i = 0; i < NUM_VOICES; i++) {
-        voice[i].Init(samplerate, blocksize);
-    }
+    voice.Init(samplerate, blocksize);
     effects.Init(samplerate);
 
     hw.StartAudio(AudioCallback);
@@ -453,11 +448,11 @@ void ProcessLeds() {
     led_osc_3.Write(params.voice.osc[2].active);
     led_fx_1.Write(params.effectUnits[0].isActive);
     led_fx_2.Write(params.effectUnits[1].isActive);
-    led_midi.Write(voice[1].isGated);
-    led_out.Write(voice[2].isGated);
-    voice_1.Write(voice[0].isGated);
-    voice_2.Write(voice[1].isGated);
-    voice_3.Write(voice[2].isGated);
+    led_midi.Write(voice.isGated);
+    led_out.Write(voice.isGated);
+    voice_1.Write(voice.isGated);
+    voice_2.Write(voice.isGated);
+    voice_3.Write(voice.isGated);
 }
 
 void DisplayView(void* data) {

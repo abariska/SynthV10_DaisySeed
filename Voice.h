@@ -20,7 +20,6 @@ extern SynthParams params;
 extern BlOsc Lfo;
 extern float lfoValue;
 
-const uint8_t NUM_VOICES = 3;
 
 // Declaration of functions
 void InitLfo(float samplerate);

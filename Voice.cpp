@@ -4,7 +4,7 @@
 BlOsc lfo;
 float lfoValue = 0.0f;
 Adsr mainADSR;
-VoiceUnit voice[NUM_VOICES];
+VoiceUnit voice;
 
 // Function definitions
 void InitLfo(float samplerate) {
@@ -43,43 +43,12 @@ void HandleNoteOn(uint8_t midi_note, uint8_t midi_vel) {
     static uint32_t global_time = 0;
     uint32_t current_time = global_time++;
     
-    if (params.global.isMono) {
-        voice[0].NoteOn(midi_note, midi_vel, current_time);
-    } else {
-        // Find a free voice
-        for (size_t i = 0; i < NUM_VOICES; i++) {
-            if (!voice[i].isVoiceActive) {
-                voice[i].NoteOn(midi_note, midi_vel, current_time);   
-                return;
-            }
-        }
-        // If none are free, find the oldest
-        uint8_t oldest_index = 0;
-        uint32_t oldest_timestamp = UINT32_MAX;
-        for (size_t i = 0; i < NUM_VOICES; i++) {
-            if (voice[i].isVoiceActive && voice[i].timestamp < oldest_timestamp) {
-                oldest_timestamp = voice[i].timestamp;
-                oldest_index = i;
-                voice[oldest_index].isGated = false;
-            }
-        }
-        voice[oldest_index].NoteOn(midi_note, midi_vel, current_time);
-
-    }
+    voice.NoteOn(midi_note, midi_vel, current_time);
 }
 
 void HandleNoteOff(uint8_t midi_note) {
-    if (params.global.isMono) {
-        // In mono mode, check if it's the same note that's currently active
-        if (voice[0].isVoiceActive && voice[0].note == midi_note) {
-            voice[0].NoteOff();
-        }
-    } else {
-        for (size_t i = 0; i < NUM_VOICES; i++) {
-            if (voice[i].isVoiceActive && voice[i].note == midi_note) {
-                voice[i].NoteOff();
-            }
-        }
+    if (voice.isVoiceActive && voice.note == midi_note) {
+        voice.NoteOff();
     }
 }
 void VoiceUnit::NoteOn(uint8_t midi_note, uint8_t midi_vel, uint32_t time){

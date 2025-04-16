@@ -37,7 +37,7 @@ using namespace daisysp;
 extern OledDisplay<SSD130x4WireSpi128x64Driver> display;
 extern Synth synth;
 extern Effects effects;
-extern VoiceUnit voice[NUM_VOICES];
+extern VoiceUnit voice;
 extern MidiUsbHandler midi;
 extern CpuLoadMeter cpu_load;
 
