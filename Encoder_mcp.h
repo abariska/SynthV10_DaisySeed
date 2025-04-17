@@ -59,4 +59,5 @@ class Enc_mcp
     inline float TimeHeldMs() const { return sw_.TimeHeldMs(); }
 
 };
+
 #endif

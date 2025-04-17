@@ -5,6 +5,7 @@
 #include "Voice.h"
 #include "Parameters.h"
 #include "Effects.h"
+#include "Encoder_mcp.h"
 
 #define PROGRAM_NAME_LENGTH 12
 #define PROGRAM_NUMBER_LENGTH 4
@@ -674,5 +675,12 @@ inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y,
     // Output text
     display.SetCursor(startX, y);
     display.WriteString(text, font, color);
+}
+
+void SetPage(MenuPage newPage) {
+    currentPage = newPage;
+    
+    UpdateDisplayParameters(); // оновлення allParams перед оновленням слотів
+    AssignParamsForPage(newPage); // прив'язка параметрів до слотів
 }
 #endif

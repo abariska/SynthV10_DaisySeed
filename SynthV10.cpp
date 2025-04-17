@@ -88,12 +88,7 @@ int main(void)
     }
 }
 
-void SetPage(MenuPage newPage) {
-    currentPage = newPage;
-    
-    UpdateDisplayParameters(); // оновлення allParams перед оновленням слотів
-    AssignParamsForPage(newPage); // прив'язка параметрів до слотів
-}
+
 
 void ProcessButtons() {
     

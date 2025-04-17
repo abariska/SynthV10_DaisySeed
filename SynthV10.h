@@ -52,11 +52,7 @@ Button_mcp button_mtx(mcp_1, BUTTON_MTX, true);
 Button_mcp button_shift(mcp_1, BUTTON_SHIFT, true);
 Button_mcp button_back(mcp_1, BUTTON_BACK, true);
 
-Enc_mcp encoder_1(mcp_2, ENC_1_A, ENC_1_B, ENC_1_SW, true);
-Enc_mcp encoder_2(mcp_2, ENC_2_A, ENC_2_B, ENC_2_SW, true);
-Enc_mcp encoder_3(mcp_2, ENC_3_A, ENC_3_B, ENC_3_SW, true);
-Enc_mcp encoder_4(mcp_2, ENC_4_A, ENC_4_B, ENC_4_SW, true);
-Enc_mcp encoder_dial(mcp_2, ENC_DIAL_A, ENC_DIAL_B, ENC_DIAL_SW, true);
+
 
 GPIO led_osc_1;
 GPIO led_osc_2;
