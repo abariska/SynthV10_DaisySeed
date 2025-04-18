@@ -12,9 +12,6 @@ extern Mcp23017 mcp_1;
 extern Mcp23017 mcp_2;
 extern SynthParams params;
 
-
-int test_int = 0;
-
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
                           AudioHandle::InterleavingOutputBuffer out,
                           size_t                                size)
@@ -55,9 +52,11 @@ int main(void)
     InitLeds();
     MidiInit();
     InitSynthParams();
-
     InitLfo(samplerate);
     EffectsInit(samplerate);
+
+    AssignParamsForPage(currentPage); 
+    UpdateParamsWithEncoders();
 
     hw.StartAudio(AudioCallback);
 
@@ -70,6 +69,7 @@ int main(void)
         mcp_2.Read();
         ProcessButtons();
         ProcessLeds(); 
+        UpdateEncoders();
         UpdateParamsWithEncoders();
 
         // MIDI processing
@@ -88,7 +88,17 @@ int main(void)
     }
 }
 
+void UpdateEncoders() {
+    encoder_1.Debounce();
+    encoder_2.Debounce();
+    encoder_3.Debounce();
+    encoder_4.Debounce();
 
+    encoderIncs[0] = encoder_1.Increment();
+    encoderIncs[1] = encoder_2.Increment();
+    encoderIncs[2] = encoder_3.Increment();
+    encoderIncs[3] = encoder_4.Increment();
+}
 
 void ProcessButtons() {
     

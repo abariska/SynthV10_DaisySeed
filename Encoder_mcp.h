@@ -5,7 +5,7 @@
 #include "Button.h"
 
 extern DaisySeed hw;
-extern int test_int;
+extern int encoderIncs[4];
 
 class Enc_mcp
 {

@@ -40,6 +40,7 @@ extern MidiUsbHandler midi;
 extern CpuLoadMeter cpu_load;
 extern FXSlot effectSlot[2];
 extern SynthParams params;
+int encoderIncs[4];
 
 Button_mcp button_osc_1(mcp_1, BUTTON_OSC_1, true);
 Button_mcp button_osc_2(mcp_1, BUTTON_OSC_2, true);
@@ -82,7 +83,7 @@ void DisplayView(void* data);
 void TimerDisplay();
 void ProcessButtons();
 void ProcessLeds();
-
+void UpdateEncoders();
 void UpdateButtons(){
     button_back.Update(System::GetTick());
     button_osc_1.Update(System::GetTick());

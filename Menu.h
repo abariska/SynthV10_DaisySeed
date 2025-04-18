@@ -21,6 +21,7 @@ extern Enc_mcp encoder_2;
 extern Enc_mcp encoder_3;
 extern Enc_mcp encoder_4;
 extern SynthParams params;
+extern int encoderIncs[4];
 
 enum MenuPage {
     MAIN_PAGE,
@@ -92,23 +93,9 @@ struct ParamSlot {
     ParamUnitName assignedParam;
 } slots[4 + 1];
 
-void UpdateDisplayParameters();
-
 inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y, FontDef font, bool color);
     
 void UpdateParamsWithEncoders() {
-
-    encoder_1.Debounce();
-    encoder_2.Debounce();
-    encoder_3.Debounce();
-    encoder_4.Debounce();
-
-    int encoderIncs[4]{
-    encoder_1.Increment(),
-    encoder_2.Increment(),
-    encoder_3.Increment(),
-    encoder_4.Increment()
-    };
 
     const uint8_t cursorX[4] = {6, 41, 72, 104};
     const uint8_t xStart[4]  = {0, 32, 64, 96};
@@ -189,11 +176,12 @@ inline void DrawMainMenu()
     sprintf(cpu_load_value, "%.1f%%", cpu_avg_load * 100);
     display.WriteString(cpu_load_value, Font_7x10, true);
 
-    slots[1].assignedParam = FILTER_CUTOFF;
-    slots[2].assignedParam = FILTER_RESONANCE;
-    slots[3].assignedParam = ADSR_ATTACK;
-    slots[4].assignedParam = ADSR_DECAY;
+    UpdateParamsWithEncoders();
 
+}
+
+void InitParam(int index, float* target, const char* label, float min, float max, float sensitivity) {
+    allParams[index] = { target, label, min, max, sensitivity };
 }
 
 void AssignParamsForPage(MenuPage page) {
@@ -203,45 +191,71 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = FILTER_RESONANCE;
             slots[2].assignedParam = ADSR_ATTACK;
             slots[3].assignedParam = ADSR_DECAY;
+            InitParam(FILTER_CUTOFF, &params.voice.filter.cutoff, "Cut", 50.0f, 15000.0f, 10.0f);
+            InitParam(FILTER_RESONANCE, &params.voice.filter.resonance, "Res", 0.0f, 1.0f, 0.01f);
+            InitParam(ADSR_ATTACK, &params.voice.adsr.attack, "Att", 0.0f, 10.0f, 0.01f);
+            InitParam(ADSR_DECAY, &params.voice.adsr.decay, "Dec", 0.0f, 10.0f, 0.01f);
             break;
         case OSCILLATOR_1_PAGE:
             slots[0].assignedParam = OSC_WAVEFORM_1;
             slots[1].assignedParam = OSC_PITCH_1;
             slots[2].assignedParam = OSC_DETUNE_1;
             slots[3].assignedParam = OSC_AMP_1;
+            InitParam(OSC_WAVEFORM_1, &params.voice.osc[0].waveform, "Wav", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_PITCH_1, &params.voice.osc[0].pitch, "Sem", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_DETUNE_1, &params.voice.osc[0].detune, "Det", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_AMP_1, &params.voice.osc[0].amp, "Amp", 0.0f, 1.0f, 0.01f);
             break;      
         case OSCILLATOR_2_PAGE:
             slots[0].assignedParam = OSC_WAVEFORM_2;
             slots[1].assignedParam = OSC_PITCH_2;
             slots[2].assignedParam = OSC_DETUNE_2;
             slots[3].assignedParam = OSC_AMP_2;
+            InitParam(OSC_WAVEFORM_2, &params.voice.osc[1].waveform, "Wav", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_PITCH_2, &params.voice.osc[1].pitch, "Sem", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_DETUNE_2, &params.voice.osc[1].detune, "Det", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_AMP_2, &params.voice.osc[1].amp, "Amp", 0.0f, 1.0f, 0.01f);
             break;  
         case OSCILLATOR_3_PAGE:
             slots[0].assignedParam = OSC_WAVEFORM_3;
             slots[1].assignedParam = OSC_PITCH_3;
             slots[2].assignedParam = OSC_DETUNE_3;
             slots[3].assignedParam = OSC_AMP_3;
+            InitParam(OSC_WAVEFORM_3, &params.voice.osc[2].waveform, "Wav", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_PITCH_3, &params.voice.osc[2].pitch, "Sem", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_DETUNE_3, &params.voice.osc[2].detune, "Det", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_AMP_3, &params.voice.osc[2].amp, "Amp", 0.0f, 1.0f, 0.01f);
             break;  
         case AMPLIFIER_PAGE:
             slots[0].assignedParam = ADSR_ATTACK;
             slots[1].assignedParam = ADSR_DECAY;
             slots[2].assignedParam = ADSR_SUSTAIN;
             slots[3].assignedParam = ADSR_RELEASE;
+            InitParam(ADSR_ATTACK, &params.voice.adsr.attack, "Att", 0.0f, 10.0f, 0.01f);
+            InitParam(ADSR_DECAY, &params.voice.adsr.decay, "Dec", 0.0f, 10.0f, 0.01f);
+            InitParam(ADSR_SUSTAIN, &params.voice.adsr.sustain, "Sus", 0.0f, 1.0f, 0.01f);
+            InitParam(ADSR_RELEASE, &params.voice.adsr.release, "Rel", 0.0f, 10.0f, 0.01f);
             break;  
         case FILTER_PAGE:
             slots[0].assignedParam = FILTER_CUTOFF;
             slots[1].assignedParam = FILTER_RESONANCE;
+            InitParam(FILTER_CUTOFF, &params.voice.filter.cutoff, "Cut", 50.0f, 15000.0f, 10.0f);
+            InitParam(FILTER_RESONANCE, &params.voice.filter.resonance, "Res", 0.0f, 1.0f, 0.01f);
             break;  
         case LFO_PAGE:
             slots[0].assignedParam = LFO_WAVEFORM;
             slots[1].assignedParam = LFO_FREQ;
             slots[2].assignedParam = LFO_DEPTH;
+            InitParam(LFO_WAVEFORM, &params.lfo.waveform, "Wav", 0.0f, 1.0f, 0.01f);
+            InitParam(LFO_FREQ, &params.lfo.freq, "Frq", 0.0f, 1.0f, 0.01f);
+            InitParam(LFO_DEPTH, &params.lfo.depth, "Amp", 0.0f, 1.0f, 0.01f);
             break;
         default: 
             slots[0].assignedParam = NONE;
             slots[1].assignedParam = NONE;
             slots[2].assignedParam = NONE;
             slots[3].assignedParam = NONE;
+            InitParam(NONE, nullptr, " - ", 0.0f, 1.0f, 0.01f);
             break;
     }
 }
@@ -304,6 +318,8 @@ void DrawEffectsMenu() {
 void DrawMenu() {
     // Clear display before showing new menu
     display.Fill(false);
+
+    AssignParamsForPage(currentPage);
     
     // Display different pages depending on selected menu
     switch (currentPage) {
@@ -387,264 +403,6 @@ void DrawMenu() {
     display.Update();
 }
 
-void UpdateDisplayParameters(){
-
-    allParams[OSC_WAVEFORM_1] = { 
-        .target_param = &params.voice.osc[0].waveform, 
-        .label = "Wav", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };  
-
-    allParams[OSC_PITCH_1] = { 
-        .target_param = &params.voice.osc[0].pitch, 
-        .label = "Sem", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-
-    allParams[OSC_DETUNE_1] = { 
-        .target_param = &params.voice.osc[0].detune, 
-        .label = "Det", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-
-    allParams[OSC_AMP_1] = { 
-        .target_param = &params.voice.osc[0].amp, 
-        .label = "Amp", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-
-    allParams[OSC_WAVEFORM_2] = {   
-        .target_param = &params.voice.osc[1].waveform, 
-        .label = "Wav", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-
-    allParams[OSC_PITCH_2] = { 
-        .target_param = &params.voice.osc[1].pitch, 
-        .label = "Sem", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-
-    allParams[OSC_DETUNE_2] = { 
-        .target_param = &params.voice.osc[1].detune, 
-        .label = "Det", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-
-    allParams[OSC_AMP_2] = { 
-        .target_param = &params.voice.osc[1].amp, 
-        .label = "Amp", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-
-    allParams[OSC_WAVEFORM_3] = { 
-        .target_param = &params.voice.osc[2].waveform, 
-        .label = "Wav", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-
-    allParams[OSC_PITCH_3] = { 
-        .target_param = &params.voice.osc[2].pitch, 
-        .label = "Sem", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-
-    allParams[OSC_DETUNE_3] = { 
-        .target_param = &params.voice.osc[2].detune, 
-        .label = "Det", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-
-    allParams[OSC_AMP_3] = { 
-        .target_param = &params.voice.osc[2].amp, 
-        .label = "Amp", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-
-    allParams[ADSR_ATTACK] = { 
-        .target_param = &params.voice.adsr.attack, 
-        .label = "Att", 
-        .min = 0.0f, 
-        .max = 10.0f, 
-        .sensitivity = 0.01f 
-    };
-
-    allParams[ADSR_DECAY] = { 
-        .target_param = &params.voice.adsr.decay, 
-        .label = "Dec", 
-        .min = 0.0f, 
-        .max = 10.0f, 
-        .sensitivity = 0.01f 
-    };
-
-    allParams[ADSR_SUSTAIN] = { 
-        .target_param = &params.voice.adsr.sustain, 
-        .label = "Sus", 
-        .min = 0.0f, 
-        .max = 1.0f, 
-        .sensitivity = 0.01f 
-    };
-
-    allParams[ADSR_RELEASE] = { 
-        .target_param = &params.voice.adsr.release, 
-        .label = "Rel", 
-        .min = 0.0f, 
-        .max = 10.0f, 
-        .sensitivity = 0.01f 
-    };
-
-    allParams[FILTER_CUTOFF] = { 
-        .target_param = &params.voice.filter.cutoff, 
-        .label = "Cut", 
-        .min = 50.0f, 
-        .max = 15000.0f,  
-        .sensitivity = 10.0f 
-    };
-    allParams[FILTER_RESONANCE] = { 
-        .target_param = &params.voice.filter.resonance, 
-        .label = "Res", 
-        .min = 0.0f, 
-        .max = 1.0f, 
-        .sensitivity = 0.01f 
-    };          
-    allParams[LFO_WAVEFORM] = { 
-        .target_param = &params.lfo.waveform, 
-        .label = "Wav", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[LFO_FREQ] = { 
-        .target_param = &params.lfo.freq, 
-        .label = "Frq", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[LFO_DEPTH] = { 
-        .target_param = &params.lfo.depth, 
-        .label = "Amp", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[EFFECT_OVERDRIVE_DRIVE] = { 
-        .target_param = &params.overdriveParams.drive, 
-        .label = "Drv", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[EFFECT_CHORUS_FREQ] = { 
-        .target_param = &params.chorusParams.freq, 
-        .label = "Frq", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };      
-    allParams[EFFECT_CHORUS_DEPTH] = { 
-        .target_param = &params.chorusParams.depth, 
-        .label = "Amp", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[EFFECT_CHORUS_FBK] = { 
-        .target_param = &params.chorusParams.feedback, 
-        .label = "Fbk", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[EFFECT_CHORUS_PAN] = { 
-        .target_param = &params.chorusParams.pan, 
-        .label = "Pan", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[EFFECT_COMPRESSOR_ATTACK] = { 
-        .target_param = &params.compressorParams.attack, 
-        .label = "Att", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[EFFECT_COMPRESSOR_RELEASE] = { 
-        .target_param = &params.compressorParams.release, 
-        .label = "Rel", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[EFFECT_COMPRESSOR_THRESHOLD] = { 
-        .target_param = &params.compressorParams.threshold, 
-        .label = "Thr", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[EFFECT_COMPRESSOR_RATIO] = { 
-        .target_param = &params.compressorParams.ratio, 
-        .label = "Rat", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[EFFECT_REVERB_DRYWET] = { 
-        .target_param = &params.reverbParams.dryWet, 
-        .label = "D/W", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[EFFECT_REVERB_FBK] = { 
-        .target_param = &params.reverbParams.feedback, 
-        .label = "Fbk", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[EFFECT_REVERB_LPFREQ] = { 
-        .target_param = &params.reverbParams.lpFreq, 
-        .label = "LPF", 
-        .min = 0.0f, 
-        .max = 1.0f,  
-        .sensitivity = 0.01f 
-    };
-    allParams[NONE] = { 
-        .target_param = nullptr, 
-        .label = " - ", 
-        .min = 0.0f, 
-        .max = 0.0f,  
-        .sensitivity = 0.0f 
-    };
-}
-
 inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y, FontDef font, bool color) {
     // Calculate text length (number of characters)
     int textLength = 0;
@@ -680,7 +438,6 @@ inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y,
 void SetPage(MenuPage newPage) {
     currentPage = newPage;
     
-    UpdateDisplayParameters(); // оновлення allParams перед оновленням слотів
-    AssignParamsForPage(newPage); // прив'язка параметрів до слотів
+    AssignParamsForPage(newPage);
 }
 #endif
