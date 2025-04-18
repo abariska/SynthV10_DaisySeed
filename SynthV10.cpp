@@ -133,10 +133,9 @@ void ProcessButtons() {
     if (button_amp.RisingEdge()) {
         SetPage(MenuPage::AMPLIFIER_PAGE); 
     }
-    // if (button_fx.RisingEdge()) {
-    //     SetPage(MenuPage::FX_PAGE);
-    //     params.effectUnits[0].isActive = !params.effectUnits[0].isActive;
-    // }
+    if (button_fx.RisingEdge()) {
+        SetPage(MenuPage::FX_PAGE);
+    }
     if (button_lfo.RisingEdge()) {
         currentPage = MenuPage::LFO_PAGE;
     }

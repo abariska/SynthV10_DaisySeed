@@ -41,6 +41,6 @@ extern Mcp23017 mcp_2;
 
 // Initialization functions
 void InitMcp();
-void LedToggle (bool state, uint8_t output_pin, bool invert);
+// void LedToggle (bool state, uint8_t output_pin, bool invert);
 
 #endif

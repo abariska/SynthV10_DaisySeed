@@ -97,11 +97,10 @@ inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y,
     
 void UpdateParamsWithEncoders() {
 
-    const uint8_t cursorX[4] = {6, 41, 72, 104};
-    const uint8_t xStart[4]  = {0, 32, 64, 96};
-    const uint8_t xEnd[4]    = {32, 64, 96, 127};
-    const uint8_t yLabel = 32;
-    const uint8_t yValue = 50;
+    const uint8_t xStart[4]  = {0, 32, 66, 102};
+    const uint8_t xEnd[4]    = {30, 65, 99, 127};
+    const uint8_t yLabel = 24;
+    const uint8_t yValue = 48;
 
     for (size_t i = 0; i < 4; i++) {
         ParamUnitName paramID = slots[i].assignedParam;
@@ -124,23 +123,16 @@ void UpdateParamsWithEncoders() {
             sprintf(valStr, "%d", (int)*param_unit.target_param);
             if (paramID == OSC_WAVEFORM_1 || 
                 paramID == OSC_PITCH_1 || 
-                paramID == OSC_DETUNE_1 || 
                 paramID == OSC_WAVEFORM_2 || 
                 paramID == OSC_PITCH_2 || 
-                paramID == OSC_DETUNE_2 || 
                 paramID == OSC_WAVEFORM_3 ||
                 paramID == OSC_PITCH_3 ||
-                paramID == OSC_DETUNE_3 ||
                 paramID == FILTER_CUTOFF) {
-                sprintf(valStr, "%02d", (int)*param_unit.target_param);
+                sprintf(valStr, "%d", (int)*param_unit.target_param);
             } else {
-                sprintf(valStr, "%02d", (int)(*param_unit.target_param * 100));
+                sprintf(valStr, "%d", (int)(*param_unit.target_param * 100));
             }
-
-            display.SetCursor(cursorX[i], yLabel);
-            display.WriteString(param_unit.label, Font_6x8, true);
-            
-            display.SetCursor(cursorX[i], yValue);
+            DisplayCentered(param_unit.label, xStart[i], xEnd[i], yLabel, Font_6x8, true);
             DisplayCentered(valStr, xStart[i], xEnd[i], yValue, Font_6x8, true);
         }
     }
@@ -157,8 +149,8 @@ inline void DrawMainLines()
                     display.DrawPixel(i, raw, true);
             else if (raw > 15 && raw % 3 == 0)
             {
-                display.DrawPixel(32, raw, true);
-                display.DrawPixel(65, raw, true);   
+                display.DrawPixel(30, raw, true);
+                display.DrawPixel(64, raw, true);   
                 display.DrawPixel(98, raw, true);
             }
             
@@ -216,8 +208,8 @@ void AssignParamsForPage(MenuPage page) {
             slots[2].assignedParam = OSC_DETUNE_1;
             slots[3].assignedParam = OSC_AMP_1;
             InitParam(OSC_WAVEFORM_1, &params.voice.osc[0].waveform, "Wav", 0.0f, 3.0f, 1.0f);
-            InitParam(OSC_PITCH_1, &params.voice.osc[0].pitch, "Sem", 0.0f, 36.0f, 1.0f);
-            InitParam(OSC_DETUNE_1, &params.voice.osc[0].detune, "Det", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_PITCH_1, &params.voice.osc[0].pitch, "Sem", -36.0f, 36.0f, 1.0f);
+            InitParam(OSC_DETUNE_1, &params.voice.osc[0].detune, "Det", -0.5f, 0.5f, 0.01f);
             InitParam(OSC_AMP_1, &params.voice.osc[0].amp, "Amp", 0.0f, 1.0f, 0.01f);
             break;      
         case OSCILLATOR_2_PAGE:
@@ -226,8 +218,8 @@ void AssignParamsForPage(MenuPage page) {
             slots[2].assignedParam = OSC_DETUNE_2;
             slots[3].assignedParam = OSC_AMP_2;
             InitParam(OSC_WAVEFORM_2, &params.voice.osc[1].waveform, "Wav", 0.0f, 3.0f, 1.0f);
-            InitParam(OSC_PITCH_2, &params.voice.osc[1].pitch, "Sem", 0.0f, 36.0f, 1.0f);
-            InitParam(OSC_DETUNE_2, &params.voice.osc[1].detune, "Det", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_PITCH_2, &params.voice.osc[1].pitch, "Sem", -36.0f, 36.0f, 1.0f);
+            InitParam(OSC_DETUNE_2, &params.voice.osc[1].detune, "Det", -0.5f, 0.5f, 0.01f);
             InitParam(OSC_AMP_2, &params.voice.osc[1].amp, "Amp", 0.0f, 1.0f, 0.01f);
             break;      
         case OSCILLATOR_3_PAGE:
@@ -236,8 +228,8 @@ void AssignParamsForPage(MenuPage page) {
             slots[2].assignedParam = OSC_DETUNE_3;
             slots[3].assignedParam = OSC_AMP_3;
             InitParam(OSC_WAVEFORM_3, &params.voice.osc[2].waveform, "Wav", 0.0f, 3.0f, 1.0f);
-            InitParam(OSC_PITCH_3, &params.voice.osc[2].pitch, "Sem", 0.0f, 36.0f, 1.0f);
-            InitParam(OSC_DETUNE_3, &params.voice.osc[2].detune, "Det", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_PITCH_3, &params.voice.osc[2].pitch, "Sem", -36.0f, 36.0f, 1.0f);
+            InitParam(OSC_DETUNE_3, &params.voice.osc[2].detune, "Det", -0.5f, 0.5f, 0.01f);
             InitParam(OSC_AMP_3, &params.voice.osc[2].amp, "Amp", 0.0f, 1.0f, 0.01f);
             break;  
         case AMPLIFIER_PAGE:
@@ -286,31 +278,37 @@ void DrawParamPage(const char* page_name, ParamUnitName p0, ParamUnitName p1, Pa
 }
 
 void DrawEffectsMenu() {
-    // Horizontal line under header
-    display.DrawLine(0, 20, 127, 20, true);
 
-    display.SetCursor(5, 15);
-    display.WriteString("Effects", Font_7x10, true);
-    
-    // Vertical lines for columns
-    display.DrawLine(15, 20, 15, 63, true);
-    display.DrawLine(90, 20, 90, 63, true);
-    
-    // Horizontal line between rows
-    display.DrawLine(0, 40, 127, 40, true);
+    DisplayCentered("Effects", 0, 127, 0, Font_7x10, true);
+    // Horizontal line under header
+    for (size_t raw = 0; raw < DISPLAY_HEIGHT; raw++)
+    {
+        for (size_t column = 0; column < DISPLAY_WIDTH; column += 2)
+        {
+            if (raw == 15 || raw == 40)
+                for (size_t i = 0; i < 127; i += 3)
+                    display.DrawPixel(i, raw, true);
+            if (raw > 15 && raw % 3 == 0)
+            {
+                display.DrawPixel(15, raw, true);
+                display.DrawPixel(90, raw, true);   
+            }
+            
+        }
+    }
     
     // Data for first unit
-    display.SetCursor(5, 30);
+    display.SetCursor(5, 24);
     display.WriteString("1", Font_7x10, true);
 
     // Data for first unit
-    display.SetCursor(5, 50);
+    display.SetCursor(5, 48);
     display.WriteString("2", Font_7x10, true);
 
     for (size_t i = 0; i < 2; i++)
     {
         EffectName selected = effectSlot[i].selectedEffect;
-        const int y = (i == 0) ? 30 : 50;
+        const int y = (i == 0) ? 24 : 48;
 
         if (selected != EFFECT_NONE)
         {

@@ -20,18 +20,16 @@
 using namespace daisy;
 using namespace daisysp;
 
-#define LED_OSC_1  seed::D27
-#define LED_OSC_2  seed::D26
-#define LED_OSC_3  seed::D25    
-#define LED_FX_1   seed::D24
-#define LED_FX_2   seed::D23
-#define LED_MIDI   seed::D22
-#define VOICE_1  seed::D20
-#define VOICE_2  seed::D19
-#define VOICE_3  seed::D18
-#define VOICE_4  seed::D17
-#define VOICE_5  seed::D16
-#define VOICE_6  seed::D15
+#define LED_OSC_1  seed::D28
+#define LED_OSC_2  seed::D27
+#define LED_OSC_3  seed::D26    
+#define LED_FX_1   seed::D25
+#define LED_FX_2   seed::D24
+#define LED_MIDI   seed::D23
+#define VOICE_1  seed::D22
+#define VOICE_2  seed::D21
+#define VOICE_3  seed::D20
+#define VOICE_4  seed::D19
 
 // Global objects
 extern OledDisplay<SSD130x4WireSpi128x64Driver> display;
@@ -52,8 +50,6 @@ Button_mcp button_lfo(mcp_1, BUTTON_LFO, true);
 Button_mcp button_mtx(mcp_1, BUTTON_MTX, true);
 Button_mcp button_shift(mcp_1, BUTTON_SHIFT, true);
 Button_mcp button_back(mcp_1, BUTTON_BACK, true);
-
-
 
 GPIO led_osc_1;
 GPIO led_osc_2;
@@ -85,16 +81,17 @@ void ProcessButtons();
 void ProcessLeds();
 void UpdateEncoders();
 void UpdateButtons(){
-    button_back.Update(System::GetTick());
-    button_osc_1.Update(System::GetTick());
-    button_osc_2.Update(System::GetTick());
-    button_osc_3.Update(System::GetTick());
-    button_flt.Update(System::GetTick());
-    button_amp.Update(System::GetTick());
-    button_fx.Update(System::GetTick());
-    button_lfo.Update(System::GetTick());
-    button_mtx.Update(System::GetTick());
-    button_shift.Update(System::GetTick());
+    unsigned long currentTime = System::GetTick();
+    button_back.Update(currentTime);
+    button_osc_1.Update(currentTime);
+    button_osc_2.Update(currentTime);
+    button_osc_3.Update(currentTime);
+    button_flt.Update(currentTime);
+    button_amp.Update(currentTime);
+    button_fx.Update(currentTime);
+    button_lfo.Update(currentTime);
+    button_mtx.Update(currentTime);
+    button_shift.Update(currentTime);
 }
 
 #endif

@@ -49,9 +49,7 @@ struct SynthParams {
     } lfo;
 
     struct {
-        float tuning;
         bool isMono;
-        bool isUnison;
     } global;
 
     // Structure for Overdrive effect parameters

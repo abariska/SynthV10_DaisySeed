@@ -105,9 +105,11 @@ float VoiceUnit::CalculateFrequency(uint8_t midi_note, int pitch, int detune) {
     return freq;
 }
 
-float VoiceUnit::CalculateVelocity(uint8_t velocity){
+float VoiceUnit::CalculateVelocity(uint8_t velocity, uint8_t midi_note){
 
-    return velocity / 127.0f;
+    float velocity_factor = velocity / 127.0f;
+    float freq_compensation = powf(2.0f, (midi_note - 60.0f) / 48.0f);
+    return velocity_factor * freq_compensation;
 }
 
 float VoiceUnit::Process(){
@@ -128,7 +130,7 @@ float VoiceUnit::Process(){
             params.voice.osc[i].detune
         );
         osc[i].SetFreq(final_freq);
-        osc[i].SetAmp(params.voice.osc[i].amp * CalculateVelocity(velocity));
+        osc[i].SetAmp(params.voice.osc[i].amp * CalculateVelocity(velocity, note));
         
         // Process only active oscillators
         if (params.voice.osc[i].active) {

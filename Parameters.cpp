@@ -11,12 +11,12 @@ void InitSynthParams() {
     params.voice.osc[1].active = false;
     params.voice.osc[2].active = false;
     for (size_t o = 0; o < OSC_NUM; o++) {
-        params.voice.osc[o].waveform = 0;
+        params.voice.osc[o].waveform = 0.0f;
         params.voice.osc[o].freq = 440.0f;
         params.voice.osc[o].pw = 0.5f;
         params.voice.osc[o].amp = 0.1f;
-        params.voice.osc[o].pitch = 0;
-        params.voice.osc[o].detune = 0;
+        params.voice.osc[o].pitch = 0.0f;
+        params.voice.osc[o].detune = 0.0f;
     }
     
     params.voice.filter.cutoff = 10000.0f;
@@ -31,11 +31,9 @@ void InitSynthParams() {
     // Global LFO initialization
     params.lfo.freq = 0.5f;
     params.lfo.depth = 0.0f;
-    params.lfo.waveform = 0;
+    params.lfo.waveform = 0.0f;
 
-    params.global.isMono = false;
-    params.global.isUnison = false;
-    params.global.tuning = 0.0f;
+    params.global.isMono = true;
     
     // Effects initialization
     InitEffectParams();

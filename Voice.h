@@ -42,7 +42,7 @@ struct VoiceUnit
     void NoteOn(uint8_t midi_note, uint8_t midi_vel, uint32_t time);
     void NoteOff();
     float CalculateFrequency(uint8_t midi_note, int pitch, int detune);
-    float CalculateVelocity(uint8_t velocity);
+    float CalculateVelocity(uint8_t velocity, uint8_t midi_note);
     float Process();
 };
 
