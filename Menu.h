@@ -121,7 +121,21 @@ void UpdateParamsWithEncoders() {
             }
 
             char valStr[16];
-            sprintf(valStr, "%.2f", *param_unit.target_param);
+            sprintf(valStr, "%d", (int)*param_unit.target_param);
+            if (paramID == OSC_WAVEFORM_1 || 
+                paramID == OSC_PITCH_1 || 
+                paramID == OSC_DETUNE_1 || 
+                paramID == OSC_WAVEFORM_2 || 
+                paramID == OSC_PITCH_2 || 
+                paramID == OSC_DETUNE_2 || 
+                paramID == OSC_WAVEFORM_3 ||
+                paramID == OSC_PITCH_3 ||
+                paramID == OSC_DETUNE_3 ||
+                paramID == FILTER_CUTOFF) {
+                sprintf(valStr, "%02d", (int)*param_unit.target_param);
+            } else {
+                sprintf(valStr, "%02d", (int)(*param_unit.target_param * 100));
+            }
 
             display.SetCursor(cursorX[i], yLabel);
             display.WriteString(param_unit.label, Font_6x8, true);
@@ -138,10 +152,10 @@ inline void DrawMainLines()
     {
         for (size_t column = 0; column < DISPLAY_WIDTH; column += 2)
         {
-            if (raw == 20)
-                for (size_t i = 0; i < 127; i += 2)
+            if (raw == 15)
+                for (size_t i = 0; i < 127; i += 3)
                     display.DrawPixel(i, raw, true);
-            else if (raw > 24 && raw % 2 == 0)
+            else if (raw > 15 && raw % 3 == 0)
             {
                 display.DrawPixel(32, raw, true);
                 display.DrawPixel(65, raw, true);   
@@ -162,17 +176,17 @@ inline void DrawMainMenu()
 
     DrawMainLines();
     
-    display.SetCursor(5, 5);
+    display.SetCursor(5, 0);
     // safe_sprintf(prog_num, PROGRAM_NUMBER_LENGTH, "%03d", 1);
     sprintf(prog_num, "%03d", 1);
     display.WriteString(prog_num, Font_7x10, true);
 
-    display.SetCursor(35, 5);
+    display.SetCursor(35, 0);
     // safe_sprintf(prog_name, PROGRAM_NAME_LENGTH, "Program");
     sprintf(prog_name, "Program");
     display.WriteString(prog_name, Font_7x10, true);
 
-    display.SetCursor(100, 5);
+    display.SetCursor(100, 0);
     sprintf(cpu_load_value, "%.1f%%", cpu_avg_load * 100);
     display.WriteString(cpu_load_value, Font_7x10, true);
 
@@ -201,8 +215,8 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = OSC_PITCH_1;
             slots[2].assignedParam = OSC_DETUNE_1;
             slots[3].assignedParam = OSC_AMP_1;
-            InitParam(OSC_WAVEFORM_1, &params.voice.osc[0].waveform, "Wav", 0.0f, 1.0f, 0.01f);
-            InitParam(OSC_PITCH_1, &params.voice.osc[0].pitch, "Sem", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_WAVEFORM_1, &params.voice.osc[0].waveform, "Wav", 0.0f, 3.0f, 1.0f);
+            InitParam(OSC_PITCH_1, &params.voice.osc[0].pitch, "Sem", 0.0f, 36.0f, 1.0f);
             InitParam(OSC_DETUNE_1, &params.voice.osc[0].detune, "Det", 0.0f, 1.0f, 0.01f);
             InitParam(OSC_AMP_1, &params.voice.osc[0].amp, "Amp", 0.0f, 1.0f, 0.01f);
             break;      
@@ -211,18 +225,18 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = OSC_PITCH_2;
             slots[2].assignedParam = OSC_DETUNE_2;
             slots[3].assignedParam = OSC_AMP_2;
-            InitParam(OSC_WAVEFORM_2, &params.voice.osc[1].waveform, "Wav", 0.0f, 1.0f, 0.01f);
-            InitParam(OSC_PITCH_2, &params.voice.osc[1].pitch, "Sem", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_WAVEFORM_2, &params.voice.osc[1].waveform, "Wav", 0.0f, 3.0f, 1.0f);
+            InitParam(OSC_PITCH_2, &params.voice.osc[1].pitch, "Sem", 0.0f, 36.0f, 1.0f);
             InitParam(OSC_DETUNE_2, &params.voice.osc[1].detune, "Det", 0.0f, 1.0f, 0.01f);
             InitParam(OSC_AMP_2, &params.voice.osc[1].amp, "Amp", 0.0f, 1.0f, 0.01f);
-            break;  
+            break;      
         case OSCILLATOR_3_PAGE:
             slots[0].assignedParam = OSC_WAVEFORM_3;
             slots[1].assignedParam = OSC_PITCH_3;
             slots[2].assignedParam = OSC_DETUNE_3;
             slots[3].assignedParam = OSC_AMP_3;
-            InitParam(OSC_WAVEFORM_3, &params.voice.osc[2].waveform, "Wav", 0.0f, 1.0f, 0.01f);
-            InitParam(OSC_PITCH_3, &params.voice.osc[2].pitch, "Sem", 0.0f, 1.0f, 0.01f);
+            InitParam(OSC_WAVEFORM_3, &params.voice.osc[2].waveform, "Wav", 0.0f, 3.0f, 1.0f);
+            InitParam(OSC_PITCH_3, &params.voice.osc[2].pitch, "Sem", 0.0f, 36.0f, 1.0f);
             InitParam(OSC_DETUNE_3, &params.voice.osc[2].detune, "Det", 0.0f, 1.0f, 0.01f);
             InitParam(OSC_AMP_3, &params.voice.osc[2].amp, "Amp", 0.0f, 1.0f, 0.01f);
             break;  
@@ -231,10 +245,10 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = ADSR_DECAY;
             slots[2].assignedParam = ADSR_SUSTAIN;
             slots[3].assignedParam = ADSR_RELEASE;
-            InitParam(ADSR_ATTACK, &params.voice.adsr.attack, "Att", 0.0f, 10.0f, 0.01f);
-            InitParam(ADSR_DECAY, &params.voice.adsr.decay, "Dec", 0.0f, 10.0f, 0.01f);
+            InitParam(ADSR_ATTACK, &params.voice.adsr.attack, "Att", 0.0f, 1.0f, 0.01f);
+            InitParam(ADSR_DECAY, &params.voice.adsr.decay, "Dec", 0.0f, 1.0f, 0.01f);
             InitParam(ADSR_SUSTAIN, &params.voice.adsr.sustain, "Sus", 0.0f, 1.0f, 0.01f);
-            InitParam(ADSR_RELEASE, &params.voice.adsr.release, "Rel", 0.0f, 10.0f, 0.01f);
+            InitParam(ADSR_RELEASE, &params.voice.adsr.release, "Rel", 0.0f, 1.0f, 0.01f);
             break;  
         case FILTER_PAGE:
             slots[0].assignedParam = FILTER_CUTOFF;
@@ -246,10 +260,11 @@ void AssignParamsForPage(MenuPage page) {
             slots[0].assignedParam = LFO_WAVEFORM;
             slots[1].assignedParam = LFO_FREQ;
             slots[2].assignedParam = LFO_DEPTH;
-            InitParam(LFO_WAVEFORM, &params.lfo.waveform, "Wav", 0.0f, 1.0f, 0.01f);
+            InitParam(LFO_WAVEFORM, &params.lfo.waveform, "Wav", 0.0f, 5.0f, 1.0f);
             InitParam(LFO_FREQ, &params.lfo.freq, "Frq", 0.0f, 1.0f, 0.01f);
             InitParam(LFO_DEPTH, &params.lfo.depth, "Amp", 0.0f, 1.0f, 0.01f);
             break;
+ break;
         default: 
             slots[0].assignedParam = NONE;
             slots[1].assignedParam = NONE;
@@ -262,8 +277,7 @@ void AssignParamsForPage(MenuPage page) {
 
 void DrawParamPage(const char* page_name, ParamUnitName p0, ParamUnitName p1, ParamUnitName p2, ParamUnitName p3) {
     DrawMainLines();
-    display.SetCursor(5, 15);
-    DisplayCentered(page_name, 0, 127, 15, Font_7x10, true);
+    DisplayCentered(page_name, 0, 127, 0, Font_7x10, true);
     slots[0].assignedParam = p0;
     slots[1].assignedParam = p1;
     slots[2].assignedParam = p2;
@@ -332,18 +346,24 @@ void DrawMenu() {
 
             DrawParamPage("Oscillator 1", 
             OSC_WAVEFORM_1, OSC_PITCH_1, OSC_DETUNE_1, OSC_AMP_1);
+            display.SetCursor(110, 0);
+            display.WriteString(params.voice.osc[0].active ? "On" : "Off", Font_6x8, true);
             break;  
 
         case OSCILLATOR_2_PAGE:
 
             DrawParamPage("Oscillator 2", 
             OSC_WAVEFORM_2, OSC_PITCH_2, OSC_DETUNE_2, OSC_AMP_2);
+            display.SetCursor(110, 0);
+            display.WriteString(params.voice.osc[1].active ? "On" : "Off", Font_6x8, true);
             break;
 
         case OSCILLATOR_3_PAGE:
 
             DrawParamPage("Oscillator 3", 
             OSC_WAVEFORM_3, OSC_PITCH_3, OSC_DETUNE_3, OSC_AMP_3);
+            display.SetCursor(110, 0);
+            display.WriteString(params.voice.osc[2].active ? "On" : "Off", Font_6x8, true);
             break;  
             
         case AMPLIFIER_PAGE:
