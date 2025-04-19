@@ -94,8 +94,14 @@ struct ParamSlot {
 } slots[4 + 1];
 
 inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y, FontDef font, bool color);
+void EncoderChangeEffect();
     
 void UpdateParamsWithEncoders() {
+
+    if (currentPage == MenuPage::FX_PAGE) {
+        EncoderChangeEffect();
+        return;
+    }
 
     const uint8_t xStart[4]  = {0, 32, 66, 102};
     const uint8_t xEnd[4]    = {30, 65, 99, 127};
@@ -256,7 +262,9 @@ void AssignParamsForPage(MenuPage page) {
             InitParam(LFO_FREQ, &params.lfo.freq, "Frq", 0.0f, 1.0f, 0.01f);
             InitParam(LFO_DEPTH, &params.lfo.depth, "Amp", 0.0f, 1.0f, 0.01f);
             break;
- break;
+        case FX_PAGE:
+            
+            break;
         default: 
             slots[0].assignedParam = NONE;
             slots[1].assignedParam = NONE;
@@ -283,46 +291,44 @@ void DrawEffectsMenu() {
     // Horizontal line under header
     for (size_t raw = 0; raw < DISPLAY_HEIGHT; raw++)
     {
-        for (size_t column = 0; column < DISPLAY_WIDTH; column += 2)
+        for (size_t column = 0; column < DISPLAY_WIDTH; column += 3)
         {
-            if (raw == 15 || raw == 40)
+            if (raw == 15 || raw == 32)
                 for (size_t i = 0; i < 127; i += 3)
                     display.DrawPixel(i, raw, true);
             if (raw > 15 && raw % 3 == 0)
             {
-                display.DrawPixel(15, raw, true);
-                display.DrawPixel(90, raw, true);   
+                display.DrawPixel(64, raw, true); 
             }
             
         }
     }
     
     // Data for first unit
-    display.SetCursor(5, 24);
-    display.WriteString("1", Font_7x10, true);
+    DisplayCentered("1", 0, 63, 20, Font_7x10, true);
 
     // Data for first unit
-    display.SetCursor(5, 48);
-    display.WriteString("2", Font_7x10, true);
+    DisplayCentered("2", 64, 127, 20, Font_7x10, true);
 
     for (size_t i = 0; i < 2; i++)
     {
         EffectName selected = effectSlot[i].selectedEffect;
-        const int y = (i == 0) ? 24 : 48;
-
+        const int x1 = (i == 0) ? 0 : 64;
+        const int x2 = (i == 0) ? 64 : 127;
+        const int y1 = 35;
+        const int y2 = 48;
         if (selected != EFFECT_NONE)
         {
-            display.SetCursor(25, y);
-            display.WriteString(effectLabels[selected], Font_7x10, true);
-            display.SetCursor(100, y);
-            display.WriteString(effectSlot[i].isActive ? "On" : "Off", Font_7x10, true);
+            display.SetCursor(0, 16);
+            DisplayCentered(effectLabels[selected], x1, x2, 35, Font_7x10, true);
+            display.SetCursor(96, 60);
+            DisplayCentered(effectSlot[i].isActive ? "On" : "Off", x1, x2, 48, Font_7x10, true);
+
         }
         else
         {
-            display.SetCursor(25, y);
-            display.WriteString(" - ", Font_7x10, true);
-            display.SetCursor(100, y);
-            display.WriteString(" - ", Font_7x10, true);
+            DisplayCentered(" - ", x1, x2, y1, Font_7x10, true);
+            DisplayCentered(" - ", x1, x2, y2, Font_7x10, true);
         }
     }
 }
@@ -458,4 +464,26 @@ void SetPage(MenuPage newPage) {
     
     AssignParamsForPage(newPage);
 }
+
+void EditParameterPage(MenuPage page) {
+    currentPage = page;
+    AssignParamsForPage(page);
+}
+
+void EncoderChangeEffect() {
+    if (currentPage == MenuPage::FX_PAGE) {
+        for (size_t i = 0; i < 2; i++) {
+        if (encoderIncs[i] != 0) {
+            int newEffect = static_cast<int>(effectSlot[i].selectedEffect) + encoderIncs[i];
+
+            // Пропускаємо EFFECT_NONE (індекс 0), якщо не хочеш його обирати:
+            if (newEffect < 1) newEffect = 1;
+            if (newEffect >= EFFECT_NUM) newEffect = EFFECT_NUM - 1;
+
+                effectSlot[i].selectedEffect = static_cast<EffectName>(newEffect);
+            }
+        }
+    }
+}
+
 #endif

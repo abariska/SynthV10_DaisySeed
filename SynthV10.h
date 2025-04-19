@@ -50,6 +50,10 @@ Button_mcp button_lfo(mcp_1, BUTTON_LFO, true);
 Button_mcp button_mtx(mcp_1, BUTTON_MTX, true);
 Button_mcp button_shift(mcp_1, BUTTON_SHIFT, true);
 Button_mcp button_back(mcp_1, BUTTON_BACK, true);
+Button_mcp sw_encoder_1(mcp_2, ENC_1_SW, true);
+Button_mcp sw_encoder_2(mcp_2, ENC_2_SW, true);
+Button_mcp sw_encoder_3(mcp_2, ENC_3_SW, true);
+Button_mcp sw_encoder_4(mcp_2, ENC_4_SW, true);
 
 GPIO led_osc_1;
 GPIO led_osc_2;
@@ -80,6 +84,7 @@ void TimerDisplay();
 void ProcessButtons();
 void ProcessLeds();
 void UpdateEncoders();
+void SelectEffectPage(uint8_t slot);
 void UpdateButtons(){
     unsigned long currentTime = System::GetTick();
     button_back.Update(currentTime);
@@ -92,6 +97,11 @@ void UpdateButtons(){
     button_lfo.Update(currentTime);
     button_mtx.Update(currentTime);
     button_shift.Update(currentTime);
+    button_back.Update(currentTime);
+    sw_encoder_1.Update(currentTime);
+    sw_encoder_2.Update(currentTime);
+    sw_encoder_3.Update(currentTime);
+    sw_encoder_4.Update(currentTime);
 }
 
 #endif

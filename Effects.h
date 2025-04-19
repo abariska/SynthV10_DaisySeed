@@ -12,25 +12,29 @@
 using namespace daisy;
 using namespace daisysp;
 
+
+
 // Enumeration of effect types
 enum EffectName {
+    EFFECT_NONE,
     EFFECT_OVERDRIVE,
     EFFECT_CHORUS,
     EFFECT_COMPRESSOR,
     EFFECT_REVERB,
-    EFFECT_NONE
+    EFFECT_NUM
 };
 
 const char* effectLabels[] = {
-    "Overdrive",
+    " - ",
+    "Drive",
     "Chorus",
-    "Compressor",
-    "Reverb",
-    " - "
+    "Comp",
+    "Reverb"
 };
 
 struct FXSlot {
     EffectName selectedEffect;
+    const char* label;
     bool isActive;
 
     Overdrive drive;
@@ -46,6 +50,8 @@ void EffectsInit(float samplerate) {
         effectSlot[i].reverb.Init(samplerate);
         effectSlot[i].compressor.Init(samplerate);
     }
+    effectSlot[0].selectedEffect = EFFECT_NONE;
+    effectSlot[1].selectedEffect = EFFECT_NONE;
 }
 
 void ProcessEffects(FXSlot& slot, float in, float& outL, float& outR) {
@@ -79,6 +85,5 @@ void ProcessEffects(FXSlot& slot, float in, float& outL, float& outR) {
             break;
     }
 }
-
 
 #endif
