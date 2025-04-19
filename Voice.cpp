@@ -140,7 +140,7 @@ float VoiceUnit::Process(){
     sig = flt.Process(sig);
     
     // Apply ADSR
-    adsrMain.SetAttackTime(params.voice.adsr.attack, 0.1f);
+    adsrMain.SetAttackTime(params.voice.adsr.attack);
     adsrMain.SetDecayTime(params.voice.adsr.decay);
     adsrMain.SetSustainLevel(params.voice.adsr.sustain);
     adsrMain.SetReleaseTime(params.voice.adsr.release);
