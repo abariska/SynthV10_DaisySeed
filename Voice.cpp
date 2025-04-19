@@ -1,8 +1,9 @@
 #include "Voice.h"
 
 // Definition of global variables
-BlOsc lfo;
+
 Adsr mainADSR;
+
 VoiceUnit voice[NUM_VOICES];
 
 // Function definitions
@@ -14,11 +15,6 @@ float ProcessLfo() {
     // Apply parameters from template
     lfo.SetFreq(params.lfo.freq);
     lfo.SetWaveform(params.lfo.waveform);
-    lfo.SetAmp(params.lfo.depth);
-    
-    // Process LFO and store value in global variable
-    float lfoValue = lfo.Process();
-    return lfoValue;
 }
 
 // Implementation of VoiceUnit methods

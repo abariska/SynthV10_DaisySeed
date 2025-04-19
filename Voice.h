@@ -15,8 +15,7 @@ using namespace daisysp;
 extern SynthParams params;
 
 // LFO is declared as global for all voices
-extern BlOsc Lfo;
-extern float lfoValue;
+extern Oscillator lfo;
 
 const uint8_t NUM_VOICES = 3;
 
