@@ -21,7 +21,6 @@ enum EffectName {
     EFFECT_CHORUS,
     EFFECT_COMPRESSOR,
     EFFECT_REVERB,
-    EFFECT_NUM
 };
 
 const char* effectLabels[] = {
@@ -79,6 +78,9 @@ void ProcessEffects(FXSlot& slot, float in, float& outL, float& outR) {
             slot.reverb.Process(in, in, &outL, &outR);
             break;
         case EFFECT_NONE:
+            outL = in;
+            outR = in;
+            break;
         default:
             outL = in;
             outR = in;

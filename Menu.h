@@ -17,7 +17,7 @@ using namespace daisy;
 extern MyOledDisplay display;
 extern CpuLoadMeter cpu_load;
 extern Enc_mcp encoder_1;
-extern Enc_mcp encoder_2;
+extern Enc_mcp encoder_2; 
 extern Enc_mcp encoder_3;
 extern Enc_mcp encoder_4;
 extern SynthParams params;
@@ -263,7 +263,38 @@ void AssignParamsForPage(MenuPage page) {
             InitParam(LFO_DEPTH, &params.lfo.depth, "Amp", 0.0f, 1.0f, 0.01f);
             break;
         case FX_PAGE:
-            
+            break;
+        case OVERDRIVE_PAGE:
+            slots[0].assignedParam = EFFECT_OVERDRIVE_DRIVE ;
+            InitParam(EFFECT_OVERDRIVE_DRIVE, &params.overdriveParams.drive, "Drive", 0.0f, 1.0f, 0.01f);
+            break;
+        case CHORUS_PAGE:
+            slots[0].assignedParam = EFFECT_CHORUS_FREQ;
+            slots[1].assignedParam = EFFECT_CHORUS_DEPTH;
+            slots[2].assignedParam = EFFECT_CHORUS_FBK;
+            slots[3].assignedParam = EFFECT_CHORUS_PAN;
+            InitParam(EFFECT_CHORUS_FREQ, &params.chorusParams.freq, "Freq", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_CHORUS_DEPTH, &params.chorusParams.depth, "Depth", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_CHORUS_FBK, &params.chorusParams.feedback, "FBK", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_CHORUS_PAN, &params.chorusParams.pan, "Pan", 0.0f, 1.0f, 0.01f);
+            break;
+        case COMPRESSOR_PAGE:
+            slots[0].assignedParam = EFFECT_COMPRESSOR_ATTACK;
+            slots[1].assignedParam = EFFECT_COMPRESSOR_RELEASE;
+            slots[2].assignedParam = EFFECT_COMPRESSOR_THRESHOLD;
+            slots[3].assignedParam = EFFECT_COMPRESSOR_RATIO;
+            InitParam(EFFECT_COMPRESSOR_ATTACK, &params.compressorParams.attack, "Att", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_COMPRESSOR_RELEASE, &params.compressorParams.release, "Rel", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_COMPRESSOR_THRESHOLD, &params.compressorParams.threshold, "Thr", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_COMPRESSOR_RATIO, &params.compressorParams.ratio, "Ratio", 0.0f, 1.0f, 0.01f);
+            break;
+        case REVERB_PAGE:
+            slots[0].assignedParam = EFFECT_REVERB_FBK;
+            slots[1].assignedParam = EFFECT_REVERB_LPFREQ;
+            slots[2].assignedParam = EFFECT_REVERB_DRYWET   ;
+            InitParam(EFFECT_REVERB_FBK, &params.reverbParams.feedback, "Fbk", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_REVERB_LPFREQ, &params.reverbParams.lpFreq, "Lpf", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_REVERB_DRYWET, &params.reverbParams.dryWet, "Wet", 0.0f, 1.0f, 0.01f);
             break;
         default: 
             slots[0].assignedParam = NONE;
@@ -409,7 +440,7 @@ void DrawMenu() {
 
         case REVERB_PAGE:
             DrawParamPage("Reverb", 
-            EFFECT_REVERB_DRYWET, EFFECT_REVERB_FBK, EFFECT_REVERB_LPFREQ, NONE);
+            EFFECT_REVERB_FBK, EFFECT_REVERB_LPFREQ,EFFECT_REVERB_DRYWET, NONE);
             break;
             
         case MTX_PAGE:
@@ -462,7 +493,7 @@ inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y,
 void SetPage(MenuPage newPage) {
     currentPage = newPage;
     
-    AssignParamsForPage(newPage);
+    AssignParamsForPage(newPage); 
 }
 
 void EditParameterPage(MenuPage page) {
@@ -472,16 +503,17 @@ void EditParameterPage(MenuPage page) {
 
 void EncoderChangeEffect() {
     if (currentPage == MenuPage::FX_PAGE) {
-        for (size_t i = 0; i < 2; i++) {
-        if (encoderIncs[i] != 0) {
-            int newEffect = static_cast<int>(effectSlot[i].selectedEffect) + encoderIncs[i];
-
-            // Пропускаємо EFFECT_NONE (індекс 0), якщо не хочеш його обирати:
-            if (newEffect < 1) newEffect = 1;
-            if (newEffect >= EFFECT_NUM) newEffect = EFFECT_NUM - 1;
-
-                effectSlot[i].selectedEffect = static_cast<EffectName>(newEffect);
-            }
+        if (encoderIncs[0] != 0) {
+            int newEffect = static_cast<int>(effectSlot[0].selectedEffect) + encoderIncs[0];
+            if (newEffect < 0) newEffect = 0;
+            if (newEffect >= 4) newEffect = 4;
+            effectSlot[0].selectedEffect = static_cast<EffectName>(newEffect);
+        }
+        if (encoderIncs[3] != 0) {
+            int newEffect = static_cast<int>(effectSlot[1].selectedEffect) + encoderIncs[3];
+            if (newEffect < 0) newEffect = 0;
+            if (newEffect >= 4) newEffect = 4;
+            effectSlot[1].selectedEffect = static_cast<EffectName>(newEffect);
         }
     }
 }
