@@ -94,14 +94,8 @@ struct ParamSlot {
 } slots[4 + 1];
 
 inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y, FontDef font, bool color);
-void EncoderChangeEffect();
     
 void UpdateParamsWithEncoders() {
-
-    if (currentPage == MenuPage::FX_PAGE) {
-        EncoderChangeEffect();
-        return;
-    }
 
     const uint8_t xStart[4]  = {0, 32, 66, 102};
     const uint8_t xEnd[4]    = {30, 65, 99, 127};
@@ -316,55 +310,63 @@ void DrawParamPage(const char* page_name, ParamUnitName p0, ParamUnitName p1, Pa
     UpdateParamsWithEncoders();
 }
 
-void DrawEffectsMenu() {
-
-    DisplayCentered("Effects", 0, 127, 0, Font_7x10, true);
-    // Horizontal line under header
-    for (size_t raw = 0; raw < DISPLAY_HEIGHT; raw++)
-    {
-        for (size_t column = 0; column < DISPLAY_WIDTH; column += 3)
-        {
-            if (raw == 15 || raw == 32)
-                for (size_t i = 0; i < 127; i += 3)
-                    display.DrawPixel(i, raw, true);
-            if (raw > 15 && raw % 3 == 0)
-            {
-                display.DrawPixel(64, raw, true); 
-            }
-            
-        }
+void BoolDisplay(uint8_t x1, uint8_t x2, uint8_t y, FontDef font, bool color, bool inValue) {
+    bool value = inValue;
+    const char* text = value ? "On" : "Off";
+    uint8_t textLength = 0;
+    
+    for (const char* c = text; *c != '\0'; c++) {
+        textLength++;
     }
     
-    // Data for first unit
-    DisplayCentered("1", 0, 63, 20, Font_7x10, true);
-
-    // Data for first unit
-    DisplayCentered("2", 64, 127, 20, Font_7x10, true);
-
-    for (size_t i = 0; i < 2; i++)
-    {
-        EffectName selected = effectSlot[i].selectedEffect;
-        const int x1 = (i == 0) ? 0 : 64;
-        const int x2 = (i == 0) ? 64 : 127;
-        const int y1 = 35;
-        const int y2 = 48;
-        if (selected != EFFECT_NONE)
-        {
-            display.SetCursor(0, 16);
-            DisplayCentered(effectLabels[selected], x1, x2, 35, Font_7x10, true);
-            display.SetCursor(96, 60);
-            DisplayCentered(effectSlot[i].isActive ? "On" : "Off", x1, x2, 48, Font_7x10, true);
-
-        }
-        else
-        {
-            DisplayCentered(" - ", x1, x2, y1, Font_7x10, true);
-            DisplayCentered(" - ", x1, x2, y2, Font_7x10, true);
-        }
+    // Determine character width based on font
+    uint8_t charWidth = 0;
+    if (font.data == Font_6x8.data) {
+        charWidth = 6;  // For font 6x8
+    } else if (font.data == Font_7x10.data) {
+        charWidth = 7;  // For font 7x10
+    } else {
+        charWidth = 8;  // For other fonts
     }
+    
+    uint8_t textWidth = textLength * charWidth;
+    
+    // Calculate x-coordinate for centering
+    uint8_t middleX = x1 + (x2 - x1) / 2;
+    uint8_t startX = middleX - (textWidth / 2);
+    
+    // Correction if text goes beyond boundaries
+    if (startX < x1) startX = x1;
+    if (startX + textWidth > x2) startX = x2 - textWidth;
+    
+    // Output text
+    display.SetCursor(startX, y);
+    display.WriteString(text, font, color);
 }
 
-void DrawMenu() {
+void DrawEffectsMenu() {
+
+    DrawMainLines();
+    DisplayCentered("Effects", 0, 127, 0, Font_7x10, true);
+    display.SetCursor(110, 0);
+    display.WriteString(isFXActive ? "On" : "Off", Font_6x8, true);
+
+    const uint8_t xStart[4]  = {0, 32, 66, 102};
+    const uint8_t xEnd[4]    = {30, 65, 99, 127};
+    const uint8_t yLabel = 24;
+    const uint8_t yValue = 48;
+
+    DisplayCentered("Drv", xStart[0], xEnd[0], yLabel, Font_7x10, true);
+    BoolDisplay(xStart[0], xEnd[0], yValue, Font_6x8, true, params.overdriveParams.isActive);
+    DisplayCentered("Chr", xStart[1], xEnd[1], yLabel, Font_7x10, true);
+    BoolDisplay(xStart[1], xEnd[1], yValue, Font_6x8, true, params.chorusParams.isActive);
+    DisplayCentered("Cmp", xStart[2], xEnd[2], yLabel, Font_7x10, true);
+    BoolDisplay(xStart[2], xEnd[2], yValue, Font_6x8, true, params.compressorParams.isActive);
+    DisplayCentered("Rvb", xStart[3], xEnd[3], yLabel, Font_7x10, true);
+    BoolDisplay(xStart[3], xEnd[3], yValue, Font_6x8, true, params.reverbParams.isActive);
+}
+
+void DrawSynthDisplay() {
     // Clear display before showing new menu
     display.Fill(false);
 
@@ -501,21 +503,5 @@ void EditParameterPage(MenuPage page) {
     AssignParamsForPage(page);
 }
 
-void EncoderChangeEffect() {
-    if (currentPage == MenuPage::FX_PAGE) {
-        if (encoderIncs[0] != 0) {
-            int newEffect = static_cast<int>(effectSlot[0].selectedEffect) + encoderIncs[0];
-            if (newEffect < 0) newEffect = 0;
-            if (newEffect >= 4) newEffect = 4;
-            effectSlot[0].selectedEffect = static_cast<EffectName>(newEffect);
-        }
-        if (encoderIncs[3] != 0) {
-            int newEffect = static_cast<int>(effectSlot[1].selectedEffect) + encoderIncs[3];
-            if (newEffect < 0) newEffect = 0;
-            if (newEffect >= 4) newEffect = 4;
-            effectSlot[1].selectedEffect = static_cast<EffectName>(newEffect);
-        }
-    }
-}
 
 #endif

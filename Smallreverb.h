@@ -2,7 +2,7 @@
 #ifndef SMALLREVERB_H
 #define SMALLREVERB_H
 
-#define DSY_SMALLREVERB_MAX_SIZE 16384 // Reduced buffer size
+#define DSY_SMALLREVERB_MAX_SIZE 32768 // Increased buffer size (16384 * 2)
 
 #ifndef PI
 #define PI 3.14159265358979323846f

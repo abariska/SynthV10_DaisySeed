@@ -28,7 +28,7 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
         mix /= NUM_VOICES;
 
         for (size_t i = 0; i < 2; i++) {
-            ProcessEffects(effectSlot[i], mix, sig_after_fxL, sig_after_fxR);
+            ProcessFX(mix, sig_after_fxL, sig_after_fxR);
         }
         out[i] = sig_after_fxL;
         out[i + 1] = sig_after_fxR;
@@ -114,71 +114,79 @@ void ProcessButtons() {
     if (currentPage == MenuPage::FX_PAGE) {
         if (shift_pressed) {  
             if (sw_encoder_1.RisingEdge()) {
-            effectSlot[0].isActive = !effectSlot[0].isActive;
-            }
-            if (sw_encoder_4.RisingEdge()) {
-                effectSlot[1].isActive = !effectSlot[1].isActive;
-            }
-        } else {
-            if (sw_encoder_1.RisingEdge()) {
-                SelectEffectPage(0);
-            }
-            if (sw_encoder_4.RisingEdge()) {
-                SelectEffectPage(1);
-            }
-        }
-    } else {
-        if (shift_pressed) {    
-            if (button_osc_1.RisingEdge()) {
-                params.voice.osc[0].active = !params.voice.osc[0].active;
-            }
-            if (button_osc_2.RisingEdge()) {
-                params.voice.osc[1].active = !params.voice.osc[1].active;
-            }
-            if (button_osc_3.RisingEdge()) {
-                params.voice.osc[2].active = !params.voice.osc[2].active;
-            }
-
-        } else {
-            if (button_back.RisingEdge()) {
-                currentPage = MenuPage::MAIN_PAGE;
-            }
-            if (button_osc_1.RisingEdge()) {
-                SetPage(MenuPage::OSCILLATOR_1_PAGE);  
-                }
-            if (button_osc_2.RisingEdge()) {
-                SetPage(MenuPage::OSCILLATOR_2_PAGE);
-            }
-            if (button_osc_3.RisingEdge()) {
-                SetPage(MenuPage::OSCILLATOR_3_PAGE);
-            }   
-            if (button_flt.RisingEdge()) {
-                SetPage(MenuPage::FILTER_PAGE);
-            }
-            if (button_amp.RisingEdge()) {
-                SetPage(MenuPage::AMPLIFIER_PAGE); 
-            }
-            if (button_fx.RisingEdge()) {
-                SetPage(MenuPage::FX_PAGE);
-            }
-            if (button_lfo.RisingEdge()) {
-                currentPage = MenuPage::LFO_PAGE;
-            }
-            if (button_mtx.RisingEdge()) {
-                SetPage(MenuPage::MTX_PAGE);
-            }
-            // if (button_settings.RisingEdge()) {
-            //     currentPage = MenuPage::SETTINGS_PAGE;
-            // }
-            if (button_back.RisingEdge()) {
-                currentPage = MenuPage::MAIN_PAGE;
-            }
-            if (sw_encoder_1.RisingEdge()) {
-                SelectEffectPage(0);
+                params.overdriveParams.isActive = !params.overdriveParams.isActive;
             }
             if (sw_encoder_2.RisingEdge()) {
-                SelectEffectPage(1);
+                params.chorusParams.isActive = !params.chorusParams.isActive;
             }
+            if (sw_encoder_3.RisingEdge()) {
+                params.compressorParams.isActive = !params.compressorParams.isActive;
+            }
+            if (sw_encoder_4.RisingEdge()) {
+                params.reverbParams.isActive = !params.reverbParams.isActive;
+            }
+        } else {
+            if (sw_encoder_1.RisingEdge()) {
+                currentPage = MenuPage::OVERDRIVE_PAGE;
+            }
+            if (sw_encoder_2.RisingEdge()) {
+                currentPage = MenuPage::CHORUS_PAGE;
+            }
+            if (sw_encoder_3.RisingEdge()) {
+                currentPage = MenuPage::COMPRESSOR_PAGE;
+            }
+            if (sw_encoder_4.RisingEdge()) {
+                currentPage = MenuPage::REVERB_PAGE;
+            }
+        }
+    }
+    if (shift_pressed) {    
+        if (button_osc_1.RisingEdge()) {
+            params.voice.osc[0].active = !params.voice.osc[0].active;
+        }
+        if (button_osc_2.RisingEdge()) {
+            params.voice.osc[1].active = !params.voice.osc[1].active;
+        }
+        if (button_osc_3.RisingEdge()) {
+            params.voice.osc[2].active = !params.voice.osc[2].active;
+        }
+        if (button_fx.RisingEdge()) {
+            isFXActive = !isFXActive;
+        }
+
+    } else {
+        if (button_back.RisingEdge()) {
+            currentPage = MenuPage::MAIN_PAGE;
+        }
+        if (button_osc_1.RisingEdge()) {
+            SetPage(MenuPage::OSCILLATOR_1_PAGE);  
+            }
+        if (button_osc_2.RisingEdge()) {
+            SetPage(MenuPage::OSCILLATOR_2_PAGE);
+        }
+        if (button_osc_3.RisingEdge()) {
+            SetPage(MenuPage::OSCILLATOR_3_PAGE);
+        }   
+        if (button_flt.RisingEdge()) {
+            SetPage(MenuPage::FILTER_PAGE);
+        }
+        if (button_amp.RisingEdge()) {
+            SetPage(MenuPage::AMPLIFIER_PAGE); 
+        }
+        if (button_fx.RisingEdge()) {
+            SetPage(MenuPage::FX_PAGE);
+        }
+        if (button_lfo.RisingEdge()) {
+            currentPage = MenuPage::LFO_PAGE;
+        }
+        if (button_mtx.RisingEdge()) {
+            SetPage(MenuPage::MTX_PAGE);
+        }
+        // if (button_settings.RisingEdge()) {
+        //     currentPage = MenuPage::SETTINGS_PAGE;
+        // }
+        if (button_back.RisingEdge()) {
+            currentPage = MenuPage::MAIN_PAGE;
         }
     }
 }
@@ -187,9 +195,9 @@ void ProcessLeds() {
     led_osc_1.Write(params.voice.osc[0].active);
     led_osc_2.Write(params.voice.osc[1].active);
     led_osc_3.Write(params.voice.osc[2].active);
-    led_fx_1.Write(effectSlot[0].isActive);
-    led_fx_2.Write(effectSlot[1].isActive);
-    led_midi.Write(voice[1].isGated);
+    led_fx_1.Write(isFXActive);;
+
+    led_midi.Write(midi.HasEvents());
     led_out.Write(voice[2].isGated);
     voice_1.Write(voice[0].isGated);
     voice_2.Write(voice[1].isGated);
@@ -197,7 +205,7 @@ void ProcessLeds() {
 }
 
 void DisplayView(void* data) {
-    DrawMenu();
+    DrawSynthDisplay();
 }
 
 void TimerDisplay() {
@@ -218,24 +226,4 @@ void TimerDisplay() {
 
     /** Start the timer, and generate callbacks at the end of each period */
     tim_display.Start();
-}
-
-void SelectEffectPage(uint8_t slot){
-        EffectName effect_to_show = effectSlot[slot].selectedEffect;
-        switch (effect_to_show) {
-            case EFFECT_OVERDRIVE:
-                currentPage = MenuPage::OVERDRIVE_PAGE;
-                break;
-            case EFFECT_CHORUS:
-                currentPage = MenuPage::CHORUS_PAGE;
-                break;
-            case EFFECT_COMPRESSOR:
-                currentPage = MenuPage::COMPRESSOR_PAGE;
-                break;
-            case EFFECT_REVERB:
-                currentPage = MenuPage::REVERB_PAGE;
-                break;
-            case EFFECT_NONE:
-                break;
-    }
 }

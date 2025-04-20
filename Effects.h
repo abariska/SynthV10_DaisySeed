@@ -12,79 +12,55 @@
 using namespace daisy;
 using namespace daisysp;
 
-
-
-// Enumeration of effect types
 enum EffectName {
-    EFFECT_NONE,
-    EFFECT_OVERDRIVE,
-    EFFECT_CHORUS,
-    EFFECT_COMPRESSOR,
-    EFFECT_REVERB,
+    OVERDRIVE,
+    CHORUS,
+    COMPRESSOR,
+    REVERB
 };
-
-const char* effectLabels[] = {
-    " - ",
-    "Drive",
-    "Chorus",
-    "Comp",
-    "Reverb"
-};
-
-struct FXSlot {
-    EffectName selectedEffect;
-    const char* label;
-    bool isActive;
 
     Overdrive drive;
     Chorus chorus;
-    SmallReverb reverb;
     Compressor compressor;
-}effectSlot[2];
+    SmallReverb reverb;
+
+    const char* labelFX;
+    bool isFXActive;
 
 void EffectsInit(float samplerate) {
-    for (size_t i = 0; i < 2; i++) {
-        effectSlot[i].drive.Init();
-        effectSlot[i].chorus.Init(samplerate);
-        effectSlot[i].reverb.Init(samplerate);
-        effectSlot[i].compressor.Init(samplerate);
-    }
-    effectSlot[0].selectedEffect = EFFECT_NONE;
-    effectSlot[1].selectedEffect = EFFECT_NONE;
+    drive.Init();
+    chorus.Init(samplerate);
+    compressor.Init(samplerate);
+    reverb.Init(samplerate);
+    isFXActive = false;
 }
 
-void ProcessEffects(FXSlot& slot, float in, float& outL, float& outR) {
-    
-    if (!slot.isActive) {
+void ProcessFX(float in, float& outL, float& outR) {
+    float sigL = in;
+    float sigR = in;
+    if (!isFXActive) {
         outL = in;
         outR = in;
         return;
-    } else {
-
-    switch (slot.selectedEffect) {
-        case EFFECT_OVERDRIVE:
-            outL = slot.drive.Process(in);
-            outR = outL;
-            break;
-        case EFFECT_CHORUS:
-            outL = slot.chorus.Process(in);
-            outR = outL;
-            break;
-        case EFFECT_COMPRESSOR:
-            outL = slot.compressor.Process(in);
-            outR = outL;
-            break;
-        case EFFECT_REVERB:
-            slot.reverb.Process(in, in, &outL, &outR);
-            break;
-        case EFFECT_NONE:
-            outL = in;
-            outR = in;
-            break;
-        default:
-            break;
     }
+    if (params.overdriveParams.isActive) {
+        sigL = drive.Process(sigL);
+        sigR = drive.Process(sigR);
     }
+    if (params.chorusParams.isActive) {
+        chorus.Process(sigL);
+        sigL += chorus.GetLeft();
+        sigR += chorus.GetRight();
+    }
+    if (params.compressorParams.isActive) {
+        sigL = compressor.Process(sigL);
+        sigR = compressor.Process(sigR);
+    }
+    if (params.reverbParams.isActive) {
+        reverb.Process(sigL, sigR, &outL, &outR);
+    }
+    outL = sigL;
+    outR = sigR;
 }
 
 #endif

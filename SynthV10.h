@@ -36,7 +36,6 @@ extern OledDisplay<SSD130x4WireSpi128x64Driver> display;
 extern VoiceUnit voice[NUM_VOICES];
 extern MidiUsbHandler midi;
 extern CpuLoadMeter cpu_load;
-extern FXSlot effectSlot[2];
 extern SynthParams params;
 int encoderIncs[4];
 
@@ -84,7 +83,6 @@ void TimerDisplay();
 void ProcessButtons();
 void ProcessLeds();
 void UpdateEncoders();
-void SelectEffectPage(uint8_t slot);
 void UpdateButtons(){
     unsigned long currentTime = System::GetTick();
     button_back.Update(currentTime);
