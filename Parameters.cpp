@@ -47,6 +47,7 @@ void InitEffectParams() {
 
         // Overdrive
         params.overdriveParams.drive = 0.0f;
+        params.overdriveParams.makeup = 0.0f;
         params.overdriveParams.isActive = false;
         
         // Chorus

@@ -67,6 +67,7 @@ enum ParamUnitName {
     LFO_FREQ,
     LFO_DEPTH,
     EFFECT_OVERDRIVE_DRIVE,
+    EFFECT_OVERDRIVE_MAKEUP,
     EFFECT_CHORUS_FREQ,
     EFFECT_CHORUS_DEPTH,
     EFFECT_CHORUS_FBK,
@@ -260,7 +261,9 @@ void AssignParamsForPage(MenuPage page) {
             break;
         case OVERDRIVE_PAGE:
             slots[0].assignedParam = EFFECT_OVERDRIVE_DRIVE ;
+            slots[1].assignedParam = EFFECT_OVERDRIVE_MAKEUP;
             InitParam(EFFECT_OVERDRIVE_DRIVE, &params.overdriveParams.drive, "Drive", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_OVERDRIVE_MAKEUP, &params.overdriveParams.makeup, "Vol", -0.5f, 0.5f, 0.01f);
             break;
         case CHORUS_PAGE:
             slots[0].assignedParam = EFFECT_CHORUS_FREQ;
@@ -268,8 +271,8 @@ void AssignParamsForPage(MenuPage page) {
             slots[2].assignedParam = EFFECT_CHORUS_FBK;
             slots[3].assignedParam = EFFECT_CHORUS_PAN;
             InitParam(EFFECT_CHORUS_FREQ, &params.chorusParams.freq, "Freq", 0.0f, 1.0f, 0.01f);
-            InitParam(EFFECT_CHORUS_DEPTH, &params.chorusParams.depth, "Depth", 0.0f, 1.0f, 0.01f);
-            InitParam(EFFECT_CHORUS_FBK, &params.chorusParams.feedback, "FBK", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_CHORUS_DEPTH, &params.chorusParams.depth, "Amp", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_CHORUS_FBK, &params.chorusParams.feedback, "Fbk", 0.0f, 1.0f, 0.01f);
             InitParam(EFFECT_CHORUS_PAN, &params.chorusParams.pan, "Pan", 0.0f, 1.0f, 0.01f);
             break;
         case COMPRESSOR_PAGE:
@@ -280,7 +283,7 @@ void AssignParamsForPage(MenuPage page) {
             InitParam(EFFECT_COMPRESSOR_ATTACK, &params.compressorParams.attack, "Att", 0.0f, 1.0f, 0.01f);
             InitParam(EFFECT_COMPRESSOR_RELEASE, &params.compressorParams.release, "Rel", 0.0f, 1.0f, 0.01f);
             InitParam(EFFECT_COMPRESSOR_THRESHOLD, &params.compressorParams.threshold, "Thr", 0.0f, 1.0f, 0.01f);
-            InitParam(EFFECT_COMPRESSOR_RATIO, &params.compressorParams.ratio, "Ratio", 0.0f, 1.0f, 0.01f);
+            InitParam(EFFECT_COMPRESSOR_RATIO, &params.compressorParams.ratio, "Rat", 0.0f, 1.0f, 0.01f);
             break;
         case REVERB_PAGE:
             slots[0].assignedParam = EFFECT_REVERB_FBK;
@@ -358,10 +361,10 @@ void DrawEffectsMenu() {
 
     DisplayCentered("Drv", xStart[0], xEnd[0], yLabel, Font_7x10, true);
     BoolDisplay(xStart[0], xEnd[0], yValue, Font_6x8, true, params.overdriveParams.isActive);
-    DisplayCentered("Chr", xStart[1], xEnd[1], yLabel, Font_7x10, true);
-    BoolDisplay(xStart[1], xEnd[1], yValue, Font_6x8, true, params.chorusParams.isActive);
-    DisplayCentered("Cmp", xStart[2], xEnd[2], yLabel, Font_7x10, true);
-    BoolDisplay(xStart[2], xEnd[2], yValue, Font_6x8, true, params.compressorParams.isActive);
+    DisplayCentered("Cmp", xStart[1], xEnd[1], yLabel, Font_7x10, true);
+    BoolDisplay(xStart[1], xEnd[1], yValue, Font_6x8, true, params.compressorParams.isActive);
+    DisplayCentered("Chr", xStart[2], xEnd[2], yLabel, Font_7x10, true);
+    BoolDisplay(xStart[2], xEnd[2], yValue, Font_6x8, true, params.chorusParams.isActive);
     DisplayCentered("Rvb", xStart[3], xEnd[3], yLabel, Font_7x10, true);
     BoolDisplay(xStart[3], xEnd[3], yValue, Font_6x8, true, params.reverbParams.isActive);
 }
@@ -427,7 +430,7 @@ void DrawSynthDisplay() {
 
         case OVERDRIVE_PAGE:
             DrawParamPage("Overdrive", 
-            EFFECT_OVERDRIVE_DRIVE, NONE, NONE, NONE);
+            EFFECT_OVERDRIVE_DRIVE, EFFECT_OVERDRIVE_MAKEUP, NONE, NONE);
             break;
 
         case CHORUS_PAGE:

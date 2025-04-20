@@ -55,6 +55,7 @@ struct SynthParams {
     // Structure for Overdrive effect parameters
     struct {
         float drive;          // Drive level
+        float makeup;         // Makeup gain
         bool isActive;        // Is the effect active
     } overdriveParams;
 
