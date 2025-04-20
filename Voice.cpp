@@ -155,8 +155,5 @@ float VoiceUnit::Process(){
     sig *= env;
 
         return sig;
-    }
+}
 
-
-Oscillator lfo;
-Adsr mainADSR;

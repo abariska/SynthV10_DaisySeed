@@ -50,6 +50,7 @@ int main(void)
     for (size_t i = 0; i < NUM_VOICES; i++) {
         voice[i].Init(samplerate, blocksize);
     };
+    EffectsInit(samplerate);
 
     Display_Init();
     InitMcp();
@@ -57,7 +58,6 @@ int main(void)
     MidiInit();
     InitSynthParams();
     InitLfo(samplerate);
-    EffectsInit(samplerate);
 
     AssignParamsForPage(currentPage); 
     UpdateParamsWithEncoders();
@@ -123,64 +123,65 @@ void ProcessButtons() {
             if (sw_encoder_1.RisingEdge()) {
                 SelectEffectPage(0);
             }
+            if (sw_encoder_4.RisingEdge()) {
+                SelectEffectPage(1);
+            }
+        }
+    } else {
+        if (shift_pressed) {    
+            if (button_osc_1.RisingEdge()) {
+                params.voice.osc[0].active = !params.voice.osc[0].active;
+            }
+            if (button_osc_2.RisingEdge()) {
+                params.voice.osc[1].active = !params.voice.osc[1].active;
+            }
+            if (button_osc_3.RisingEdge()) {
+                params.voice.osc[2].active = !params.voice.osc[2].active;
+            }
+
+        } else {
+            if (button_back.RisingEdge()) {
+                currentPage = MenuPage::MAIN_PAGE;
+            }
+            if (button_osc_1.RisingEdge()) {
+                SetPage(MenuPage::OSCILLATOR_1_PAGE);  
+                }
+            if (button_osc_2.RisingEdge()) {
+                SetPage(MenuPage::OSCILLATOR_2_PAGE);
+            }
+            if (button_osc_3.RisingEdge()) {
+                SetPage(MenuPage::OSCILLATOR_3_PAGE);
+            }   
+            if (button_flt.RisingEdge()) {
+                SetPage(MenuPage::FILTER_PAGE);
+            }
+            if (button_amp.RisingEdge()) {
+                SetPage(MenuPage::AMPLIFIER_PAGE); 
+            }
+            if (button_fx.RisingEdge()) {
+                SetPage(MenuPage::FX_PAGE);
+            }
+            if (button_lfo.RisingEdge()) {
+                currentPage = MenuPage::LFO_PAGE;
+            }
+            if (button_mtx.RisingEdge()) {
+                SetPage(MenuPage::MTX_PAGE);
+            }
+            // if (button_settings.RisingEdge()) {
+            //     currentPage = MenuPage::SETTINGS_PAGE;
+            // }
+            if (button_back.RisingEdge()) {
+                currentPage = MenuPage::MAIN_PAGE;
+            }
+            if (sw_encoder_1.RisingEdge()) {
+                SelectEffectPage(0);
+            }
             if (sw_encoder_2.RisingEdge()) {
                 SelectEffectPage(1);
             }
         }
     }
-    if (shift_pressed) {    
-        if (button_osc_1.RisingEdge()) {
-            params.voice.osc[0].active = !params.voice.osc[0].active;
-        }
-        if (button_osc_2.RisingEdge()) {
-            params.voice.osc[1].active = !params.voice.osc[1].active;
-        }
-        if (button_osc_3.RisingEdge()) {
-            params.voice.osc[2].active = !params.voice.osc[2].active;
-        }
-
-    } else {
-        if (button_back.RisingEdge()) {
-            currentPage = MenuPage::MAIN_PAGE;
-        }
-        if (button_osc_1.RisingEdge()) {
-            SetPage(MenuPage::OSCILLATOR_1_PAGE);  
-            }
-        if (button_osc_2.RisingEdge()) {
-            SetPage(MenuPage::OSCILLATOR_2_PAGE);
-        }
-        if (button_osc_3.RisingEdge()) {
-            SetPage(MenuPage::OSCILLATOR_3_PAGE);
-        }   
-        if (button_flt.RisingEdge()) {
-            SetPage(MenuPage::FILTER_PAGE);
-        }
-        if (button_amp.RisingEdge()) {
-            SetPage(MenuPage::AMPLIFIER_PAGE); 
-        }
-        if (button_fx.RisingEdge()) {
-            SetPage(MenuPage::FX_PAGE);
-        }
-        if (button_lfo.RisingEdge()) {
-            currentPage = MenuPage::LFO_PAGE;
-        }
-        if (button_mtx.RisingEdge()) {
-            SetPage(MenuPage::MTX_PAGE);
-        }
-        // if (button_settings.RisingEdge()) {
-        //     currentPage = MenuPage::SETTINGS_PAGE;
-        // }
-        if (button_back.RisingEdge()) {
-            currentPage = MenuPage::MAIN_PAGE;
-        }
-        if (sw_encoder_1.RisingEdge()) {
-            SelectEffectPage(0);
-        }
-        if (sw_encoder_2.RisingEdge()) {
-            SelectEffectPage(1);
-        }
-    }
-}   
+}
 
 void ProcessLeds() {
     led_osc_1.Write(params.voice.osc[0].active);

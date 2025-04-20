@@ -59,7 +59,7 @@ void ProcessEffects(FXSlot& slot, float in, float& outL, float& outR) {
         outL = in;
         outR = in;
         return;
-    }
+    } else {
 
     switch (slot.selectedEffect) {
         case EFFECT_OVERDRIVE:
@@ -82,9 +82,8 @@ void ProcessEffects(FXSlot& slot, float in, float& outL, float& outR) {
             outR = in;
             break;
         default:
-            outL = in;
-            outR = in;
             break;
+    }
     }
 }
 
