@@ -8,6 +8,8 @@ DaisySeed hw;
 TimerHandle tim_display;
 MidiUsbHandler midi;
 CpuLoadMeter cpu_load;
+System::Config config;
+
 extern Mcp23017 mcp_1;
 extern Mcp23017 mcp_2;
 extern SynthParams params;
@@ -41,7 +43,7 @@ int main(void)
     float samplerate;
     int blocksize = 4;
 
-    hw.Configure();
+    config.Boost();    
     hw.Init();
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
@@ -51,7 +53,6 @@ int main(void)
         voice[i].Init(samplerate, blocksize);
     };
     EffectsInit(samplerate);
-
     Display_Init();
     InitMcp();
     InitLeds();
@@ -62,32 +63,27 @@ int main(void)
     AssignParamsForPage(currentPage); 
     UpdateParamsWithEncoders();
 
+    hw.DelayMs(100);
+
     hw.StartAudio(AudioCallback);
 
     TimerDisplay();
 
     while (1)
     {
-        // hw.PrintLine("Loop start %d", System::GetNow());
         mcp_1.Read();
         mcp_2.Read();
         ProcessButtons();
         ProcessLeds(); 
         UpdateEncoders();
         UpdateParamsWithEncoders();
-        // MIDI processing
+
         midi.Listen();
         while(midi.HasEvents())
         {
             auto msg = midi.PopEvent();
             HandleMidiMessage(msg);
-    }
-        // hw.PrintLine("Loop end %d", System::GetNow());
-        // System::Delay(100);  // Add delay for better output
-
-        // if (button_lfo.IsPressed()) {
-        //     synth.HandleNoteOn(440.0f, 1.0f);
-        // }
+        }
     }
 }
 
