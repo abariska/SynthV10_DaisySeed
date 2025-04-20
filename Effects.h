@@ -36,6 +36,18 @@ void EffectsInit(float samplerate) {
 }
 
 void ProcessFX(float in, float& outL, float& outR) {
+    drive.SetDrive(params.overdriveParams.drive);
+    chorus.SetLfoFreq(params.chorusParams.freq);
+    chorus.SetLfoDepth(params.chorusParams.depth);
+    chorus.SetFeedback(params.chorusParams.feedback);
+    chorus.SetPan(params.chorusParams.pan);
+    compressor.SetAttack(params.compressorParams.attack);
+    compressor.SetRelease(params.compressorParams.release);
+    compressor.SetThreshold(params.compressorParams.threshold);
+    compressor.SetRatio(params.compressorParams.ratio);
+    reverb.SetFeedback(params.reverbParams.feedback);
+    reverb.SetLpFreq(params.reverbParams.lpFreq);
+    reverb.SetDryWet(params.reverbParams.dryWet);
     float sigL = in;
     float sigR = in;
     if (!isFXActive) {
@@ -44,8 +56,8 @@ void ProcessFX(float in, float& outL, float& outR) {
         return;
     }
     if (params.overdriveParams.isActive) {
-        sigL = drive.Process(sigL);
-        sigR = drive.Process(sigR);
+        sigL += drive.Process(sigL);
+        sigR += drive.Process(sigR);
     }
     if (params.chorusParams.isActive) {
         chorus.Process(sigL);
@@ -53,14 +65,19 @@ void ProcessFX(float in, float& outL, float& outR) {
         sigR += chorus.GetRight();
     }
     if (params.compressorParams.isActive) {
-        sigL = compressor.Process(sigL);
-        sigR = compressor.Process(sigR);
+        sigL += compressor.Process(sigL);
+        sigR += compressor.Process(sigR);
     }
     if (params.reverbParams.isActive) {
-        reverb.Process(sigL, sigR, &outL, &outR);
+        float wetRevL;
+        float wetRevR;
+        reverb.Process(sigL, sigR, &wetRevL, &wetRevR);
+        outL = (1 - params.reverbParams.dryWet) * sigL + params.reverbParams.dryWet * wetRevL;
+        outR = (1 - params.reverbParams.dryWet) * sigR + params.reverbParams.dryWet * wetRevR;
+    } else {
+        outL = sigL;
+        outR = sigR;
     }
-    outL = sigL;
-    outR = sigR;
 }
 
 #endif
