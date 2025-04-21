@@ -8,7 +8,6 @@ DaisySeed hw;
 TimerHandle tim_display;
 MidiUsbHandler midi;
 CpuLoadMeter cpu_load;
-System::Config config;
 
 extern Mcp23017 mcp_1;
 extern Mcp23017 mcp_2;
@@ -43,8 +42,7 @@ int main(void)
     float samplerate;
     int blocksize = 4;
 
-    config.Boost();    
-    hw.Init();
+    hw.Init(true);
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
@@ -201,7 +199,7 @@ void ProcessLeds() {
 }
 
 void DisplayView(void* data) {
-    DrawSynthDisplay();
+    DrawPages();
 }
 
 void TimerDisplay() {

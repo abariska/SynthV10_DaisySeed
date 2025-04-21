@@ -98,11 +98,6 @@ inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y,
     
 void UpdateParamsWithEncoders() {
 
-    const uint8_t xStart[4]  = {0, 32, 66, 102};
-    const uint8_t xEnd[4]    = {30, 65, 99, 127};
-    const uint8_t yLabel = 24;
-    const uint8_t yValue = 48;
-
     for (size_t i = 0; i < 4; i++) {
         ParamUnitName paramID = slots[i].assignedParam;
 
@@ -119,22 +114,6 @@ void UpdateParamsWithEncoders() {
             } else if (*param_unit.target_param < param_unit.min) {
                 *param_unit.target_param = param_unit.min;
             }
-
-            char valStr[16];
-            sprintf(valStr, "%d", (int)*param_unit.target_param);
-            if (paramID == OSC_WAVEFORM_1 || 
-                paramID == OSC_PITCH_1 || 
-                paramID == OSC_WAVEFORM_2 || 
-                paramID == OSC_PITCH_2 || 
-                paramID == OSC_WAVEFORM_3 ||
-                paramID == OSC_PITCH_3 ||
-                paramID == FILTER_CUTOFF) {
-                sprintf(valStr, "%d", (int)*param_unit.target_param);
-            } else {
-                sprintf(valStr, "%d", (int)(*param_unit.target_param * 100));
-            }
-            DisplayCentered(param_unit.label, xStart[i], xEnd[i], yLabel, Font_6x8, true);
-            DisplayCentered(valStr, xStart[i], xEnd[i], yValue, Font_6x8, true);
         }
     }
 }
@@ -158,6 +137,40 @@ inline void DrawMainLines()
         }
     }
 } 
+
+void DrawParameters(ParamUnitName p0, ParamUnitName p1, ParamUnitName p2, ParamUnitName p3) {
+    const uint8_t xStart[4]  = {0, 32, 66, 102};
+    const uint8_t xEnd[4]    = {30, 65, 99, 127};
+    const uint8_t yLabel = 24;
+    const uint8_t yValue = 48;
+
+    slots[0].assignedParam = p0;
+    slots[1].assignedParam = p1;
+    slots[2].assignedParam = p2;
+    slots[3].assignedParam = p3;
+    // UpdateParamsWithEncoders();
+
+    for (size_t i = 0; i < 4; i++){
+        char valStr[16];
+        if (slots[i].assignedParam == NONE) {
+            continue;
+        }
+        if (slots[i].assignedParam == OSC_WAVEFORM_1 || 
+            slots[i].assignedParam == OSC_PITCH_1 || 
+            slots[i].assignedParam == OSC_WAVEFORM_2 || 
+            slots[i].assignedParam == OSC_PITCH_2 || 
+            slots[i].assignedParam == OSC_WAVEFORM_3 ||
+            slots[i].assignedParam == OSC_PITCH_3 ||
+            slots[i].assignedParam == FILTER_CUTOFF ||
+            slots[i].assignedParam == LFO_WAVEFORM) {
+            sprintf(valStr, "%d", (int)*allParams[slots[i].assignedParam].target_param);
+        } else {
+            sprintf(valStr, "%d", (int)(*allParams[slots[i].assignedParam].target_param * 100));
+        }
+        DisplayCentered(allParams[slots[i].assignedParam].label, xStart[i], xEnd[i], yLabel, Font_6x8, true);
+        DisplayCentered(valStr, xStart[i], xEnd[i], yValue, Font_6x8, true);
+    }
+}
 
 inline void DrawMainMenu()
 {
@@ -183,8 +196,7 @@ inline void DrawMainMenu()
     sprintf(cpu_load_value, "%.1f%%", cpu_avg_load * 100);
     display.WriteString(cpu_load_value, Font_7x10, true);
 
-    UpdateParamsWithEncoders();
-
+    DrawParameters(FILTER_CUTOFF, FILTER_RESONANCE, ADSR_ATTACK, ADSR_DECAY);
 }
 
 void InitParam(int index, float* target, const char* label, float min, float max, float sensitivity) {
@@ -306,11 +318,7 @@ void AssignParamsForPage(MenuPage page) {
 void DrawParamPage(const char* page_name, ParamUnitName p0, ParamUnitName p1, ParamUnitName p2, ParamUnitName p3) {
     DrawMainLines();
     DisplayCentered(page_name, 0, 127, 0, Font_7x10, true);
-    slots[0].assignedParam = p0;
-    slots[1].assignedParam = p1;
-    slots[2].assignedParam = p2;
-    slots[3].assignedParam = p3;
-    UpdateParamsWithEncoders();
+    DrawParameters(p0, p1, p2, p3);
 }
 
 void BoolDisplay(uint8_t x1, uint8_t x2, uint8_t y, FontDef font, bool color, bool inValue) {
@@ -369,7 +377,7 @@ void DrawEffectsMenu() {
     BoolDisplay(xStart[3], xEnd[3], yValue, Font_6x8, true, params.reverbParams.isActive);
 }
 
-void DrawSynthDisplay() {
+void DrawPages() {
     // Clear display before showing new menu
     display.Fill(false);
 
