@@ -48,8 +48,15 @@ struct SynthParams {
         float waveform;
     } lfo;
 
+    enum {
+        mono,
+        legato
+    } monoMode;
+
     struct {
         bool isMono;
+        float globalTuning;
+        float glideTime; // New: glide time in seconds
     } global;
 
     // Structure for Overdrive effect parameters

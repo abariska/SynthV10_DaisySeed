@@ -86,12 +86,14 @@ void VoiceUnit::NoteOn(uint8_t midi_note, uint8_t midi_vel, uint32_t time){
         timestamp = time;
         isVoiceActive = true;
         isGated = true;
+        for (size_t i = 0; i < OSC_NUM; i++) {
+            osc[i].Reset();
+        }
         adsrMain.Retrigger(true);
     }
 
 void VoiceUnit::NoteOff(){
     isGated = false; 
-    // isVoiceActive = false; 
 }
 
 float VoiceUnit::CalculateFrequency(uint8_t midi_note, int pitch, int detune) {
@@ -154,6 +156,6 @@ float VoiceUnit::Process(){
     float env = adsrMain.Process(isGated);
     sig *= env;
 
-        return sig;
+    return sig;
 }
 

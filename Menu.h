@@ -275,7 +275,7 @@ void AssignParamsForPage(MenuPage page) {
             slots[0].assignedParam = EFFECT_OVERDRIVE_DRIVE ;
             slots[1].assignedParam = EFFECT_OVERDRIVE_MAKEUP;
             InitParam(EFFECT_OVERDRIVE_DRIVE, &params.overdriveParams.drive, "Drive", 0.0f, 1.0f, 0.01f);
-            InitParam(EFFECT_OVERDRIVE_MAKEUP, &params.overdriveParams.makeup, "Vol", -0.5f, 0.5f, 0.01f);
+            InitParam(EFFECT_OVERDRIVE_MAKEUP, &params.overdriveParams.makeup, "Vol", -0.5f, 1.0f, 0.01f);
             break;
         case CHORUS_PAGE:
             slots[0].assignedParam = EFFECT_CHORUS_FREQ;
