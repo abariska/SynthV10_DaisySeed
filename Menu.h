@@ -1,20 +1,15 @@
 #ifndef DISPLAY_MENU_H
 #define DISPLAY_MENU_H
 
-#include "DisplayOLED.h"
+#include "Display.h"
 #include "Voice.h"
 #include "Parameters.h"
 #include "Effects.h"
 #include "Encoder_mcp.h"
-
-#define PROGRAM_NAME_LENGTH 12
-#define PROGRAM_NUMBER_LENGTH 4
-#define PARAM_NAME_LENGTH 8
-#define PARAM_VALUE_LENGTH 8
+#include "OLED_1.5_Daisy_Seed/fonts.h"
 
 using namespace daisy;
 
-extern MyOledDisplay display;
 extern CpuLoadMeter cpu_load;
 extern Enc_mcp encoder_1;
 extern Enc_mcp encoder_2; 
@@ -91,30 +86,75 @@ struct ParamUnitData{
 
 struct ParamSlot {
     ParamUnitName assignedParam;
-} slots[4 + 1];
+    bool need_update;
+} slots[NUM_PARAM_BLOCKS];
 
-inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y, FontDef font, bool color);
 void EncoderChangeEffect();
+void DrawPages();
+
+void InitParamBlocks(){
+    for (size_t i = 0; i < 4; i++) {
+        const char* label = allParams[slots[i].assignedParam].label;
+        const float value = *allParams[slots[i].assignedParam].target_param * 100;
+        
+
+        Paint_NewImage(param_block[i], PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, BLACK); 
+        Paint_SetScale(16);
+        Paint_Clear(BLACK);
+        
+        Paint_TextCentered(label, 0, 32, 10, Font12, WHITE, BLACK);
+        Paint_NumCentered((int)value, 0, 32, 30, 0, Font12, WHITE, BLACK);
+        OLED_1in5_Display_Part(param_block[i], BLOCK_X_START[i], BLOCK_TOP_LINE_Y, BLOCK_X_END[i], BLOCK_BOTTOM_LINE_Y);
+    }
+}
+
+void CheckBlockParamForUpdate(){
+
+    static float current_param_value[NUM_PARAM_BLOCKS];
+    static float new_param_value[NUM_PARAM_BLOCKS];
+    static bool initialized = false;
     
+    if (!initialized) {
+        for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+            if (allParams[slots[i].assignedParam].target_param != NULL) {
+                new_param_value[i] = *allParams[slots[i].assignedParam].target_param;
+            }
+            if (allParams[slots[i].assignedParam].target_param != NULL) {
+                current_param_value[i] = *allParams[slots[i].assignedParam].target_param;
+            }
+        }
+        initialized = true;
+    }
+
+    for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+        if (new_param_value[i] != current_param_value[i]) {
+            current_param_value[i] = new_param_value[i];
+            slots[i].need_update = true;
+        }
+    }
+}
+
 void UpdateParamsWithEncoders() {
 
     if (currentPage == MenuPage::FX_PAGE) {
         EncoderChangeEffect();
         return;
     }
-
+    
     const uint8_t xStart[4]  = {0, 32, 66, 102};
     const uint8_t xEnd[4]    = {30, 65, 99, 127};
     const uint8_t yLabel = 24;
     const uint8_t yValue = 48;
 
-    for (size_t i = 0; i < 4; i++) {
-        ParamUnitName paramID = slots[i].assignedParam;
+    int param_value;
 
+    for (size_t i = 0; i < 4; i++) {
+        if (!slots[i].need_update) continue;
+
+        ParamUnitName paramID = slots[i].assignedParam;
         if (paramID == NONE) continue; // слот пустий
 
-        ParamUnitData& param_unit = allParams[paramID];
-
+        ParamUnitData& param_unit = allParams[paramID];     
         if (param_unit.target_param != nullptr) {
 
             *param_unit.target_param += encoderIncs[i] * param_unit.sensitivity;
@@ -124,9 +164,7 @@ void UpdateParamsWithEncoders() {
             } else if (*param_unit.target_param < param_unit.min) {
                 *param_unit.target_param = param_unit.min;
             }
-
-            char valStr[16];
-            sprintf(valStr, "%d", (int)*param_unit.target_param);
+            param_value = (int)*param_unit.target_param;
             if (paramID == OSC_WAVEFORM_1 || 
                 paramID == OSC_PITCH_1 || 
                 paramID == OSC_WAVEFORM_2 || 
@@ -134,62 +172,63 @@ void UpdateParamsWithEncoders() {
                 paramID == OSC_WAVEFORM_3 ||
                 paramID == OSC_PITCH_3 ||
                 paramID == FILTER_CUTOFF) {
-                sprintf(valStr, "%d", (int)*param_unit.target_param);
+                param_value = (int)*param_unit.target_param;
             } else {
-                sprintf(valStr, "%d", (int)(*param_unit.target_param * 100));
+                param_value = (int)(*param_unit.target_param * 100);
             }
-            DisplayCentered(param_unit.label, xStart[i], xEnd[i], yLabel, Font_6x8, true);
-            DisplayCentered(valStr, xStart[i], xEnd[i], yValue, Font_6x8, true);
+            for (size_t i = 0; i < 4; i++) {
+                Paint_NewImage(param_block[i], PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, BLACK); 
+                Paint_SetScale(16);
+                Paint_Clear(BLACK);
+
+                Paint_TextCentered(param_unit.label, 0, 32, 10, Font12, WHITE, BLACK);
+                Paint_NumCentered(param_value, 0, 32, 30, 0, Font12, WHITE, BLACK);
+                
+                OLED_1in5_Display_Part(param_block[i], BLOCK_X_START[i], BLOCK_TOP_LINE_Y, BLOCK_X_END[i], BLOCK_BOTTOM_LINE_Y);
+            }
         }
+        slots[i].need_update = false;
     }
 }
 
-inline void DrawMainLines()
+inline void DrawMainPageLines()
 {
-    for (size_t raw = 0; raw < DISPLAY_HEIGHT; raw++)
+    for (size_t raw = 0; raw < FULL_PAGE_HEIGHT; raw++)
     {
-        for (size_t column = 0; column < DISPLAY_WIDTH; column += 2)
+        for (size_t column = 0; column < FULL_PAGE_WIDTH; column += 2)
         {
             if (raw == 15)
-                for (size_t i = 0; i < 127; i += 3)
-                    display.DrawPixel(i, raw, true);
+                for (size_t i = 0; i < FULL_PAGE_WIDTH; i += 3)
+                    Paint_DrawPoint(i, raw, 0x1, DOT_PIXEL_1X1, DOT_STYLE_DFT);
             else if (raw > 15 && raw % 3 == 0)
             {
-                display.DrawPixel(30, raw, true);
-                display.DrawPixel(64, raw, true);   
-                display.DrawPixel(98, raw, true);
+                Paint_DrawPoint(30, raw, 0x1, DOT_PIXEL_1X1, DOT_STYLE_DFT);
+                Paint_DrawPoint(64, raw, 0x1, DOT_PIXEL_1X1, DOT_STYLE_DFT);   
+                Paint_DrawPoint(98, raw, 0x1, DOT_PIXEL_1X1, DOT_STYLE_DFT);
             }
             
         }
     }
 } 
 
-inline void DrawMainMenu()
+inline void DrawMainPage()
 {
     char prog_num[PROGRAM_NUMBER_LENGTH];
     char prog_name[PROGRAM_NAME_LENGTH];
 
-    char cpu_load_value[PARAM_VALUE_LENGTH];
     float cpu_avg_load = cpu_load.GetAvgCpuLoad();
 
-    DrawMainLines();
+    DrawStaticPage(BLACK);
     
-    display.SetCursor(5, 0);
-    // safe_sprintf(prog_num, PROGRAM_NUMBER_LENGTH, "%03d", 1);
     sprintf(prog_num, "%03d", 1);
-    display.WriteString(prog_num, Font_7x10, true);
+    Paint_TextCentered(prog_num, 0, 127, 0, Font16, WHITE, BLACK);
 
-    display.SetCursor(35, 0);
-    // safe_sprintf(prog_name, PROGRAM_NAME_LENGTH, "Program");
     sprintf(prog_name, "Program");
-    display.WriteString(prog_name, Font_7x10, true);
+    Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
 
-    display.SetCursor(100, 0);
-    sprintf(cpu_load_value, "%.1f%%", cpu_avg_load * 100);
-    display.WriteString(cpu_load_value, Font_7x10, true);
+    Paint_NumCentered(cpu_avg_load * 100, 100, 127, 0, 1, Font8, WHITE, BLACK);
 
-    UpdateParamsWithEncoders();
-
+    OLED_1in5_Display(background_black);
 }
 
 void InitParam(int index, float* target, const char* label, float min, float max, float sensitivity) {
@@ -306,40 +345,36 @@ void AssignParamsForPage(MenuPage page) {
     }
 }
 
-void DrawParamPage(const char* page_name, ParamUnitName p0, ParamUnitName p1, ParamUnitName p2, ParamUnitName p3) {
-    DrawMainLines();
-    DisplayCentered(page_name, 0, 127, 0, Font_7x10, true);
+void SetParamPageContent(const char* page_name, ParamUnitName p0, ParamUnitName p1, ParamUnitName p2, ParamUnitName p3) {
+    DrawStaticParamPage(BLACK);
+    Paint_TextCentered(page_name, 0, 127, 0, Font12, WHITE, BLACK);
     slots[0].assignedParam = p0;
     slots[1].assignedParam = p1;
     slots[2].assignedParam = p2;
     slots[3].assignedParam = p3;
-    UpdateParamsWithEncoders();
 }
 
 void DrawEffectsMenu() {
 
-    DisplayCentered("Effects", 0, 127, 0, Font_7x10, true);
+    Paint_TextCentered("Effects", 0, 127, 0, Font8, WHITE, BLACK);
     // Horizontal line under header
-    for (size_t raw = 0; raw < DISPLAY_HEIGHT; raw++)
+    for (size_t raw = 0; raw < FULL_PAGE_HEIGHT; raw++)
     {
-        for (size_t column = 0; column < DISPLAY_WIDTH; column += 3)
+        for (size_t column = 0; column < FULL_PAGE_WIDTH; column += 3)
         {
             if (raw == 15 || raw == 32)
                 for (size_t i = 0; i < 127; i += 3)
-                    display.DrawPixel(i, raw, true);
+                    Paint_DrawPoint(i, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT);
             if (raw > 15 && raw % 3 == 0)
             {
-                display.DrawPixel(64, raw, true); 
+                Paint_DrawPoint(64, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT); 
             }
             
         }
     }
     
-    // Data for first unit
-    DisplayCentered("1", 0, 63, 20, Font_7x10, true);
-
-    // Data for first unit
-    DisplayCentered("2", 64, 127, 20, Font_7x10, true);
+    Paint_TextCentered("1", 0, 63, 20, Font8, BLACK, WHITE);
+    Paint_TextCentered("2", 64, 127, 20, Font8, BLACK, WHITE);
 
     for (size_t i = 0; i < 2; i++)
     {
@@ -350,72 +385,57 @@ void DrawEffectsMenu() {
         const int y2 = 48;
         if (selected != EFFECT_NONE)
         {
-            display.SetCursor(0, 16);
-            DisplayCentered(effectLabels[selected], x1, x2, 35, Font_7x10, true);
-            display.SetCursor(96, 60);
-            DisplayCentered(effectSlot[i].isActive ? "On" : "Off", x1, x2, 48, Font_7x10, true);
+            Paint_TextCentered(effectLabels[selected], x1, x2, 35, Font8, BLACK, WHITE);
+            Paint_TextCentered(effectSlot[i].isActive ? "On" : "Off", x1, x2, 48, Font8, BLACK, WHITE);
 
         }
         else
         {
-            DisplayCentered(" - ", x1, x2, y1, Font_7x10, true);
-            DisplayCentered(" - ", x1, x2, y2, Font_7x10, true);
+            Paint_TextCentered(" - ", x1, x2, y1, Font8, BLACK, WHITE);
+            Paint_TextCentered(" - ", x1, x2, y2, Font8, BLACK, WHITE);
         }
     }
 }
 
-void DrawMenu() {
-    // Clear display before showing new menu
-    display.Fill(false);
-
-    AssignParamsForPage(currentPage);
+void DrawPages() {
     
     // Display different pages depending on selected menu
     switch (currentPage) {
 
         case MAIN_PAGE:
-            DrawMainMenu();
+            DrawMainPage();
             break;
             
         case OSCILLATOR_1_PAGE:
-
-            DrawParamPage("Oscillator 1", 
+            SetParamPageContent("Oscillator 1", 
             OSC_WAVEFORM_1, OSC_PITCH_1, OSC_DETUNE_1, OSC_AMP_1);
-            display.SetCursor(110, 0);
-            display.WriteString(params.voice.osc[0].active ? "On" : "Off", Font_6x8, true);
+            Paint_DrawString_EN(110, 0,params.voice.osc[0].active ? "On" : "Off", &Font8, WHITE, BLACK);
             break;  
 
         case OSCILLATOR_2_PAGE:
-
-            DrawParamPage("Oscillator 2", 
+            SetParamPageContent("Oscillator 2", 
             OSC_WAVEFORM_2, OSC_PITCH_2, OSC_DETUNE_2, OSC_AMP_2);
-            display.SetCursor(110, 0);
-            display.WriteString(params.voice.osc[1].active ? "On" : "Off", Font_6x8, true);
+            Paint_DrawString_EN(110, 0,params.voice.osc[1].active ? "On" : "Off", &Font8, WHITE, BLACK);
             break;
 
         case OSCILLATOR_3_PAGE:
-
-            DrawParamPage("Oscillator 3", 
+            SetParamPageContent("Oscillator 3", 
             OSC_WAVEFORM_3, OSC_PITCH_3, OSC_DETUNE_3, OSC_AMP_3);
-            display.SetCursor(110, 0);
-            display.WriteString(params.voice.osc[2].active ? "On" : "Off", Font_6x8, true);
+            Paint_DrawString_EN(110, 0,params.voice.osc[2].active ? "On" : "Off", &Font8, WHITE, BLACK);
             break;  
             
         case AMPLIFIER_PAGE:
-
-            DrawParamPage("Amplifier", 
+            SetParamPageContent("Amplifier", 
             ADSR_ATTACK, ADSR_DECAY, ADSR_SUSTAIN, ADSR_RELEASE);
             break;          
 
         case FILTER_PAGE:
-
-            DrawParamPage("Filter", 
+            SetParamPageContent("Filter", 
             FILTER_CUTOFF, FILTER_RESONANCE, NONE, NONE);
             break;  
 
         case LFO_PAGE:
-
-            DrawParamPage("LFO", 
+            SetParamPageContent("LFO", 
             LFO_WAVEFORM, LFO_FREQ, LFO_DEPTH, NONE);
             break;  
             
@@ -424,22 +444,22 @@ void DrawMenu() {
             break;
 
         case OVERDRIVE_PAGE:
-            DrawParamPage("Overdrive", 
+            SetParamPageContent("Overdrive", 
             EFFECT_OVERDRIVE_DRIVE, NONE, NONE, NONE);
             break;
 
         case CHORUS_PAGE:
-            DrawParamPage("Chorus", 
+            SetParamPageContent("Chorus", 
             EFFECT_CHORUS_FREQ, EFFECT_CHORUS_DEPTH, EFFECT_CHORUS_FBK, EFFECT_CHORUS_PAN);
             break;
 
         case COMPRESSOR_PAGE:
-            DrawParamPage("Compressor", 
+            SetParamPageContent("Compressor", 
             EFFECT_COMPRESSOR_ATTACK, EFFECT_COMPRESSOR_RELEASE, EFFECT_COMPRESSOR_THRESHOLD, EFFECT_COMPRESSOR_RATIO);
             break;
 
         case REVERB_PAGE:
-            DrawParamPage("Reverb", 
+            SetParamPageContent("Reverb", 
             EFFECT_REVERB_FBK, EFFECT_REVERB_LPFREQ,EFFECT_REVERB_DRYWET, NONE);
             break;
             
@@ -455,50 +475,14 @@ void DrawMenu() {
         case LOAD_PAGE  :
             break;
     }    
-    display.Update();
-}
-
-inline void DisplayCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y, FontDef font, bool color) {
-    // Calculate text length (number of characters)
-    int textLength = 0;
-    for (const char* c = text; *c != '\0'; c++) {
-        textLength++;
-    }
-    
-    // Determine character width based on font
-    int charWidth = 0;
-    if (font.data == Font_6x8.data) {
-        charWidth = 6;  // For font 6x8
-    } else if (font.data == Font_7x10.data) {
-        charWidth = 7;  // For font 7x10
-    } else {
-        charWidth = 8;  // For other fonts
-    }
-    
-    int textWidth = textLength * charWidth;
-    
-    // Calculate x-coordinate for centering
-    uint8_t middleX = x1 + (x2 - x1) / 2;
-    uint8_t startX = middleX - (textWidth / 2);
-    
-    // Correction if text goes beyond boundaries
-    if (startX < x1) startX = x1;
-    if (startX + textWidth > x2) startX = x2 - textWidth;
-    
-    // Output text
-    display.SetCursor(startX, y);
-    display.WriteString(text, font, color);
+    OLED_1in5_Display(background_black);
+    InitParamBlocks();
 }
 
 void SetPage(MenuPage newPage) {
-    currentPage = newPage;
-    
+    currentPage = newPage;    
     AssignParamsForPage(newPage); 
-}
-
-void EditParameterPage(MenuPage page) {
-    currentPage = page;
-    AssignParamsForPage(page);
+    DrawPages();
 }
 
 void EncoderChangeEffect() {
@@ -517,5 +501,6 @@ void EncoderChangeEffect() {
         }
     }
 }
+
 
 #endif

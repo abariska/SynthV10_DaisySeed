@@ -43,6 +43,7 @@ int main(void)
 
     hw.Configure();
     hw.Init();
+    // hw.StartLog(true);
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
@@ -51,29 +52,33 @@ int main(void)
         voice[i].Init(samplerate, blocksize);
     };
     EffectsInit(samplerate);
-
-    Display_Init();
-    InitMcp();
+    InitImages();
+    // InitMcp();
     InitLeds();
     MidiInit();
     InitSynthParams();
     InitLfo(samplerate);
+    InitDisplayPages();
+    DrawIntroPage();
 
-    AssignParamsForPage(currentPage); 
-    UpdateParamsWithEncoders();
+    hw.DelayMs(1000);
 
     hw.StartAudio(AudioCallback);
+
+    currentPage = MenuPage::OSCILLATOR_1_PAGE;
+    SetPage(currentPage);
+    InitParamBlocks();
 
     TimerDisplay();
 
     while (1)
     {
-        // hw.PrintLine("Loop start %d", System::GetNow());
-        mcp_1.Read();
-        mcp_2.Read();
+        // mcp_1.Read();
+        // mcp_2.Read();
         ProcessButtons();
         ProcessLeds(); 
         UpdateEncoders();
+        CheckBlockParamForUpdate();
         UpdateParamsWithEncoders();
         // MIDI processing
         midi.Listen();
@@ -82,12 +87,6 @@ int main(void)
             auto msg = midi.PopEvent();
             HandleMidiMessage(msg);
     }
-        // hw.PrintLine("Loop end %d", System::GetNow());
-        // System::Delay(100);  // Add delay for better output
-
-        // if (button_lfo.IsPressed()) {
-        //     synth.HandleNoteOn(440.0f, 1.0f);
-        // }
     }
 }
 
@@ -106,8 +105,6 @@ void UpdateEncoders() {
 void ProcessButtons() {
     
     UpdateButtons();
-
-
 
     bool shift_pressed = button_shift.IsPressed();
 
@@ -197,7 +194,7 @@ void ProcessLeds() {
 }
 
 void DisplayView(void* data) {
-    DrawMenu();
+    
 }
 
 void TimerDisplay() {

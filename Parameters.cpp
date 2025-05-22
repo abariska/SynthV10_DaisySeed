@@ -11,7 +11,7 @@ void InitSynthParams() {
     params.voice.osc[1].active = false;
     params.voice.osc[2].active = false;
     for (size_t o = 0; o < OSC_NUM; o++) {
-        params.voice.osc[o].waveform = 0.0f;
+        params.voice.osc[o].waveform = 1.0f;
         params.voice.osc[o].freq = 440.0f;
         params.voice.osc[o].pw = 0.5f;
         params.voice.osc[o].amp = 0.1f;
@@ -19,7 +19,7 @@ void InitSynthParams() {
         params.voice.osc[o].detune = 0.0f;
     }
     
-    params.voice.filter.cutoff = 10000.0f;
+    params.voice.filter.cutoff = 99.99f;
     params.voice.filter.resonance = 0.0f;
     
     params.voice.adsr.attack = 0.01f;

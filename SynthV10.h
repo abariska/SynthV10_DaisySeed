@@ -10,7 +10,6 @@
 #include "Button.h"
 #include "Encoder_mcp.h"
 #include "Voice.h"
-#include "DisplayOLED.h"
 #include "Menu.h"
 #include "Effects.h"
 #include "MidiHandler.h"
@@ -32,7 +31,6 @@ using namespace daisysp;
 #define VOICE_4  seed::D19
 
 // Global objects
-extern OledDisplay<SSD130x4WireSpi128x64Driver> display;
 extern VoiceUnit voice[NUM_VOICES];
 extern MidiUsbHandler midi;
 extern CpuLoadMeter cpu_load;
@@ -103,5 +101,6 @@ void UpdateButtons(){
     sw_encoder_3.Update(currentTime);
     sw_encoder_4.Update(currentTime);
 }
+
 
 #endif
