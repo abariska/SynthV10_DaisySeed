@@ -65,7 +65,8 @@ int main(void)
 
     hw.StartAudio(AudioCallback);
 
-    currentPage = MenuPage::OSCILLATOR_1_PAGE;
+
+    currentPage = MenuPage::FX_PAGE;
     SetPage(currentPage);
     InitParamBlocks();
 
@@ -78,8 +79,8 @@ int main(void)
         ProcessButtons();
         ProcessLeds(); 
         UpdateEncoders();
-        CheckBlockParamForUpdate();
-        UpdateParamsWithEncoders();
+        // CheckBlockParamForUpdate();
+        // UpdateParamsWithEncoders();
         // MIDI processing
         midi.Listen();
         while(midi.HasEvents())

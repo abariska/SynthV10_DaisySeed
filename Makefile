@@ -15,7 +15,7 @@ C_INCLUDES += -I$(OLED_DIR)
 # Library Locations
 LIBDAISY_DIR = ../DaisyExamples/libDaisy
 DAISYSP_DIR = ../DaisyExamples/DaisySP
-OLED_DIR = ../lib/OLED_1.5_Daisy_Seed
+OLED_DIR = OLED_1.5_Daisy_Seed
 
 # Core location, and generic Makefile.
 SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core

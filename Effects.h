@@ -49,8 +49,8 @@ void EffectsInit(float samplerate) {
         effectSlot[i].reverb.Init(samplerate);
         effectSlot[i].compressor.Init(samplerate);
     }
-    effectSlot[0].selectedEffect = EFFECT_NONE;
-    effectSlot[1].selectedEffect = EFFECT_NONE;
+    effectSlot[0].selectedEffect = EFFECT_OVERDRIVE;
+    effectSlot[1].selectedEffect = EFFECT_CHORUS;
 }
 
 void ProcessEffects(FXSlot& slot, float in, float& outL, float& outR) {

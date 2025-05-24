@@ -10,7 +10,12 @@
 
 using namespace daisysp;
 
-
+enum Waves {
+    TRI,
+    SAW,
+    SQR,
+    OFF
+};
 
 // Structure for storing synthesizer parameters
 struct SynthParams {

@@ -31,7 +31,7 @@ void InitSynthParams() {
     // Global LFO initialization
     params.lfo.freq = 0.5f;
     params.lfo.depth = 0.0f;
-    params.lfo.waveform = 0.0f;
+    params.lfo.waveform = 2.0f;
 
     params.global.isMono = true;
     

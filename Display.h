@@ -53,6 +53,9 @@ UBYTE *intro_page;
 UWORD intro_page_size = ((FULL_PAGE_WIDTH%2==0)? (FULL_PAGE_WIDTH/2)
     : (FULL_PAGE_WIDTH/2+1)) * FULL_PAGE_HEIGHT;
 
+UBYTE *wave_buffer;
+UWORD wave_buffer_size = ((32%2==0)? (32/2) : (32/2+1)) * 16; 
+
 void InitImages(){
 
     if((background_black = (UBYTE *)malloc(background_black_size)) == NULL) {
@@ -68,6 +71,11 @@ void InitImages(){
     }
     if((intro_page = (UBYTE *)malloc(intro_page_size)) == NULL) {
         printf("Failed to allocate memory for intro page\r\n");
+        return; // Вихід з функції, якщо не вдалося виділити пам'ять
+    }
+
+    if((wave_buffer = (UBYTE *)malloc(wave_buffer_size)) == NULL) {
+        printf("Failed to allocate memory for wave buffer\r\n");
         return; // Вихід з функції, якщо не вдалося виділити пам'ять
     }
 
