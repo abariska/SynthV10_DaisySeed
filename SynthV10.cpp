@@ -79,7 +79,6 @@ int main(void)
         ProcessButtons();
         ProcessLeds(); 
         UpdateEncoders();
-        CheckBlockParamForUpdate();
         UpdateParamsWithEncoders();
         // MIDI processing
         midi.Listen();
@@ -127,7 +126,11 @@ void ProcessButtons() {
         }
     } 
     else if (currentPage == MenuPage::MAIN_PAGE) {
-        
+        for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+            if (sw_encoder_1.RisingEdge()) {
+                isParamEditMode[i] = !isParamEditMode[i];
+            }
+        }
     }
     else {
         if (shift_pressed) {    

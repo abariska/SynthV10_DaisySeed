@@ -8,6 +8,11 @@
 #include "Encoder_mcp.h"
 #include "OLED_1.5_Daisy_Seed/fonts.h"
 #include "OLED_1.5_Daisy_Seed/ImageData.h"
+#include "OLED_1.5_Daisy_Seed/GUI_Paint.h"
+#include "OLED_1.5_Daisy_Seed/OLED_Driver.h"
+#include "OLED_1.5_Daisy_Seed/DEV_Config.h"
+#include "Button.h"
+#include "MidiHandler.h"
 
 using namespace daisy;
 
@@ -18,7 +23,13 @@ extern Enc_mcp encoder_3;
 extern Enc_mcp encoder_4;
 extern SynthParams params;
 extern int encoderIncs[4];
+extern bool isParamEditMode[4];
 char page_name[32];
+
+// Змінні для ефекту блимання
+uint32_t lastBlinkTime = 0;
+bool blinkState = false;
+const uint32_t BLINK_INTERVAL_MS = 500; // 0.5 секунди
 
 const uint8_t yBlockLabel = 10;
 const uint8_t yBlockValue = 30;
@@ -125,36 +136,34 @@ void DrawWaveformImage(int waveform){
     }
 }
 
+void InitOneParamBlock(int blockIndex, float value, const char* label){
+
+    Paint_NewImage(param_block[blockIndex], PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, BLACK); 
+    Paint_SetScale(16);
+    Paint_Clear(BLACK);
+    
+    Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
+    switch (allParams[slots[blockIndex].assignedParam].valueType) {
+            case REGULAR:
+                Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
+                break;
+            case X100:
+                Paint_NumCentered(value * 100, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
+                break;
+            case WAVEFORM:
+                DrawWaveformImage((Waves)value);
+                break;
+            }
+    OLED_1in5_Display_Part(param_block[blockIndex], BLOCK_X_START[blockIndex], BLOCK_TOP_LINE_Y, BLOCK_X_END[blockIndex], BLOCK_BOTTOM_LINE_Y);
+}
+
 void InitParamBlocks(){
     if (currentPage == FX_PAGE) {
         return;
     }
     
     for (size_t i = 0; i < 4; i++) {
-
-        Paint_NewImage(param_block[i], PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, BLACK); 
-        Paint_SetScale(16);
-        Paint_Clear(BLACK);
-        
-        const char* label = allParams[slots[i].assignedParam].label;
-        const float value = *allParams[slots[i].assignedParam].target_param;
-        
-        
-        switch (allParams[slots[i].assignedParam].valueType) {
-            case REGULAR:
-                Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
-                Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
-                break;
-            case X100:
-                Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
-                Paint_NumCentered(value * 100, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
-                break;
-            case WAVEFORM:
-                Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
-                DrawWaveformImage((Waves)value);
-                break;
-        }
-        OLED_1in5_Display_Part(param_block[i], BLOCK_X_START[i], BLOCK_TOP_LINE_Y, BLOCK_X_END[i], BLOCK_BOTTOM_LINE_Y);
+        InitOneParamBlock(i, *allParams[slots[i].assignedParam].target_param, allParams[slots[i].assignedParam].label);   
     }
 }
 
@@ -162,76 +171,101 @@ void CheckBlockParamForUpdate(){
 
     static float current_param_value[NUM_PARAM_BLOCKS];
     static float new_param_value[NUM_PARAM_BLOCKS];
-    static bool initialized = false;
-    
-    if (!initialized) {
-        for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-            if (allParams[slots[i].assignedParam].target_param != NULL) {
-                new_param_value[i] = *allParams[slots[i].assignedParam].target_param;
-            }
-            if (allParams[slots[i].assignedParam].target_param != NULL) {
-                current_param_value[i] = *allParams[slots[i].assignedParam].target_param;
-            }
-        }
-        initialized = true;
-    }
 
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+        new_param_value[i] = *allParams[slots[i].assignedParam].target_param;
         if (new_param_value[i] != current_param_value[i]) {
             current_param_value[i] = new_param_value[i];
             slots[i].need_update = true;
         }
-        slots[i].need_update = true;  // must be false !!!!!!!!!!!!!!
+    }
+}
+
+void UpdateBlinkState() {
+    uint32_t currentTime = System::GetNow();
+    
+    if (currentTime - lastBlinkTime >= BLINK_INTERVAL_MS) {
+        blinkState = !blinkState;
+        lastBlinkTime = currentTime;
+    }
+}
+
+void EditBlockParam(int blockIndex) {
+    UpdateBlinkState();
+    
+    ParamUnitName paramID = slots[blockIndex].assignedParam;
+    ParamUnitData& param_unit = allParams[paramID];
+
+    uint16_t textColor = blinkState ? BLACK : WHITE;
+    uint16_t bgColor = blinkState ? WHITE : BLACK;
+    
+    Paint_SelectImage(param_block[blockIndex]); 
+    Paint_SetScale(16);
+    Paint_Clear(bgColor);
+    
+    Paint_TextCentered(param_unit.label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
+    
+    if (paramID != NONE) {
+        int value = (int)slots[blockIndex].assignedParam;
+        
+        value += encoderIncs[blockIndex] * param_unit.sensitivity;
+        
+        if (value > (int)NONE - 1) {
+            value = (int)NONE - 1;
+        } else if (value < 0) {
+            value = 0;
+        }
+        
+        slots[blockIndex].assignedParam = (ParamUnitName)value;
+        InitOneParamBlock(blockIndex, *allParams[slots[blockIndex].assignedParam].target_param, allParams[slots[blockIndex].assignedParam].label);
     }
 }
 
 void UpdateParamsWithEncoders() {
 
-    if (currentPage == MenuPage::FX_PAGE) {
-        EncoderChangeEffect();
-        return;
-    }
-
-    for (size_t i = 0; i < 4; i++) {
-        if (!slots[i].need_update) continue;
-
-        ParamUnitName paramID = slots[i].assignedParam;
-        if (paramID == NONE) continue;
-
-        ParamUnitData& param_unit = allParams[paramID];     
-        if (param_unit.target_param != nullptr) {
-            float value;
-            
-            value += encoderIncs[i] * param_unit.sensitivity;
-
-            if (value > param_unit.max) {
-                value = param_unit.max;
-            } else if (value < param_unit.min) {
-                value = param_unit.min;
+    switch (currentPage)
+    {
+    case MAIN_PAGE:
+        for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+            if (isParamEditMode[i]) {
+                EditBlockParam(i);
             }
-            
-            Paint_NewImage(param_block[i], PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, BLACK); 
-            Paint_SetScale(16);
-            Paint_Clear(BLACK);
-            Paint_TextCentered(param_unit.label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
-
-            switch (param_unit.valueType) {
-                case REGULAR:
-                    value = (int)value;
-                    Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
-                    break;
-                case X100:
-                    value = (int)(value * 100);
-                    Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
-                    break;
-                case WAVEFORM:
-                    value = (int)value;
-                    DrawWaveformImage((Waves)value);
-                    break;
+            else {
+                InitOneParamBlock(i, *allParams[slots[i].assignedParam].target_param, allParams[slots[i].assignedParam].label);
             }
-            OLED_1in5_Display_Part(param_block[i], BLOCK_X_START[i], BLOCK_TOP_LINE_Y, BLOCK_X_END[i], BLOCK_BOTTOM_LINE_Y);
         }
-        slots[i].need_update = false;
+        break;
+    case FX_PAGE:
+        EncoderChangeEffect();
+        break;
+    
+    default:
+        CheckBlockParamForUpdate();
+
+        for (size_t i = 0; i < 4; i++) {
+            if (!slots[i].need_update) continue;
+
+            ParamUnitName paramID = slots[i].assignedParam;
+            if (paramID == NONE) continue;
+
+            ParamUnitData& param_unit = allParams[paramID];     
+            if (param_unit.target_param != nullptr) {
+                float value = *param_unit.target_param;
+                
+                value += encoderIncs[i] * param_unit.sensitivity;
+
+                if (value > param_unit.max) {
+                    value = param_unit.max;
+                } else if (value < param_unit.min) {
+                    value = param_unit.min;
+                }
+                
+                *param_unit.target_param = value;
+                InitOneParamBlock(i, value, param_unit.label);
+            }
+            slots[i].need_update = false;
+        }
+        break;
     }
 }
 
@@ -240,7 +274,7 @@ void CpuUsageDisplay(){
     Paint_NumCentered(cpu_avg_load* 100, 100, 127, 0, 1, Font8, WHITE, BLACK);
 }
 
-inline void DrawMainPage()
+void DrawMainPage()
 {
     char prog_num[PROGRAM_NUMBER_LENGTH];
     char prog_name[PROGRAM_NAME_LENGTH];
