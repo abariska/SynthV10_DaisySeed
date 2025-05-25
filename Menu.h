@@ -107,10 +107,6 @@ void AssignParamsForPage(MenuPage page);
 
 void DrawWaveformImage(int waveform){
     
-    // Paint_NewImage(param_block, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, BLACK);
-    // Paint_SetScale(16); 
-    // Paint_Clear(BLACK); 
-    // Paint_SetPixel(0, 0, WHITE);
     switch (waveform)
     {
     case 0: // 0
@@ -217,21 +213,19 @@ void UpdateParamsWithEncoders() {
             Paint_NewImage(param_block[i], PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, BLACK); 
             Paint_SetScale(16);
             Paint_Clear(BLACK);
+            Paint_TextCentered(param_unit.label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
 
             switch (param_unit.valueType) {
                 case REGULAR:
                     value = (int)value;
-                    Paint_TextCentered(param_unit.label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
                     Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
                     break;
                 case X100:
                     value = (int)(value * 100);
-                    Paint_TextCentered(param_unit.label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
                     Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
                     break;
                 case WAVEFORM:
                     value = (int)value;
-                    Paint_TextCentered(param_unit.label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
                     DrawWaveformImage((Waves)value);
                     break;
             }
@@ -240,25 +234,6 @@ void UpdateParamsWithEncoders() {
         slots[i].need_update = false;
     }
 }
-
-inline void DrawMainPageLines()
-{
-    for (size_t raw = 0; raw < FULL_PAGE_HEIGHT; raw++)
-    {
-        for (size_t column = 0; column < FULL_PAGE_WIDTH; column += 2)
-        {
-            if (raw == 15)
-                for (size_t i = 0; i < FULL_PAGE_WIDTH; i += 3)
-                    Paint_DrawPoint(i, raw, 0x1, DOT_PIXEL_1X1, DOT_STYLE_DFT);
-            else if (raw > 15 && raw % 3 == 0)
-            {
-                Paint_DrawPoint(30, raw, 0x1, DOT_PIXEL_1X1, DOT_STYLE_DFT);
-                Paint_DrawPoint(64, raw, 0x1, DOT_PIXEL_1X1, DOT_STYLE_DFT);   
-                Paint_DrawPoint(98, raw, 0x1, DOT_PIXEL_1X1, DOT_STYLE_DFT);
-            }
-        }
-    }
-} 
 
 void CpuUsageDisplay(){
     float cpu_avg_load = cpu_load.GetAvgCpuLoad();
@@ -432,7 +407,7 @@ void DrawPages() {
     
     else if (currentPage == FX_PAGE)
     {
-        DrawEffectsMenu();
+        DrawFXLines();
     }
     
     else {
