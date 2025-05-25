@@ -17,6 +17,12 @@ enum Waves {
     OFF
 };
 
+enum ValueType {
+    REGULAR,
+    X100,
+    WAVEFORM
+};
+
 // Structure for storing synthesizer parameters
 struct SynthParams {
     // Single voice template with all settings
@@ -90,7 +96,6 @@ struct SynthParams {
         float lpFreq;         // Low-pass filter frequency
         bool isActive;        // Is the effect active
     } reverbParams;
-
 
 };
 

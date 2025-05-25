@@ -79,8 +79,8 @@ int main(void)
         ProcessButtons();
         ProcessLeds(); 
         UpdateEncoders();
-        // CheckBlockParamForUpdate();
-        // UpdateParamsWithEncoders();
+        CheckBlockParamForUpdate();
+        UpdateParamsWithEncoders();
         // MIDI processing
         midi.Listen();
         while(midi.HasEvents())
@@ -125,7 +125,11 @@ void ProcessButtons() {
                 SelectEffectPage(1);
             }
         }
-    } else {
+    } 
+    else if (currentPage == MenuPage::MAIN_PAGE) {
+        
+    }
+    else {
         if (shift_pressed) {    
             if (button_osc_1.RisingEdge()) {
                 params.voice.osc[0].active = !params.voice.osc[0].active;

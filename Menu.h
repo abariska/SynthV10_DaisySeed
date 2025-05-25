@@ -20,6 +20,9 @@ extern SynthParams params;
 extern int encoderIncs[4];
 char page_name[32];
 
+const uint8_t yBlockLabel = 10;
+const uint8_t yBlockValue = 30;
+
 enum MenuPage {
     MAIN_PAGE,
     OSCILLATOR_1_PAGE,
@@ -84,7 +87,7 @@ struct ParamUnitData{
     float min;
     float max;
     float sensitivity;
-    bool isWaveform;
+    ValueType valueType;
 } allParams[ParamUnitName::NONE + 1];
 
 struct ParamSlot {
@@ -96,8 +99,8 @@ void EncoderChangeEffect();
 void DrawPages();
 void DrawEffectsMenu();
 
-void InitParam(int index, float* target, const char* label, float min, float max, float sensitivity, bool isWaveform) {
-    allParams[index] = { target, label, min, max, sensitivity, isWaveform };
+void InitParam(int index, float* target, const char* label, float min, float max, float sensitivity, ValueType valueType) {
+    allParams[index] = { target, label, min, max, sensitivity, valueType };
 }
 
 void AssignParamsForPage(MenuPage page);
@@ -130,6 +133,7 @@ void InitParamBlocks(){
     if (currentPage == FX_PAGE) {
         return;
     }
+    
     for (size_t i = 0; i < 4; i++) {
 
         Paint_NewImage(param_block[i], PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, BLACK); 
@@ -137,14 +141,22 @@ void InitParamBlocks(){
         Paint_Clear(BLACK);
         
         const char* label = allParams[slots[i].assignedParam].label;
+        const float value = *allParams[slots[i].assignedParam].target_param;
         
-        Paint_TextCentered(label, 0, 32, 10, Font12, WHITE, BLACK);
-        if (allParams[slots[i].assignedParam].isWaveform) {
-            const float value = *allParams[slots[i].assignedParam].target_param;
-            DrawWaveformImage((int)value);
-        } else {
-            const float value = *allParams[slots[i].assignedParam].target_param * 100;
-            Paint_NumCentered((int)value, 0, 32, 30, 0, Font12, WHITE, BLACK);
+        
+        switch (allParams[slots[i].assignedParam].valueType) {
+            case REGULAR:
+                Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
+                Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
+                break;
+            case X100:
+                Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
+                Paint_NumCentered(value * 100, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
+                break;
+            case WAVEFORM:
+                Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
+                DrawWaveformImage((Waves)value);
+                break;
         }
         OLED_1in5_Display_Part(param_block[i], BLOCK_X_START[i], BLOCK_TOP_LINE_Y, BLOCK_X_END[i], BLOCK_BOTTOM_LINE_Y);
     }
@@ -183,10 +195,6 @@ void UpdateParamsWithEncoders() {
         EncoderChangeEffect();
         return;
     }
-    
-    const uint8_t yLabel = 10;
-    const uint8_t yValue = 30;
-    int param_value;
 
     for (size_t i = 0; i < 4; i++) {
         if (!slots[i].need_update) continue;
@@ -210,27 +218,25 @@ void UpdateParamsWithEncoders() {
             Paint_SetScale(16);
             Paint_Clear(BLACK);
 
-            if (param_unit.isWaveform) {
-                Paint_TextCentered(param_unit.label, 0, PARAM_BLOCK_WIDTH, yLabel, Font12, WHITE, BLACK);
-                DrawWaveformImage((Waves)value);
-                OLED_1in5_Display_Part(param_block[i], BLOCK_X_START[i], BLOCK_TOP_LINE_Y, BLOCK_X_END[i], BLOCK_BOTTOM_LINE_Y);
-                continue;
+            switch (param_unit.valueType) {
+                case REGULAR:
+                    value = (int)value;
+                    Paint_TextCentered(param_unit.label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
+                    Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
+                    break;
+                case X100:
+                    value = (int)(value * 100);
+                    Paint_TextCentered(param_unit.label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
+                    Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, WHITE, BLACK);
+                    break;
+                case WAVEFORM:
+                    value = (int)value;
+                    Paint_TextCentered(param_unit.label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, WHITE, BLACK);
+                    DrawWaveformImage((Waves)value);
+                    break;
             }
-            
-            if (paramID == OSC_PITCH_1 || 
-                paramID == OSC_PITCH_2 || 
-                paramID == OSC_PITCH_3 ||
-                paramID == FILTER_CUTOFF) {
-                param_value = (int)value;
-            } 
-            else {
-                param_value = (int)(value * 100);
-            }
-            
-            Paint_TextCentered(param_unit.label, 0, PARAM_BLOCK_WIDTH, yLabel, Font12, WHITE, BLACK);
-            Paint_NumCentered(param_value, 0, PARAM_BLOCK_WIDTH, yValue, 0, Font12, WHITE, BLACK);
             OLED_1in5_Display_Part(param_block[i], BLOCK_X_START[i], BLOCK_TOP_LINE_Y, BLOCK_X_END[i], BLOCK_BOTTOM_LINE_Y);
-            }
+        }
         slots[i].need_update = false;
     }
 }
@@ -277,8 +283,6 @@ inline void DrawMainPage()
     OLED_1in5_Display(background_black);
 }
 
-
-
 void SetPageName(const char* name) {
     strcpy(page_name, name);
 }
@@ -296,10 +300,10 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = FILTER_RESONANCE;
             slots[2].assignedParam = ADSR_ATTACK;
             slots[3].assignedParam = ADSR_DECAY;
-            InitParam(FILTER_CUTOFF, &params.voice.filter.cutoff, "Cut", 50.0f, 15000.0f, 10.0f, false);
-            InitParam(FILTER_RESONANCE, &params.voice.filter.resonance, "Res", 0.0f, 1.0f, 0.01f, false);
-            InitParam(ADSR_ATTACK, &params.voice.adsr.attack, "Att", 0.0f, 10.0f, 0.01f, false);
-            InitParam(ADSR_DECAY, &params.voice.adsr.decay, "Dec", 0.0f, 10.0f, 0.01f, false);
+            InitParam(FILTER_CUTOFF, &params.voice.filter.cutoff, "Cut", 50.0f, 15000.0f, 10.0f, ValueType::REGULAR);
+            InitParam(FILTER_RESONANCE, &params.voice.filter.resonance, "Res", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(ADSR_ATTACK, &params.voice.adsr.attack, "Att", 0.0f, 10.0f, 0.01f, ValueType::X100);
+            InitParam(ADSR_DECAY, &params.voice.adsr.decay, "Dec", 0.0f, 10.0f, 0.01f, ValueType::X100);
             break;
         case OSCILLATOR_1_PAGE:
             SetPageName("Oscillator 1");
@@ -307,10 +311,10 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = OSC_PITCH_1;
             slots[2].assignedParam = OSC_DETUNE_1;
             slots[3].assignedParam = OSC_AMP_1;
-            InitParam(OSC_WAVEFORM_1, &params.voice.osc[0].waveform, "Wav", 0.0f, 3.0f, 1.0f, true);
-            InitParam(OSC_PITCH_1, &params.voice.osc[0].pitch, "Sem", -36.0f, 36.0f, 1.0f, false);
-            InitParam(OSC_DETUNE_1, &params.voice.osc[0].detune, "Det", -0.5f, 0.5f, 0.01f, false);
-            InitParam(OSC_AMP_1, &params.voice.osc[0].amp, "Amp", 0.0f, 1.0f, 0.01f, false);
+            InitParam(OSC_WAVEFORM_1, &params.voice.osc[0].waveform, "Wav", 0.0f, 3.0f, 1.0f, ValueType::WAVEFORM);
+            InitParam(OSC_PITCH_1, &params.voice.osc[0].pitch, "Sem", -36.0f, 36.0f, 1.0f, ValueType::REGULAR);
+            InitParam(OSC_DETUNE_1, &params.voice.osc[0].detune, "Det", -0.5f, 0.5f, 0.01f, ValueType::X100);
+            InitParam(OSC_AMP_1, &params.voice.osc[0].amp, "Amp", 0.0f, 1.0f, 0.01f, ValueType::X100);
             break;      
         case OSCILLATOR_2_PAGE:
             SetPageName("Oscillator 2");
@@ -318,10 +322,10 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = OSC_PITCH_2;
             slots[2].assignedParam = OSC_DETUNE_2;
             slots[3].assignedParam = OSC_AMP_2;
-            InitParam(OSC_WAVEFORM_2, &params.voice.osc[1].waveform, "Wav", 0.0f, 3.0f, 1.0f, true);
-            InitParam(OSC_PITCH_2, &params.voice.osc[1].pitch, "Sem", -36.0f, 36.0f, 1.0f, false);
-            InitParam(OSC_DETUNE_2, &params.voice.osc[1].detune, "Det", -0.5f, 0.5f, 0.01f, false);
-            InitParam(OSC_AMP_2, &params.voice.osc[1].amp, "Amp", 0.0f, 1.0f, 0.01f, false);
+            InitParam(OSC_WAVEFORM_2, &params.voice.osc[1].waveform, "Wav", 0.0f, 3.0f, 1.0f, ValueType::WAVEFORM);
+            InitParam(OSC_PITCH_2, &params.voice.osc[1].pitch, "Sem", -36.0f, 36.0f, 1.0f, ValueType::REGULAR);
+            InitParam(OSC_DETUNE_2, &params.voice.osc[1].detune, "Det", -0.5f, 0.5f, 0.01f, ValueType::X100);
+            InitParam(OSC_AMP_2, &params.voice.osc[1].amp, "Amp", 0.0f, 1.0f, 0.01f, ValueType::X100);
             break;      
         case OSCILLATOR_3_PAGE:
             SetPageName("Oscillator 3");
@@ -329,10 +333,10 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = OSC_PITCH_3;
             slots[2].assignedParam = OSC_DETUNE_3;
             slots[3].assignedParam = OSC_AMP_3;
-            InitParam(OSC_WAVEFORM_3, &params.voice.osc[2].waveform, "Wav", 0.0f, 3.0f, 1.0f, true);
-            InitParam(OSC_PITCH_3, &params.voice.osc[2].pitch, "Sem", -36.0f, 36.0f, 1.0f, false);
-            InitParam(OSC_DETUNE_3, &params.voice.osc[2].detune, "Det", -0.5f, 0.5f, 0.01f, false);
-            InitParam(OSC_AMP_3, &params.voice.osc[2].amp, "Amp", 0.0f, 1.0f, 0.01f, false);
+            InitParam(OSC_WAVEFORM_3, &params.voice.osc[2].waveform, "Wav", 0.0f, 3.0f, 1.0f, ValueType::WAVEFORM);
+            InitParam(OSC_PITCH_3, &params.voice.osc[2].pitch, "Sem", -36.0f, 36.0f, 1.0f, ValueType::REGULAR);
+            InitParam(OSC_DETUNE_3, &params.voice.osc[2].detune, "Det", -0.5f, 0.5f, 0.01f, ValueType::X100);
+            InitParam(OSC_AMP_3, &params.voice.osc[2].amp, "Amp", 0.0f, 1.0f, 0.01f, ValueType::X100);
             break;  
         case AMPLIFIER_PAGE:
             SetPageName("Amplifier");
@@ -340,26 +344,26 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = ADSR_DECAY;
             slots[2].assignedParam = ADSR_SUSTAIN;
             slots[3].assignedParam = ADSR_RELEASE;
-            InitParam(ADSR_ATTACK, &params.voice.adsr.attack, "Att", 0.0f, 1.0f, 0.01f, false);
-            InitParam(ADSR_DECAY, &params.voice.adsr.decay, "Dec", 0.0f, 1.0f, 0.01f, false);
-            InitParam(ADSR_SUSTAIN, &params.voice.adsr.sustain, "Sus", 0.0f, 1.0f, 0.01f, false);
-            InitParam(ADSR_RELEASE, &params.voice.adsr.release, "Rel", 0.0f, 1.0f, 0.01f, false);
+            InitParam(ADSR_ATTACK, &params.voice.adsr.attack, "Att", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(ADSR_DECAY, &params.voice.adsr.decay, "Dec", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(ADSR_SUSTAIN, &params.voice.adsr.sustain, "Sus", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(ADSR_RELEASE, &params.voice.adsr.release, "Rel", 0.0f, 1.0f, 0.01f, ValueType::X100);
             break;  
         case FILTER_PAGE:
             SetPageName("Filter");
             slots[0].assignedParam = FILTER_CUTOFF;
             slots[1].assignedParam = FILTER_RESONANCE;
-            InitParam(FILTER_CUTOFF, &params.voice.filter.cutoff, "Cut", 50.0f, 15000.0f, 10.0f, false);
-            InitParam(FILTER_RESONANCE, &params.voice.filter.resonance, "Res", 0.0f, 1.0f, 0.01f, false);
+            InitParam(FILTER_CUTOFF, &params.voice.filter.cutoff, "Cut", 50.0f, 15000.0f, 10.0f, ValueType::REGULAR);
+            InitParam(FILTER_RESONANCE, &params.voice.filter.resonance, "Res", 0.0f, 1.0f, 0.01f, ValueType::X100);
             break;  
         case LFO_PAGE:
             SetPageName("LFO");
             slots[0].assignedParam = LFO_WAVEFORM;
             slots[1].assignedParam = LFO_FREQ;
             slots[2].assignedParam = LFO_DEPTH;
-            InitParam(LFO_WAVEFORM, &params.lfo.waveform, "Wav", 0.0f, 3.0f, 1.0f, true);
-            InitParam(LFO_FREQ, &params.lfo.freq, "Frq", 0.0f, 1.0f, 0.01f, false);
-            InitParam(LFO_DEPTH, &params.lfo.depth, "Amp", 0.0f, 1.0f, 0.01f, false);
+            InitParam(LFO_WAVEFORM, &params.lfo.waveform, "Wav", 0.0f, 3.0f, 1.0f, ValueType::WAVEFORM);
+            InitParam(LFO_FREQ, &params.lfo.freq, "Frq", 0.0f, 1.0f, 0.01f, ValueType::REGULAR);
+            InitParam(LFO_DEPTH, &params.lfo.depth, "Amp", 0.0f, 1.0f, 0.01f, ValueType::X100);
           break;
         case FX_PAGE:
             SetPageName("Effects");
@@ -367,7 +371,7 @@ void AssignParamsForPage(MenuPage page) {
         case OVERDRIVE_PAGE:
             SetPageName("Overdrive");
             slots[0].assignedParam = EFFECT_OVERDRIVE_DRIVE ;
-            InitParam(EFFECT_OVERDRIVE_DRIVE, &params.overdriveParams.drive, "Drive", 0.0f, 1.0f, 0.01f, false);
+            InitParam(EFFECT_OVERDRIVE_DRIVE, &params.overdriveParams.drive, "Drive", 0.0f, 1.0f, 0.01f, ValueType::X100);
             break;
         case CHORUS_PAGE: 
             SetPageName("Chorus");
@@ -375,10 +379,10 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = EFFECT_CHORUS_DEPTH;
             slots[2].assignedParam = EFFECT_CHORUS_FBK;
             slots[3].assignedParam = EFFECT_CHORUS_PAN;
-            InitParam(EFFECT_CHORUS_FREQ, &params.chorusParams.freq, "Freq", 0.0f, 1.0f, 0.01f, false);
-            InitParam(EFFECT_CHORUS_DEPTH, &params.chorusParams.depth, "Depth", 0.0f, 1.0f, 0.01f, false);
-            InitParam(EFFECT_CHORUS_FBK, &params.chorusParams.feedback, "FBK", 0.0f, 1.0f, 0.01f, false);
-            InitParam(EFFECT_CHORUS_PAN, &params.chorusParams.pan, "Pan", 0.0f, 1.0f, 0.01f, false);
+            InitParam(EFFECT_CHORUS_FREQ, &params.chorusParams.freq, "Freq", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(EFFECT_CHORUS_DEPTH, &params.chorusParams.depth, "Depth", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(EFFECT_CHORUS_FBK, &params.chorusParams.feedback, "FBK", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(EFFECT_CHORUS_PAN, &params.chorusParams.pan, "Pan", 0.0f, 1.0f, 0.01f, ValueType::X100);
             break;
         case COMPRESSOR_PAGE:
             SetPageName("Compressor");
@@ -386,19 +390,19 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = EFFECT_COMPRESSOR_RELEASE;
             slots[2].assignedParam = EFFECT_COMPRESSOR_THRESHOLD;
             slots[3].assignedParam = EFFECT_COMPRESSOR_RATIO;
-            InitParam(EFFECT_COMPRESSOR_ATTACK, &params.compressorParams.attack, "Att", 0.0f, 1.0f, 0.01f, false);
-            InitParam(EFFECT_COMPRESSOR_RELEASE, &params.compressorParams.release, "Rel", 0.0f, 1.0f, 0.01f, false);
-            InitParam(EFFECT_COMPRESSOR_THRESHOLD, &params.compressorParams.threshold, "Thr", 0.0f, 1.0f, 0.01f, false);
-            InitParam(EFFECT_COMPRESSOR_RATIO, &params.compressorParams.ratio, "Ratio", 0.0f, 1.0f, 0.01f, false);
+            InitParam(EFFECT_COMPRESSOR_ATTACK, &params.compressorParams.attack, "Att", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(EFFECT_COMPRESSOR_RELEASE, &params.compressorParams.release, "Rel", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(EFFECT_COMPRESSOR_THRESHOLD, &params.compressorParams.threshold, "Thr", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(EFFECT_COMPRESSOR_RATIO, &params.compressorParams.ratio, "Ratio", 0.0f, 1.0f, 0.01f, ValueType::X100);
             break;
         case REVERB_PAGE:
             SetPageName("Reverb");
             slots[0].assignedParam = EFFECT_REVERB_FBK;
             slots[1].assignedParam = EFFECT_REVERB_LPFREQ;
             slots[2].assignedParam = EFFECT_REVERB_DRYWET   ;
-            InitParam(EFFECT_REVERB_FBK, &params.reverbParams.feedback, "Fbk", 0.0f, 1.0f, 0.01f, false);
-            InitParam(EFFECT_REVERB_LPFREQ, &params.reverbParams.lpFreq, "Lpf", 0.0f, 1.0f, 0.01f, false);
-            InitParam(EFFECT_REVERB_DRYWET, &params.reverbParams.dryWet, "Wet", 0.0f, 1.0f, 0.01f, false);
+            InitParam(EFFECT_REVERB_FBK, &params.reverbParams.feedback, "Fbk", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(EFFECT_REVERB_LPFREQ, &params.reverbParams.lpFreq, "Lpf", 0.0f, 1.0f, 0.01f, ValueType::X100);
+            InitParam(EFFECT_REVERB_DRYWET, &params.reverbParams.dryWet, "Wet", 0.0f, 1.0f, 0.01f, ValueType::X100);
             break;
         default: 
             SetPageName(" - ");
@@ -406,7 +410,7 @@ void AssignParamsForPage(MenuPage page) {
             slots[1].assignedParam = NONE;
             slots[2].assignedParam = NONE;
             slots[3].assignedParam = NONE;
-            InitParam(NONE, nullptr, " - ", 0.0f, 1.0f, 0.01f, false);
+            InitParam(NONE, nullptr, " - ", 0.0f, 1.0f, 0.01f, ValueType::REGULAR);
             break;
     }
 }
