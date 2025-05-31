@@ -36,13 +36,13 @@ UBYTE *background_black;
 UWORD background_black_size = ((FULL_PAGE_WIDTH%2==0)? (FULL_PAGE_WIDTH/2)
     : (FULL_PAGE_WIDTH/2+1)) * FULL_PAGE_HEIGHT;
 
-UBYTE *preset_num_block;
-UWORD preset_num_black_size = ((PRESET_NUM_BLOCK_WIDTH%2==0)? (PRESET_NUM_BLOCK_WIDTH/2)
-    : (PRESET_NUM_BLOCK_WIDTH/2+1)) * PRESET_NUM_BLOCK_HEIGHT;
+// UBYTE *preset_num_block;
+// UWORD preset_num_black_size = ((PRESET_NUM_BLOCK_WIDTH%2==0)? (PRESET_NUM_BLOCK_WIDTH/2)
+//     : (PRESET_NUM_BLOCK_WIDTH/2+1)) * PRESET_NUM_BLOCK_HEIGHT;
 
-UBYTE *preset_name_block;
-UWORD preset_name_black_size = ((PRESET_NAME_BLOCK_WIDTH%2==0)? (PRESET_NAME_BLOCK_WIDTH/2)
-    : (PRESET_NAME_BLOCK_WIDTH/2+1)) * PRESET_NAME_BLOCK_HEIGHT;
+// UBYTE *preset_name_block;
+// UWORD preset_name_black_size = ((PRESET_NAME_BLOCK_WIDTH%2==0)? (PRESET_NAME_BLOCK_WIDTH/2)
+//     : (PRESET_NAME_BLOCK_WIDTH/2+1)) * PRESET_NAME_BLOCK_HEIGHT;
 
     
 UBYTE *param_block[NUM_PARAM_BLOCKS];
@@ -55,6 +55,10 @@ UWORD intro_page_size = ((FULL_PAGE_WIDTH%2==0)? (FULL_PAGE_WIDTH/2)
 
 UBYTE *wave_buffer;
 UWORD wave_buffer_size = ((32%2==0)? (32/2) : (32/2+1)) * 16; 
+
+UBYTE *cpu_load_block;
+UWORD cpu_load_block_size = ((16%2==0)? (16/2)
+    : (16/2+1)) * 16;
 
 void InitImages(){
 
@@ -79,12 +83,16 @@ void InitImages(){
         return; // Вихід з функції, якщо не вдалося виділити пам'ять
     }
 
-    if((preset_name_block = (UBYTE *)malloc(preset_name_black_size)) == NULL) {
-        printf("Failed to allocate memory for intro page\r\n");
-        return; // Вихід з функції, якщо не вдалося виділити пам'ять
-    }
+    // if((preset_name_block = (UBYTE *)malloc(preset_name_black_size)) == NULL) {
+    //     printf("Failed to allocate memory for intro page\r\n");
+    //     return; // Вихід з функції, якщо не вдалося виділити пам'ять
+    // }
 
-    if((preset_num_block = (UBYTE *)malloc(preset_num_black_size)) == NULL) {
+    // if((preset_num_block = (UBYTE *)malloc(preset_num_black_size)) == NULL) {
+    //     printf("Failed to allocate memory for intro page\r\n");
+    //     return; // Вихід з функції, якщо не вдалося виділити пам'ять
+    // }
+    if((cpu_load_block = (UBYTE *)malloc(cpu_load_block_size)) == NULL) {
         printf("Failed to allocate memory for intro page\r\n");
         return; // Вихід з функції, якщо не вдалося виділити пам'ять
     }
@@ -132,8 +140,6 @@ void DrawParamPageLines(){
     }
 }
 
-
-
 void DrawParamBlock(uint8_t *block, const char* label, float value){
     Paint_SelectImage(block);
     Paint_SetScale(16);
@@ -145,21 +151,18 @@ void DrawParamBlock(uint8_t *block, const char* label, float value){
     OLED_1in5_Display_Part(block, 0, 0, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT);
 }
 
-void DrawPresetNumBlock(){
+// void DrawPresetNumBlock(){
 
-    Paint_NewImage(preset_num_block, PRESET_NUM_BLOCK_WIDTH, PRESET_NUM_BLOCK_HEIGHT, 0, BLACK);
-    Paint_SetScale(16);
-    Paint_Clear(BLACK);
-    Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, Font24, WHITE, BLACK);
-    Paint_TextCentered("Program", 0, FULL_PAGE_WIDTH, 50, Font24, WHITE, BLACK);
+//     Paint_NewImage(preset_num_block, PRESET_NUM_BLOCK_WIDTH, PRESET_NUM_BLOCK_HEIGHT, 0, BLACK);
+//     Paint_SetScale(16);
+//     Paint_Clear(BLACK);
+//     Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, Font24, WHITE, BLACK);
+//     Paint_TextCentered("Program", 0, FULL_PAGE_WIDTH, 50, Font24, WHITE, BLACK);
 
-}
+// }
 
-void DrawPresetNameBlock(uint8_t *block){
-}
-
-void DrawCpuLoadBlock(uint8_t *block){
-}
+// void DrawPresetNameBlock(uint8_t *block){
+// }
 
 void InitDisplayPages(){
     OLED_1in5_Init();

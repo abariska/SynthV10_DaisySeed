@@ -75,7 +75,6 @@ struct SynthParams {
         float depth;       // LFO depth
         float delay;          // Delay
         float feedback;       // Feedback
-        float pan;            // Pan
         bool isActive;        // Is the effect active
     } chorusParams;
 
@@ -109,5 +108,6 @@ void InitEffectParams();
 // Functions for saving/loading presets
 // void SavePreset(uint8_t presetNumber);
 // void LoadPreset(uint8_t presetNumber);
+
 
 #endif // PARAMETERS_H

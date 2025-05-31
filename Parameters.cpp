@@ -54,7 +54,6 @@ void InitEffectParams() {
         params.chorusParams.depth = 0.0f;
         params.chorusParams.delay = 0.0f;
         params.chorusParams.feedback = 0.0f;
-        params.chorusParams.pan = 0.5f;
         params.chorusParams.isActive = false;
         
         // Compressor
@@ -62,7 +61,7 @@ void InitEffectParams() {
         params.compressorParams.release = 0.01f;
         params.compressorParams.threshold = 0.0f;
         params.compressorParams.ratio = 1.0f;
-        params.compressorParams.makeup = 0.0f;
+        // params.compressorParams.makeup = 0.0f;
         params.compressorParams.isActive = false;
         
         // Reverb

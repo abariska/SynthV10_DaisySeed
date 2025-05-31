@@ -12,8 +12,6 @@
 using namespace daisy;
 using namespace daisysp;
 
-
-
 // Enumeration of effect types
 enum EffectName {
     EFFECT_NONE,
