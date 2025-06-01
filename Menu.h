@@ -105,7 +105,7 @@ struct ParamSlot {
 
 void EncoderChangeEffect();
 void DrawPages();
-void DrawEffectsMenu();
+void DrawEffectsPage();
 void InitParam(ParamUnitName param, uint8_t slotIndex);
 
 void AssignParamsForPage(MenuPage page);
@@ -153,10 +153,7 @@ void InitOneParamBlock(int blockIndex, float value, const char* label, uint16_t 
 }
 
 void InitParamBlocks(){
-    if (currentPage == FX_PAGE) {
-        return;
-    }
-    
+
     for (size_t i = 0; i < 4; i++) {
         if (slots[i].assignedParam == NONE) {
             continue;
@@ -203,12 +200,8 @@ void UpdateParamsWithEncoders() {
 
     static uint8_t isCurrentEditSlot = 0;
 
-    if (currentPage == FX_PAGE) {
-        EncoderChangeEffect();
-    }
-    else {
-        if (currentPage == MAIN_PAGE) {
-            for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+    if (currentPage == MAIN_PAGE) {
+        for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
                 if (isParamEditMode[i]) {
                     if (isCurrentEditSlot != i) {
                         isCurrentEditSlot = i;
@@ -224,12 +217,19 @@ void UpdateParamsWithEncoders() {
                     EditBlockParam(i);
                 }
             }
+    }
+
+    else if (currentPage == FX_PAGE) {
+        if (encoderIncs[0] != 0 || encoderIncs[3] != 0) {
+            EncoderChangeEffect();
+            return;
         }
+    }
     
-        for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-            if (encoderIncs[i] != 0 && !isParamEditMode[i]) {
-                slots[i].need_update = true;
-            }
+    for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+        if (encoderIncs[i] != 0 && !isParamEditMode[i]) {
+            slots[i].need_update = true;
+        }
         }
         
         for (size_t i = 0; i < 4; i++) {
@@ -254,7 +254,7 @@ void UpdateParamsWithEncoders() {
             }
             slots[i].need_update = false;
         }
-    }
+    
 }
 
 void DrawMainPage()
@@ -277,13 +277,14 @@ void SetPageName(const char* name) {
 }
 
 void SetPage(MenuPage newPage) {
-    if (currentPage == newPage) {
-        return;
-    }
     currentPage = newPage;    
-    AssignParamsForPage(newPage); 
-    DrawPages();
-    InitParamBlocks();
+    if (currentPage == FX_PAGE) {
+        DrawEffectsPage();
+    } else {
+        AssignParamsForPage(newPage); 
+        DrawPages();
+        InitParamBlocks();
+    }
 }
 
 void AssignParamsForPage(MenuPage page) {
@@ -340,7 +341,7 @@ void AssignParamsForPage(MenuPage page) {
             InitParam(LFO_DEPTH, 2);
           break;
         case FX_PAGE:
-            SetPageName("Effects");
+            
             break;
         case OVERDRIVE_PAGE:
             SetPageName("Overdrive");
@@ -406,7 +407,7 @@ void DrawPages() {
     OLED_1in5_Display(background_black);
 }
 
-void DrawEffectsMenu() {
+void DrawEffectsPage() {
     Paint_NewImage(background_black, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_SetScale(16); 
     Paint_Clear(BLACK); 
@@ -447,22 +448,22 @@ void DrawEffectsMenu() {
             Paint_TextCentered(" - ", x1, x2, y2, Font12, WHITE, BLACK);
         }
     }
+
+    OLED_1in5_Display(background_black);
 }
 
 void EncoderChangeEffect() {
-    if (currentPage == MenuPage::FX_PAGE) {
-        if (encoderIncs[0] != 0) {
-            int newEffect = static_cast<int>(effectSlot[0].selectedEffect) + encoderIncs[0];
-            if (newEffect < 0) newEffect = 0;
-            if (newEffect >= 4) newEffect = 4;
-            effectSlot[0].selectedEffect = static_cast<EffectName>(newEffect);
-        }
-        if (encoderIncs[3] != 0) {
-            int newEffect = static_cast<int>(effectSlot[1].selectedEffect) + encoderIncs[3];
-            if (newEffect < 0) newEffect = 0;
-            if (newEffect >= 4) newEffect = 4;
-            effectSlot[1].selectedEffect = static_cast<EffectName>(newEffect);
-        }
+    if (encoderIncs[0] != 0) {
+        int newEffect = static_cast<int>(effectSlot[0].selectedEffect) + encoderIncs[0];
+        if (newEffect < 0) newEffect = 0;
+        if (newEffect >= 4) newEffect = 4;
+        effectSlot[0].selectedEffect = static_cast<EffectName>(newEffect);
+    }
+    if (encoderIncs[3] != 0) {
+        int newEffect = static_cast<int>(effectSlot[1].selectedEffect) + encoderIncs[3];
+        if (newEffect < 0) newEffect = 0;
+        if (newEffect >= 4) newEffect = 4;
+        effectSlot[1].selectedEffect = static_cast<EffectName>(newEffect);
     }
 }
 
