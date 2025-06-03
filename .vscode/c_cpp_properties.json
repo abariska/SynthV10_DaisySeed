@@ -12,7 +12,8 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "${workspaceFolder}/../DaisyExamples/libDaisy/**",
-                "${workspaceFolder}/../DaisyExamples/DaisySP/**"
+                "${workspaceFolder}/../DaisyExamples/DaisySP/**",
+                "${workspaceFolder}/../lib/OLED_1.5_Daisy_Seed/**"
             ],
             "name": "macOS"
         }

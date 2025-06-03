@@ -43,6 +43,7 @@ int main(void)
 
     hw.Configure();
     hw.Init();
+    // hw.StartLog(true);
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
@@ -51,44 +52,41 @@ int main(void)
         voice[i].Init(samplerate, blocksize);
     };
     EffectsInit(samplerate);
-
-    Display_Init();
-    InitMcp();
+    InitImages();
+    InitMcp(); // MCP1 - Buttons, MCP2 - Encoders
     InitLeds();
     MidiInit();
     InitSynthParams();
     InitLfo(samplerate);
+    InitDisplayPages();
+    DrawIntroPage();
 
-    AssignParamsForPage(currentPage); 
-    UpdateParamsWithEncoders();
+    hw.DelayMs(1000);
 
-    hw.StartAudio(AudioCallback);
-
+    // hw.StartAudio(AudioCallback);
+    currentPage = EMPTY;
+    SetPage(MAIN_PAGE);
+    
     TimerDisplay();
 
     while (1)
     {
-        // hw.PrintLine("Loop start %d", System::GetNow());
         mcp_1.Read();
         mcp_2.Read();
         ProcessButtons();
         ProcessLeds(); 
         UpdateEncoders();
+        CheckEditParamOnMain();
         UpdateParamsWithEncoders();
-        // MIDI processing
+
         midi.Listen();
         while(midi.HasEvents())
         {
             auto msg = midi.PopEvent();
             HandleMidiMessage(msg);
-    }
-        // hw.PrintLine("Loop end %d", System::GetNow());
-        // System::Delay(100);  // Add delay for better output
-
-        // if (button_lfo.IsPressed()) {
-        //     synth.HandleNoteOn(440.0f, 1.0f);
-        // }
-    }
+        }
+        // CpuUsageDisplay();
+}
 }
 
 void UpdateEncoders() {
@@ -106,8 +104,6 @@ void UpdateEncoders() {
 void ProcessButtons() {
     
     UpdateButtons();
-
-
 
     bool shift_pressed = button_shift.IsPressed();
 
@@ -127,8 +123,16 @@ void ProcessButtons() {
                 SelectEffectPage(1);
             }
         }
-    } else {
-        if (shift_pressed) {    
+    } 
+    // else if (currentPage == MenuPage::MAIN_PAGE) {
+    //     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+    //         if (sw_encoder_1.RisingEdge()) {
+    //             isParamEditMode[i] = !isParamEditMode[i];
+    //         }
+    //     }
+    // }
+
+    if (shift_pressed) {    
             if (button_osc_1.RisingEdge()) {
                 params.voice.osc[0].active = !params.voice.osc[0].active;
             }
@@ -138,10 +142,9 @@ void ProcessButtons() {
             if (button_osc_3.RisingEdge()) {
                 params.voice.osc[2].active = !params.voice.osc[2].active;
             }
-
-        } else {
+    } else {
             if (button_back.RisingEdge()) {
-                currentPage = MenuPage::MAIN_PAGE;
+                SetPage(MenuPage::MAIN_PAGE);
             }
             if (button_osc_1.RisingEdge()) {
                 SetPage(MenuPage::OSCILLATOR_1_PAGE);  
@@ -162,7 +165,7 @@ void ProcessButtons() {
                 SetPage(MenuPage::FX_PAGE);
             }
             if (button_lfo.RisingEdge()) {
-                currentPage = MenuPage::LFO_PAGE;
+                SetPage(MenuPage::LFO_PAGE);
             }
             if (button_mtx.RisingEdge()) {
                 SetPage(MenuPage::MTX_PAGE);
@@ -170,17 +173,14 @@ void ProcessButtons() {
             // if (button_settings.RisingEdge()) {
             //     currentPage = MenuPage::SETTINGS_PAGE;
             // }
-            if (button_back.RisingEdge()) {
-                currentPage = MenuPage::MAIN_PAGE;
-            }
-            if (sw_encoder_1.RisingEdge()) {
-                SelectEffectPage(0);
-            }
-            if (sw_encoder_2.RisingEdge()) {
-                SelectEffectPage(1);
-            }
+            // if (sw_encoder_1.RisingEdge()) {
+            //     SelectEffectPage(0);
+            // }
+            // if (sw_encoder_2.RisingEdge()) {
+            //     SelectEffectPage(1);
+            // }
         }
-    }
+    
 }
 
 void ProcessLeds() {
@@ -197,7 +197,7 @@ void ProcessLeds() {
 }
 
 void DisplayView(void* data) {
-    DrawMenu();
+    
 }
 
 void TimerDisplay() {
@@ -237,5 +237,30 @@ void SelectEffectPage(uint8_t slot){
                 break;
             case EFFECT_NONE:
                 break;
+    }
+}
+
+void CheckEditParamOnMain() {
+    if (currentPage == MenuPage::MAIN_PAGE) {
+        if (sw_encoder_1.RisingEdge()) {
+            isParamEditMode[0] = !isParamEditMode[0];
+            InitOneParamBlock(0, *allParams[slots[0].assignedParam].target_param, 
+                allParams[slots[0].assignedParam].label, WHITE, BLACK);
+        }
+        if (sw_encoder_2.RisingEdge()) {
+            isParamEditMode[1] = !isParamEditMode[1];
+            InitOneParamBlock(1, *allParams[slots[1].assignedParam].target_param, 
+                allParams[slots[1].assignedParam].label, WHITE, BLACK);
+        }
+        if (sw_encoder_3.RisingEdge()) {
+            isParamEditMode[2] = !isParamEditMode[2];
+            InitOneParamBlock(2, *allParams[slots[2].assignedParam].target_param, 
+                allParams[slots[2].assignedParam].label, WHITE, BLACK);
+        }
+        if (sw_encoder_4.RisingEdge()) {
+            isParamEditMode[3] = !isParamEditMode[3];
+            InitOneParamBlock(3, *allParams[slots[3].assignedParam].target_param, 
+                allParams[slots[3].assignedParam].label, WHITE, BLACK);
+        }
     }
 }

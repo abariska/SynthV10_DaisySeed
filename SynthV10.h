@@ -10,7 +10,6 @@
 #include "Button.h"
 #include "Encoder_mcp.h"
 #include "Voice.h"
-#include "DisplayOLED.h"
 #include "Menu.h"
 #include "Effects.h"
 #include "MidiHandler.h"
@@ -32,13 +31,13 @@ using namespace daisysp;
 #define VOICE_4  seed::D19
 
 // Global objects
-extern OledDisplay<SSD130x4WireSpi128x64Driver> display;
 extern VoiceUnit voice[NUM_VOICES];
 extern MidiUsbHandler midi;
 extern CpuLoadMeter cpu_load;
 extern FXSlot effectSlot[2];
 extern SynthParams params;
 int encoderIncs[4];
+extern bool isParamEditMode[4];
 
 Button_mcp button_osc_1(mcp_1, BUTTON_OSC_1, true);
 Button_mcp button_osc_2(mcp_1, BUTTON_OSC_2, true);
@@ -85,6 +84,7 @@ void ProcessButtons();
 void ProcessLeds();
 void UpdateEncoders();
 void SelectEffectPage(uint8_t slot);
+void CheckEditParamOnMain();
 void UpdateButtons(){
     unsigned long currentTime = System::GetTick();
     button_back.Update(currentTime);
@@ -103,5 +103,6 @@ void UpdateButtons(){
     sw_encoder_3.Update(currentTime);
     sw_encoder_4.Update(currentTime);
 }
+
 
 #endif

@@ -10,7 +10,18 @@
 
 using namespace daisysp;
 
+enum Waves {
+    TRI,
+    SAW,
+    SQR,
+    OFF
+};
 
+enum ValueType {
+    REGULAR,
+    X100,
+    WAVEFORM
+};
 
 // Structure for storing synthesizer parameters
 struct SynthParams {
@@ -64,7 +75,6 @@ struct SynthParams {
         float depth;       // LFO depth
         float delay;          // Delay
         float feedback;       // Feedback
-        float pan;            // Pan
         bool isActive;        // Is the effect active
     } chorusParams;
 
@@ -86,7 +96,6 @@ struct SynthParams {
         bool isActive;        // Is the effect active
     } reverbParams;
 
-
 };
 
 // Global variable for accessing parameters
@@ -99,5 +108,6 @@ void InitEffectParams();
 // Functions for saving/loading presets
 // void SavePreset(uint8_t presetNumber);
 // void LoadPreset(uint8_t presetNumber);
+
 
 #endif // PARAMETERS_H
