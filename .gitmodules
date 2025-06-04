@@ -1,3 +1,6 @@
 [submodule "OLED_1.5_Daisy_Seed"]
 	path = OLED_1.5_Daisy_Seed
 	url = https://github.com/abariska/OLED_1.5_Daisy_Seed
+[submodule "SX1509_Daisy_Seed"]
+	path = SX1509_Daisy_Seed
+	url = https://github.com/abariska/SX1509_Daisy_Seed.git
