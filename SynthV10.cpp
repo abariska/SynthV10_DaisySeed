@@ -1,5 +1,4 @@
 #include "SynthV10.h"
-#include "Encoder_mcp.h"
 #include "daisy.h"
 using namespace daisy;
 
@@ -11,6 +10,8 @@ CpuLoadMeter cpu_load;
 extern Mcp23017 mcp_1;
 extern Mcp23017 mcp_2;
 extern SynthParams params;
+
+int encoderIncs[4];
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
                           AudioHandle::InterleavingOutputBuffer out,
@@ -52,18 +53,17 @@ int main(void)
         voice[i].Init(samplerate, blocksize);
     };
     EffectsInit(samplerate);
-    InitImages();
-    InitMcp(); // MCP1 - Buttons, MCP2 - Encoders
-    InitLeds();
+    InitSX1509Extenders(); 
     MidiInit();
-    InitSynthParams();
     InitLfo(samplerate);
+    InitSynthParams();
+    InitImages();
     InitDisplayPages();
     DrawIntroPage();
 
     hw.DelayMs(1000);
 
-    // hw.StartAudio(AudioCallback);
+    hw.StartAudio(AudioCallback);
     currentPage = EMPTY;
     SetPage(MAIN_PAGE);
     
@@ -71,11 +71,8 @@ int main(void)
 
     while (1)
     {
-        mcp_1.Read();
-        mcp_2.Read();
         ProcessButtons();
-        ProcessLeds(); 
-        UpdateEncoders();
+        ProcessEncoders();
         CheckEditParamOnMain();
         UpdateParamsWithEncoders();
 
@@ -84,116 +81,106 @@ int main(void)
         {
             auto msg = midi.PopEvent();
             HandleMidiMessage(msg);
+            sx1509_leds.WritePin(LED_SHIFT, msg.AsNoteOn().note);
+            sx1509_leds.WritePin(LED_BACK, !msg.AsNoteOff().note);
         }
         // CpuUsageDisplay();
 }
 }
 
-void UpdateEncoders() {
-    encoder_1.Debounce();
-    encoder_2.Debounce();
-    encoder_3.Debounce();
-    encoder_4.Debounce();
-
-    encoderIncs[0] = encoder_1.Increment();
-    encoderIncs[1] = encoder_2.Increment();
-    encoderIncs[2] = encoder_3.Increment();
-    encoderIncs[3] = encoder_4.Increment();
-}
-
 void ProcessButtons() {
-    
-    UpdateButtons();
 
-    bool shift_pressed = button_shift.IsPressed();
+    if (sx1509_buttons.ReadAllPins()) {
+        
+        bool shift_pressed = sx1509_buttons.IsPressed(BUTTON_SHIFT);
 
-    if (currentPage == MenuPage::FX_PAGE) {
-        if (shift_pressed) {  
-            if (sw_encoder_1.RisingEdge()) {
-            effectSlot[0].isActive = !effectSlot[0].isActive;
-            }
-            if (sw_encoder_4.RisingEdge()) {
-                effectSlot[1].isActive = !effectSlot[1].isActive;
-            }
-        } else {
-            if (sw_encoder_1.RisingEdge()) {
-                SelectEffectPage(0);
-            }
-            if (sw_encoder_4.RisingEdge()) {
-                SelectEffectPage(1);
-            }
-        }
-    } 
-    // else if (currentPage == MenuPage::MAIN_PAGE) {
-    //     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-    //         if (sw_encoder_1.RisingEdge()) {
-    //             isParamEditMode[i] = !isParamEditMode[i];
-    //         }
-    //     }
-    // }
-
-    if (shift_pressed) {    
-            if (button_osc_1.RisingEdge()) {
-                params.voice.osc[0].active = !params.voice.osc[0].active;
-            }
-            if (button_osc_2.RisingEdge()) {
-                params.voice.osc[1].active = !params.voice.osc[1].active;
-            }
-            if (button_osc_3.RisingEdge()) {
-                params.voice.osc[2].active = !params.voice.osc[2].active;
-            }
-    } else {
-            if (button_back.RisingEdge()) {
-                SetPage(MenuPage::MAIN_PAGE);
-            }
-            if (button_osc_1.RisingEdge()) {
-                SetPage(MenuPage::OSCILLATOR_1_PAGE);  
+        if (currentPage == MenuPage::FX_PAGE) {
+            if (shift_pressed) {  
+                if (sx1509_buttons.isRisingEdge(ENC_1_SW)) {
+                effectSlot[0].isActive = !effectSlot[0].isActive;
                 }
-            if (button_osc_2.RisingEdge()) {
-                SetPage(MenuPage::OSCILLATOR_2_PAGE);
+                if (sx1509_buttons.isRisingEdge(ENC_4_SW)) {
+                    effectSlot[1].isActive = !effectSlot[1].isActive;
+                }
+            } else {
+                if (sx1509_buttons.isRisingEdge(ENC_1_SW)) {
+                    SelectEffectPage(0);
+                }
+                if (sx1509_buttons.isRisingEdge(ENC_4_SW)) {
+                    SelectEffectPage(1);
+                }
             }
-            if (button_osc_3.RisingEdge()) {
-                SetPage(MenuPage::OSCILLATOR_3_PAGE);
-            }   
-            if (button_flt.RisingEdge()) {
-                SetPage(MenuPage::FILTER_PAGE);
+        } 
+        // else if (currentPage == MenuPage::MAIN_PAGE) {
+        //     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+        //         if (sw_encoder_1.RisingEdge()) {
+        //             isParamEditMode[i] = !isParamEditMode[i];
+        //         }
+        //     }
+        // }
+
+        if (shift_pressed) {    
+                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_1)) {
+                    params.voice.osc[0].active = !params.voice.osc[0].active;
+                    sx1509_leds.WritePin(LED_OSC_1, params.voice.osc[0].active);
+                }
+                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_2)) {
+                    params.voice.osc[1].active = !params.voice.osc[1].active;
+                    sx1509_leds.WritePin(LED_OSC_2, params.voice.osc[1].active);
+                }
+                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_3)) {
+                    params.voice.osc[2].active = !params.voice.osc[2].active;
+                    sx1509_leds.WritePin(LED_OSC_3, params.voice.osc[2].active);
+                }
+        } else {
+                if (sx1509_buttons.isRisingEdge(BUTTON_BACK)) {
+                    SetPage(MenuPage::MAIN_PAGE);
+                }
+                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_1)) {
+                    SetPage(MenuPage::OSCILLATOR_1_PAGE);  
+                    }
+                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_2)) {
+                    SetPage(MenuPage::OSCILLATOR_2_PAGE);
+                }
+                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_3)) {
+                    SetPage(MenuPage::OSCILLATOR_3_PAGE);
+                }   
+                if (sx1509_buttons.isRisingEdge(BUTTON_FLT)) {
+                    SetPage(MenuPage::FILTER_PAGE);
+                }
+                if (sx1509_buttons.isRisingEdge(BUTTON_AMP)) {
+                    SetPage(MenuPage::AMPLIFIER_PAGE); 
+                }
+                if (sx1509_buttons.isRisingEdge(BUTTON_FX)) {
+                    SetPage(MenuPage::FX_PAGE);
+                }
+                if (sx1509_buttons.isRisingEdge(BUTTON_LFO)) {
+                    SetPage(MenuPage::LFO_PAGE);
+                }
+                if (sx1509_buttons.isRisingEdge(BUTTON_MTX)) {
+                    SetPage(MenuPage::MTX_PAGE);
+                }
+                // if (button_settings.RisingEdge()) {
+                //     currentPage = MenuPage::SETTINGS_PAGE;
+                // }
+                // if (sw_encoder_1.RisingEdge()) {
+                //     SelectEffectPage(0);
+                // }
+                // if (sw_encoder_2.RisingEdge()) {
+                //     SelectEffectPage(1);
+                // }
             }
-            if (button_amp.RisingEdge()) {
-                SetPage(MenuPage::AMPLIFIER_PAGE); 
-            }
-            if (button_fx.RisingEdge()) {
-                SetPage(MenuPage::FX_PAGE);
-            }
-            if (button_lfo.RisingEdge()) {
-                SetPage(MenuPage::LFO_PAGE);
-            }
-            if (button_mtx.RisingEdge()) {
-                SetPage(MenuPage::MTX_PAGE);
-            }
-            // if (button_settings.RisingEdge()) {
-            //     currentPage = MenuPage::SETTINGS_PAGE;
-            // }
-            // if (sw_encoder_1.RisingEdge()) {
-            //     SelectEffectPage(0);
-            // }
-            // if (sw_encoder_2.RisingEdge()) {
-            //     SelectEffectPage(1);
-            // }
-        }
-    
+    }
 }
 
-void ProcessLeds() {
-    led_osc_1.Write(params.voice.osc[0].active);
-    led_osc_2.Write(params.voice.osc[1].active);
-    led_osc_3.Write(params.voice.osc[2].active);
-    led_fx_1.Write(effectSlot[0].isActive);
-    led_fx_2.Write(effectSlot[1].isActive);
-    led_midi.Write(voice[1].isGated);
-    led_out.Write(voice[2].isGated);
-    voice_1.Write(voice[0].isGated);
-    voice_2.Write(voice[1].isGated);
-    voice_3.Write(voice[2].isGated);
+void ProcessEncoders(){
+    
+    if (sx1509_encoders.ReadAllPins()) {
+        encoderIncs[0] = sx1509_encoders.EncoderInc(ENC_1_A, ENC_1_B);  
+        encoderIncs[1] = sx1509_encoders.EncoderInc(ENC_2_A, ENC_2_B);  
+        encoderIncs[2] = sx1509_encoders.EncoderInc(ENC_3_A, ENC_3_B);  
+        encoderIncs[3] = sx1509_encoders.EncoderInc(ENC_4_A, ENC_4_B);  
+    }
 }
 
 void DisplayView(void* data) {
@@ -242,22 +229,22 @@ void SelectEffectPage(uint8_t slot){
 
 void CheckEditParamOnMain() {
     if (currentPage == MenuPage::MAIN_PAGE) {
-        if (sw_encoder_1.RisingEdge()) {
+        if (sx1509_buttons.isRisingEdge(ENC_1_SW)) {
             isParamEditMode[0] = !isParamEditMode[0];
             InitOneParamBlock(0, *allParams[slots[0].assignedParam].target_param, 
                 allParams[slots[0].assignedParam].label, WHITE, BLACK);
         }
-        if (sw_encoder_2.RisingEdge()) {
+        if (sx1509_buttons.isRisingEdge(ENC_2_SW)) {
             isParamEditMode[1] = !isParamEditMode[1];
             InitOneParamBlock(1, *allParams[slots[1].assignedParam].target_param, 
                 allParams[slots[1].assignedParam].label, WHITE, BLACK);
         }
-        if (sw_encoder_3.RisingEdge()) {
+        if (sx1509_buttons.isRisingEdge(ENC_3_SW)) {
             isParamEditMode[2] = !isParamEditMode[2];
             InitOneParamBlock(2, *allParams[slots[2].assignedParam].target_param, 
                 allParams[slots[2].assignedParam].label, WHITE, BLACK);
         }
-        if (sw_encoder_4.RisingEdge()) {
+        if (sx1509_buttons.isRisingEdge(ENC_4_SW)) {
             isParamEditMode[3] = !isParamEditMode[3];
             InitOneParamBlock(3, *allParams[slots[3].assignedParam].target_param, 
                 allParams[slots[3].assignedParam].label, WHITE, BLACK);
