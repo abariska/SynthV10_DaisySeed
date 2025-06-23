@@ -30,9 +30,8 @@ extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
 
 // Function prototypes
-void DisplayView(void* data);
 void TimerDisplay();
-void ProcessButtons();
+void ProcessButtons(void *data);
 void ProcessEncoders();
 void SelectEffectPage(uint8_t slot);
 void CheckEditParamOnMain();

@@ -1,5 +1,6 @@
 #include "SynthV10.h"
 #include "daisy.h"
+#include "SX1509_extender.h"
 using namespace daisy;
 
 DaisySeed hw;
@@ -71,7 +72,7 @@ int main(void)
 
     while (1)
     {
-        ProcessButtons();
+        // ProcessButtons();
         ProcessEncoders();
         CheckEditParamOnMain();
         UpdateParamsWithEncoders();
@@ -81,14 +82,12 @@ int main(void)
         {
             auto msg = midi.PopEvent();
             HandleMidiMessage(msg);
-            sx1509_leds.WritePin(LED_SHIFT, msg.AsNoteOn().note);
-            sx1509_leds.WritePin(LED_BACK, !msg.AsNoteOff().note);
         }
         // CpuUsageDisplay();
 }
 }
 
-void ProcessButtons() {
+void ProcessButtons(void *data) {
 
     if (sx1509_buttons.ReadAllPins()) {
         
@@ -111,13 +110,13 @@ void ProcessButtons() {
                 }
             }
         } 
-        // else if (currentPage == MenuPage::MAIN_PAGE) {
-        //     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-        //         if (sw_encoder_1.RisingEdge()) {
-        //             isParamEditMode[i] = !isParamEditMode[i];
-        //         }
-        //     }
-        // }
+        else if (currentPage == MenuPage::MAIN_PAGE) {
+            for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+                if (sx1509_encoders.isRisingEdge(ENC_1_SW)) {
+                    isParamEditMode[i] = !isParamEditMode[i];
+                }
+            }
+        }
 
         if (shift_pressed) {    
                 if (sx1509_buttons.isRisingEdge(BUTTON_OSC_1)) {
@@ -160,15 +159,6 @@ void ProcessButtons() {
                 if (sx1509_buttons.isRisingEdge(BUTTON_MTX)) {
                     SetPage(MenuPage::MTX_PAGE);
                 }
-                // if (button_settings.RisingEdge()) {
-                //     currentPage = MenuPage::SETTINGS_PAGE;
-                // }
-                // if (sw_encoder_1.RisingEdge()) {
-                //     SelectEffectPage(0);
-                // }
-                // if (sw_encoder_2.RisingEdge()) {
-                //     SelectEffectPage(1);
-                // }
             }
     }
 }
@@ -183,10 +173,6 @@ void ProcessEncoders(){
     }
 }
 
-void DisplayView(void* data) {
-    
-}
-
 void TimerDisplay() {
     TimerHandle::Config tim_cfg;
 
@@ -195,13 +181,13 @@ void TimerDisplay() {
     tim_cfg.enable_irq = true;
 
     /** Configure frequency (30Hz) */
-    auto tim_target_freq = 30;
+    auto tim_target_freq = 100;
     auto tim_base_freq   = System::GetPClk2Freq();
     tim_cfg.period       = tim_base_freq / tim_target_freq;
 
     /** Initialize timer */
     tim_display.Init(tim_cfg);
-    tim_display.SetCallback(DisplayView);
+    tim_display.SetCallback(ProcessButtons);
 
     /** Start the timer, and generate callbacks at the end of each period */
     tim_display.Start();
