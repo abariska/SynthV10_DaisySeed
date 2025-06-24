@@ -31,7 +31,6 @@ using namespace daisysp;
 #define VOICE_4  seed::D19
 
 // Global objects
-extern VoiceUnit voice[NUM_VOICES];
 extern MidiUsbHandler midi;
 extern CpuLoadMeter cpu_load;
 extern FXSlot effectSlot[2];

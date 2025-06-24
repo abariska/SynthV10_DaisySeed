@@ -10,11 +10,6 @@ void MidiInit() {
     midi.Init(midi_cfg);
 }
 
-// Convert MIDI note to frequency
-float mtof(uint8_t midi_note) {
-    return 440.0f * powf(2.0f, (midi_note - 69.0f) / 12.0f);
-}
-
 // Handle MIDI messages
 void HandleMidiMessage(MidiEvent m) {
     switch(m.type) {

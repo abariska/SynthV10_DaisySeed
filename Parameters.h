@@ -27,30 +27,28 @@ enum ValueType {
 struct SynthParams {
     // Single voice template with all settings
     struct {
-        struct {
-            float waveform;
-            float pw;
-            float amp;
-            float pitch;
-            float detune;
-            float freq; 
-            float pan; 
-            bool active;
-        } osc[OSC_NUM];
-        
-        struct {
-            float cutoff;
-            float resonance;
-        } filter;
-        
-        struct {
-            float attack;
-            float decay;
-            float sustain;
-            float release;
-            bool retrigger;
-        } adsr;
-    } voice;  // Single voice template
+        float waveform;
+        float pw;
+        float amp;
+        float pitch;
+        float detune;
+        float freq; 
+        float pan; 
+        bool active;
+    } osc[OSC_NUM];
+    
+    struct {
+        float cutoff;
+        float resonance;
+    } filter;
+    
+    struct {
+        float attack;
+        float decay;
+        float sustain;
+        float release;
+        bool retrigger;
+    } adsr;
     
     // Global LFO
     struct {

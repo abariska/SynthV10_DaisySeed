@@ -7,26 +7,26 @@ SynthParams params;
 // Parameters initialization - old version replaced with new one in Parameters.h
 void InitSynthParams() {
     // Voice template initialization
-    params.voice.osc[0].active = true;
-    params.voice.osc[1].active = false;
-    params.voice.osc[2].active = false;
+    params.osc[0].active = true;
+    params.osc[1].active = false;
+    params.osc[2].active = false;
     for (size_t o = 0; o < OSC_NUM; o++) {
-        params.voice.osc[o].waveform = 1.0f;
-        params.voice.osc[o].freq = 440.0f;
-        params.voice.osc[o].pw = 0.5f;
-        params.voice.osc[o].amp = 0.1f;
-        params.voice.osc[o].pitch = 0.0f;
-        params.voice.osc[o].detune = 0.0f;
+        params.osc[o].waveform = 1.0f;
+        params.osc[o].freq = 440.0f;
+        params.osc[o].pw = 0.5f;
+        params.osc[o].amp = 0.1f;
+        params.osc[o].pitch = 0.0f;
+        params.osc[o].detune = 0.0f;
     }
     
-    params.voice.filter.cutoff = 99.99f;
-    params.voice.filter.resonance = 0.0f;
+    params.filter.cutoff = 99.99f;
+    params.filter.resonance = 0.0f;
     
-    params.voice.adsr.attack = 0.01f;
-    params.voice.adsr.decay = 0.1f;
-    params.voice.adsr.sustain = 1.0f;
-    params.voice.adsr.release = 0.5f;
-    params.voice.adsr.retrigger = false;
+    params.adsr.attack = 0.01f;
+    params.adsr.decay = 0.1f;
+    params.adsr.sustain = 1.0f;
+    params.adsr.release = 0.5f;
+    params.adsr.retrigger = false;
     
     // Global LFO initialization
     params.lfo.freq = 0.5f;

@@ -17,15 +17,20 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
                           size_t                                size)
 {
     cpu_load.OnBlockStart();
+
+    midi.Listen();
+    while(midi.HasEvents())
+    {
+        auto msg = midi.PopEvent();
+        HandleMidiMessage(msg);
+    }
+    
     for(size_t i = 0; i < size; i += 2)
     {
         float sig_after_fxL, sig_after_fxR;
         float mix = 0.0f;
 
-        for (size_t i = 0; i < NUM_VOICES; i++) {
-            mix += voice[i].Process();
-        }   
-        mix /= NUM_VOICES;
+        mix += VoiceProcess();
 
         for (size_t i = 0; i < 2; i++) {
             ProcessEffects(effectSlot[i], mix, sig_after_fxL, sig_after_fxR);
@@ -48,9 +53,7 @@ int main(void)
     samplerate = hw.AudioSampleRate(); 
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
 
-    for (size_t i = 0; i < NUM_VOICES; i++) {
-        voice[i].Init(samplerate, blocksize);
-    };
+    VoiceInit(samplerate, blocksize);
     EffectsInit(samplerate);
     InitImages();
     InitMcp(); // MCP1 - Buttons, MCP2 - Encoders
@@ -79,12 +82,7 @@ int main(void)
         CheckEditParamOnMain();
         UpdateParamsWithEncoders();
 
-        midi.Listen();
-        while(midi.HasEvents())
-        {
-            auto msg = midi.PopEvent();
-            HandleMidiMessage(msg);
-        }
+        
         // CpuUsageDisplay();
 }
 }
@@ -134,13 +132,13 @@ void ProcessButtons() {
 
     if (shift_pressed) {    
             if (button_osc_1.RisingEdge()) {
-                params.voice.osc[0].active = !params.voice.osc[0].active;
+                params.osc[0].active = !params.osc[0].active;
             }
             if (button_osc_2.RisingEdge()) {
-                params.voice.osc[1].active = !params.voice.osc[1].active;
+                params.osc[1].active = !params.osc[1].active;
             }
             if (button_osc_3.RisingEdge()) {
-                params.voice.osc[2].active = !params.voice.osc[2].active;
+                params.osc[2].active = !params.osc[2].active;
             }
     } else {
             if (button_back.RisingEdge()) {
@@ -184,16 +182,11 @@ void ProcessButtons() {
 }
 
 void ProcessLeds() {
-    led_osc_1.Write(params.voice.osc[0].active);
-    led_osc_2.Write(params.voice.osc[1].active);
-    led_osc_3.Write(params.voice.osc[2].active);
+    led_osc_1.Write(params.osc[0].active);
+    led_osc_2.Write(params.osc[1].active);
+    led_osc_3.Write(params.osc[2].active);
     led_fx_1.Write(effectSlot[0].isActive);
     led_fx_2.Write(effectSlot[1].isActive);
-    led_midi.Write(voice[1].isGated);
-    led_out.Write(voice[2].isGated);
-    voice_1.Write(voice[0].isGated);
-    voice_2.Write(voice[1].isGated);
-    voice_3.Write(voice[2].isGated);
 }
 
 void DisplayView(void* data) {
