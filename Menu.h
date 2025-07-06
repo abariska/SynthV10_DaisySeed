@@ -5,23 +5,19 @@
 #include "Voice.h"
 #include "Parameters.h"
 #include "Effects.h"
-#include "Encoder_mcp.h"
+#include "SX1509_extender.h"
 #include "OLED_1.5_Daisy_Seed/fonts.h"
 #include "OLED_1.5_Daisy_Seed/ImageData.h"
 #include "OLED_1.5_Daisy_Seed/GUI_Paint.h"
 #include "OLED_1.5_Daisy_Seed/OLED_Driver.h"
 #include "OLED_1.5_Daisy_Seed/DEV_Config.h"
-#include "Button.h"
 #include "MidiHandler.h"
 #include "GUI_Paint.h"
 
 using namespace daisy;
 
 extern CpuLoadMeter cpu_load;
-extern Enc_mcp encoder_1;
-extern Enc_mcp encoder_2; 
-extern Enc_mcp encoder_3;
-extern Enc_mcp encoder_4;
+
 extern SynthParams params;
 extern int encoderIncs[4];
 bool isParamEditMode[4] = {false, false, false, false};
