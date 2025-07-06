@@ -387,7 +387,7 @@ void DrawPages() {
         || currentPage == OSCILLATOR_3_PAGE)
     {
         DrawStaticParamPage(BLACK);
-        Paint_DrawString_EN(110, 0,params.voice.osc[0].active ? "On" : "Off", &Font8, WHITE, BLACK);
+        Paint_DrawString_EN(110, 0,params.osc[0].active ? "On" : "Off", &Font8, WHITE, BLACK);
     }
     
     else if (currentPage == FX_PAGE)
@@ -477,24 +477,24 @@ void CpuUsageDisplay(){
 
 // Array of parameter initialization data
 const ParamUnitData paramInitTable[] = {
-    { &params.voice.osc[0].waveform, "Wav", 0, 3, 1, WAVEFORM },
-    { &params.voice.osc[0].pitch, "Sem", -36, 36, 1, X100 },
-    { &params.voice.osc[0].detune, "Det", -0.5, 0.5, 0.01, X100 },
-    { &params.voice.osc[0].amp, "Amp", 0, 1, 0.01, X100 },
-    { &params.voice.osc[1].waveform, "Wav", 0, 3, 1, WAVEFORM },    
-    { &params.voice.osc[1].pitch, "Sem", -36, 36, 1, X100 },
-    { &params.voice.osc[1].detune, "Det", -0.5, 0.5, 0.01, X100 },
-    { &params.voice.osc[1].amp, "Amp", 0, 1, 0.01, X100 },
-    { &params.voice.osc[2].waveform, "Wav", 0, 3, 1, WAVEFORM },    
-    { &params.voice.osc[2].pitch, "Sem", -36, 36, 1, X100 },
-    { &params.voice.osc[2].detune, "Det", -0.5, 0.5, 0.01, X100 },
-    { &params.voice.osc[2].amp, "Amp", 0, 1, 0.01, X100 },
-    { &params.voice.filter.cutoff, "Cut", 50, 15000, 1, REGULAR },
-    { &params.voice.filter.resonance, "Res", 0, 1, 0.01, X100 },
-    { &params.voice.adsr.attack, "Atk", 0, 1, 0.01, X100 },
-    { &params.voice.adsr.decay, "Dec", 0, 1, 0.01, X100 },
-    { &params.voice.adsr.sustain, "Sus", 0, 1, 0.01, X100 },
-    { &params.voice.adsr.release, "Rel", 0, 1, 0.01, X100 },
+    { &params.osc[0].waveform, "Wav", 0, 3, 1, WAVEFORM },
+    { &params.osc[0].pitch, "Sem", -36, 36, 1, X100 },
+    { &params.osc[0].detune, "Det", -0.5, 0.5, 0.01, X100 },
+    { &params.osc[0].amp, "Amp", 0, 1, 0.01, X100 },
+    { &params.osc[1].waveform, "Wav", 0, 3, 1, WAVEFORM },    
+    { &params.osc[1].pitch, "Sem", -36, 36, 1, X100 },
+    { &params.osc[1].detune, "Det", -0.5, 0.5, 0.01, X100 },
+    { &params.osc[1].amp, "Amp", 0, 1, 0.01, X100 },
+    { &params.osc[2].waveform, "Wav", 0, 3, 1, WAVEFORM },    
+    { &params.osc[2].pitch, "Sem", -36, 36, 1, X100 },
+    { &params.osc[2].detune, "Det", -0.5, 0.5, 0.01, X100 },
+    { &params.osc[2].amp, "Amp", 0, 1, 0.01, X100 },
+    { &params.filter.cutoff, "Cut", 50, 15000, 1, REGULAR },
+    { &params.filter.resonance, "Res", 0, 1, 0.01, X100 },
+    { &params.adsr.attack, "Atk", 0, 1, 0.01, X100 },
+    { &params.adsr.decay, "Dec", 0, 1, 0.01, X100 },
+    { &params.adsr.sustain, "Sus", 0, 1, 0.01, X100 },
+    { &params.adsr.release, "Rel", 0, 1, 0.01, X100 },
     { &params.lfo.freq, "Freq", 0, 1, 0.01, REGULAR },
     { &params.lfo.depth, "Dpth", 0, 1, 0.01, X100 },
     { &params.lfo.waveform, "Wav", 0, 3, 1, WAVEFORM },

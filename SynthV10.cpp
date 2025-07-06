@@ -14,20 +14,25 @@ extern SynthParams params;
 
 int encoderIncs[4];
 
-static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
+static void AudioCallback(AudioHandle::InterleavingInputBuffer  in, 
                           AudioHandle::InterleavingOutputBuffer out,
                           size_t                                size)
 {
     cpu_load.OnBlockStart();
+
+    midi.Listen();
+    while(midi.HasEvents())
+    {
+        auto msg = midi.PopEvent();
+        HandleMidiMessage(msg);
+    }
+    
     for(size_t i = 0; i < size; i += 2)
     {
         float sig_after_fxL, sig_after_fxR;
         float mix = 0.0f;
 
-        for (size_t i = 0; i < NUM_VOICES; i++) {
-            mix += voice[i].Process();
-        }   
-        mix /= NUM_VOICES;
+        mix += VoiceProcess();
 
         for (size_t i = 0; i < 2; i++) {
             ProcessEffects(effectSlot[i], mix, sig_after_fxL, sig_after_fxR);
@@ -50,9 +55,7 @@ int main(void)
     samplerate = hw.AudioSampleRate(); 
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
 
-    for (size_t i = 0; i < NUM_VOICES; i++) {
-        voice[i].Init(samplerate, blocksize);
-    };
+    VoiceInit(samplerate, blocksize);
     EffectsInit(samplerate);
     InitSX1509Extenders(); 
     MidiInit();
@@ -77,26 +80,19 @@ int main(void)
         CheckEditParamOnMain();
         UpdateParamsWithEncoders();
 
-        midi.Listen();
-        while(midi.HasEvents())
-        {
-            auto msg = midi.PopEvent();
-            HandleMidiMessage(msg);
-        }
+        
         // CpuUsageDisplay();
 }
 }
 
 void ProcessButtons(void *data) {
-
     if (sx1509_buttons.ReadAllPins()) {
-        
         bool shift_pressed = sx1509_buttons.IsPressed(BUTTON_SHIFT);
 
         if (currentPage == MenuPage::FX_PAGE) {
             if (shift_pressed) {  
                 if (sx1509_buttons.isRisingEdge(ENC_1_SW)) {
-                effectSlot[0].isActive = !effectSlot[0].isActive;
+                    effectSlot[0].isActive = !effectSlot[0].isActive;
                 }
                 if (sx1509_buttons.isRisingEdge(ENC_4_SW)) {
                     effectSlot[1].isActive = !effectSlot[1].isActive;
@@ -109,60 +105,58 @@ void ProcessButtons(void *data) {
                     SelectEffectPage(1);
                 }
             }
-        } 
-        else if (currentPage == MenuPage::MAIN_PAGE) {
+        } else if (currentPage == MenuPage::MAIN_PAGE) {
             for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-                if (sx1509_encoders.isRisingEdge(ENC_1_SW)) {
+                if (sx1509_buttons.isRisingEdge(ENC_1_SW + i)) {
                     isParamEditMode[i] = !isParamEditMode[i];
                 }
             }
         }
 
-        if (shift_pressed) {    
-                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_1)) {
-                    params.voice.osc[0].active = !params.voice.osc[0].active;
-                    sx1509_leds.WritePin(LED_OSC_1, params.voice.osc[0].active);
-                }
-                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_2)) {
-                    params.voice.osc[1].active = !params.voice.osc[1].active;
-                    sx1509_leds.WritePin(LED_OSC_2, params.voice.osc[1].active);
-                }
-                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_3)) {
-                    params.voice.osc[2].active = !params.voice.osc[2].active;
-                    sx1509_leds.WritePin(LED_OSC_3, params.voice.osc[2].active);
-                }
-        } else {
-                if (sx1509_buttons.isRisingEdge(BUTTON_BACK)) {
-                    SetPage(MenuPage::MAIN_PAGE);
-                }
-                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_1)) {
-                    SetPage(MenuPage::OSCILLATOR_1_PAGE);  
-                    }
-                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_2)) {
-                    SetPage(MenuPage::OSCILLATOR_2_PAGE);
-                }
-                if (sx1509_buttons.isRisingEdge(BUTTON_OSC_3)) {
-                    SetPage(MenuPage::OSCILLATOR_3_PAGE);
-                }   
-                if (sx1509_buttons.isRisingEdge(BUTTON_FLT)) {
-                    SetPage(MenuPage::FILTER_PAGE);
-                }
-                if (sx1509_buttons.isRisingEdge(BUTTON_AMP)) {
-                    SetPage(MenuPage::AMPLIFIER_PAGE); 
-                }
-                if (sx1509_buttons.isRisingEdge(BUTTON_FX)) {
-                    SetPage(MenuPage::FX_PAGE);
-                }
-                if (sx1509_buttons.isRisingEdge(BUTTON_LFO)) {
-                    SetPage(MenuPage::LFO_PAGE);
-                }
-                if (sx1509_buttons.isRisingEdge(BUTTON_MTX)) {
-                    SetPage(MenuPage::MTX_PAGE);
-                }
+        if (shift_pressed) {
+            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_1)) {
+                params.voice.osc[0].active = !params.voice.osc[0].active;
+                sx1509_leds.WritePin(LED_OSC_1, params.voice.osc[0].active);
             }
+            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_2)) {
+                params.voice.osc[1].active = !params.voice.osc[1].active;
+                sx1509_leds.WritePin(LED_OSC_2, params.voice.osc[1].active);
+            }
+            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_3)) {
+                params.voice.osc[2].active = !params.voice.osc[2].active;
+                sx1509_leds.WritePin(LED_OSC_3, params.voice.osc[2].active);
+            }
+        } else {
+            if (sx1509_buttons.isRisingEdge(BUTTON_BACK)) {
+                SetPage(MenuPage::MAIN_PAGE);
+            }
+            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_1)) {
+                SetPage(MenuPage::OSCILLATOR_1_PAGE);
+            }
+            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_2)) {
+                SetPage(MenuPage::OSCILLATOR_2_PAGE);
+            }
+            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_3)) {
+                SetPage(MenuPage::OSCILLATOR_3_PAGE);
+            }
+            if (sx1509_buttons.isRisingEdge(BUTTON_FLT)) {
+                SetPage(MenuPage::FILTER_PAGE);
+            }
+            if (sx1509_buttons.isRisingEdge(BUTTON_AMP)) {
+                SetPage(MenuPage::AMPLIFIER_PAGE);
+            }
+            if (sx1509_buttons.isRisingEdge(BUTTON_FX)) {
+                SetPage(MenuPage::FX_PAGE);
+            }
+            if (sx1509_buttons.isRisingEdge(BUTTON_LFO)) {
+                SetPage(MenuPage::LFO_PAGE);
+            }
+            if (sx1509_buttons.isRisingEdge(BUTTON_MTX)) {
+                SetPage(MenuPage::MTX_PAGE);
+            }
+        }
     }
 }
-
 void ProcessEncoders(){
     
     if (sx1509_encoders.ReadAllPins()) {

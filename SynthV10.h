@@ -18,7 +18,6 @@ using namespace daisy;
 using namespace daisysp;
 
 // Global objects
-extern VoiceUnit voice[NUM_VOICES];
 extern MidiUsbHandler midi;
 extern CpuLoadMeter cpu_load;
 extern FXSlot effectSlot[2];
