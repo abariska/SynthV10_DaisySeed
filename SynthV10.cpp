@@ -115,16 +115,16 @@ void ProcessButtons(void *data) {
 
         if (shift_pressed) {
             if (sx1509_buttons.isRisingEdge(BUTTON_OSC_1)) {
-                params.voice.osc[0].active = !params.voice.osc[0].active;
-                sx1509_leds.WritePin(LED_OSC_1, params.voice.osc[0].active);
+                params.osc[0].active = !params.osc[0].active;
+                sx1509_leds.WritePin(LED_OSC_1, params.osc[0].active);
             }
             if (sx1509_buttons.isRisingEdge(BUTTON_OSC_2)) {
-                params.voice.osc[1].active = !params.voice.osc[1].active;
-                sx1509_leds.WritePin(LED_OSC_2, params.voice.osc[1].active);
+                params.osc[1].active = !params.osc[1].active;
+                sx1509_leds.WritePin(LED_OSC_2, params.osc[1].active);
             }
             if (sx1509_buttons.isRisingEdge(BUTTON_OSC_3)) {
-                params.voice.osc[2].active = !params.voice.osc[2].active;
-                sx1509_leds.WritePin(LED_OSC_3, params.voice.osc[2].active);
+                params.osc[2].active = !params.osc[2].active;
+                sx1509_leds.WritePin(LED_OSC_3, params.osc[2].active);
             }
         } else {
             if (sx1509_buttons.isRisingEdge(BUTTON_BACK)) {
