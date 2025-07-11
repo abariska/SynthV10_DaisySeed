@@ -2,7 +2,7 @@
 TARGET = SynthV10
 
 # Sources
-CPP_SOURCES = SynthV10.cpp Parameters.cpp MidiHandler.cpp Voice.cpp SX1509_extender.cpp \
+CPP_SOURCES = SynthV10.cpp SX1509_extender.cpp \
 	$(OLED_DIR)/DEV_Config.cpp $(OLED_DIR)/OLED_Driver.cpp $(OLED_DIR)/GUI_Paint.cpp $(OLED_DIR)/font8.cpp \
 	$(OLED_DIR)/font12.cpp $(OLED_DIR)/font16.cpp $(OLED_DIR)/font20.cpp $(OLED_DIR)/font24.cpp $(SX1509_DIR)/SX1509.cpp
 

@@ -23,16 +23,16 @@
 #define ENC_DIAL_SW 15
 
 // sx1509 encoders
-#define ENC_1_B 0
-#define ENC_1_A 1
-#define ENC_2_B 2
-#define ENC_2_A 3
-#define ENC_3_B 4
-#define ENC_3_A 5
-#define ENC_4_B 6
-#define ENC_4_A 7
-#define ENC_DIAL_B 8
-#define ENC_DIAL_A 9
+#define ENC_1_A 0
+#define ENC_1_B 1
+#define ENC_2_A 2
+#define ENC_2_B 3
+#define ENC_3_A 4
+#define ENC_3_B 5
+#define ENC_4_A 6
+#define ENC_4_B 7
+#define ENC_DIAL_A 8
+#define ENC_DIAL_B 9
 
 // sx1509 leds
 #define LED_OSC_1 0
@@ -51,7 +51,7 @@ extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
 
 void InitSX1509Extenders();
-
+int8_t EncoderInc(uint8_t enc_index, uint8_t pin_a, uint8_t pin_b);
 
 
 #endif
