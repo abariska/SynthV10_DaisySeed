@@ -135,20 +135,20 @@ void DrawIntroPage(){
     OLED_Transmit_DMA(&intro_page_data);
 }   
     
-void DrawIntroPage2(){
-    while (1)
-    {
-        static int i = 0;
-        char text[12];
-        Paint_NewImage(param_block_data[0].data, 32, 32, 0, BLACK);
-        Paint_Clear(BLACK);
+// void DrawIntroPage2(){
+//     while (1)
+//     {
+//         static int i = 0;
+//         char text[12];
+//         Paint_NewImage(param_block_data[0].data, 32, 32, 0, BLACK);
+//         Paint_Clear(BLACK);
     
-        sprintf(text, "%d", i);
-        Paint_TextCentered(text, 0, 32, 0, Font8, WHITE, BLACK);
-        Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
-        OLED_Part_Transmit_DMA(&param_block_data[0], 40, 40, 72, 72);
-        i++;
-    }   
+//         sprintf(text, "%d", i);
+//         Paint_TextCentered(text, 0, 32, 0, Font8, WHITE, BLACK);
+//         Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
+//         OLED_Part_Transmit_DMA(&param_block_data[0], 40, 40, 72, 72);
+//         i++;
+//     }   
     
     // Paint_NewImage(param_block_data2.data, 32, 46, 0, BLACK);
     // Paint_Clear(WHITE);
@@ -157,7 +157,7 @@ void DrawIntroPage2(){
     // Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
     
     // OLED_Part_Transmit_DMA(&param_block_data2, 80, 80, 112, 106);
-}   
+// }   
 
 void DrawStaticPage(uint8_t color){
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);

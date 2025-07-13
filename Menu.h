@@ -378,8 +378,7 @@ void AssignParamsForPage(MenuPage page) {
 }
 
 void DrawPages() {
-    // Paint_SelectImage(background_black);
-    // Paint_SetScale(16);
+    // Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     // Paint_Clear(BLACK);
     if (currentPage == MAIN_PAGE)
     {
