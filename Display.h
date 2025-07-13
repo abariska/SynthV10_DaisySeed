@@ -12,10 +12,15 @@
 #define PRESET_NUM_BLOCK_WIDTH 128
 #define PRESET_NUM_BLOCK_HEIGHT 16
 #define PARAM_BLOCK_WIDTH 32
-#define PARAM_BLOCK_HEIGHT 64
+#define PARAM_BLOCK_HEIGHT 46
 #define SCOPE_BLOCK_WIDTH 128
 #define SCOPE_BLOCK_HEIGHT 32
 #define NUM_PARAM_BLOCKS 4
+#define WAVE_BUFFER_WIDTH 32
+#define WAVE_BUFFER_HEIGHT 16
+#define CPU_LOAD_BLOCK_WIDTH 16 
+#define CPU_LOAD_BLOCK_HEIGHT 16
+
 
 #include "OLED_1.5_Daisy_Seed/DEV_Config.h"
 #include "OLED_1.5_Daisy_Seed/OLED_Driver.h"
@@ -25,80 +30,48 @@
 #include <cstdint>
 
 const uint8_t BLOCK_TOP_LINE_Y = 80;
-const uint8_t BLOCK_BOTTOM_LINE_Y = 127;
+const uint8_t BLOCK_BOTTOM_LINE_Y = 126;
 const uint8_t BLOCK_X_START[] = {0, 32, 64, 96};
 const uint8_t BLOCK_X_END[] = {32, 64, 96, 128};
 const uint8_t BLOCK_LABEL_Y_START = 0;
 const uint8_t BLOCK_VALUE_Y_START = 24;
 
+const UWORD INTRO_PAGE_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
+const UWORD BG_BLACK_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
+const UWORD PARAM_BLOCK_SIZE = (((PARAM_BLOCK_WIDTH % 2 == 0) ? (PARAM_BLOCK_WIDTH / 2) : (PARAM_BLOCK_WIDTH / 2 + 1)) * PARAM_BLOCK_HEIGHT);
+const UWORD WAVE_BUFFER_SIZE = (((WAVE_BUFFER_WIDTH % 2 == 0) ? (WAVE_BUFFER_WIDTH / 2) : (WAVE_BUFFER_WIDTH / 2 + 1)) * WAVE_BUFFER_HEIGHT);
+const UWORD CPU_LOAD_BLOCK_SIZE = (((CPU_LOAD_BLOCK_WIDTH % 2 == 0) ? (CPU_LOAD_BLOCK_WIDTH / 2) : (CPU_LOAD_BLOCK_WIDTH / 2 + 1)) * CPU_LOAD_BLOCK_HEIGHT);
+const UWORD PRESET_NAME_BLOCK_SIZE = (((PRESET_NAME_BLOCK_WIDTH % 2 == 0) ? (PRESET_NAME_BLOCK_WIDTH / 2) : (PRESET_NAME_BLOCK_WIDTH / 2 + 1)) * PRESET_NAME_BLOCK_HEIGHT);
+const UWORD PRESET_NUM_BLOCK_SIZE = (((PRESET_NUM_BLOCK_WIDTH % 2 == 0) ? (PRESET_NUM_BLOCK_WIDTH / 2) : (PRESET_NUM_BLOCK_WIDTH / 2 + 1)) * PRESET_NUM_BLOCK_HEIGHT);
 
-UBYTE *background_black;
-UWORD background_black_size = ((FULL_PAGE_WIDTH%2==0)? (FULL_PAGE_WIDTH/2)
-    : (FULL_PAGE_WIDTH/2+1)) * FULL_PAGE_HEIGHT;
+__attribute__((section(".sdram_bss"))) UBYTE intro_page[INTRO_PAGE_SIZE];
+__attribute__((section(".sdram_bss"))) UBYTE bg_black[BG_BLACK_SIZE];
+__attribute__((section(".sdram_bss"))) UBYTE param_block[NUM_PARAM_BLOCKS][PARAM_BLOCK_SIZE];
+__attribute__((section(".sdram_bss"))) UBYTE wave_buffer[WAVE_BUFFER_SIZE];
+__attribute__((section(".sdram_bss"))) UBYTE cpu_load_block[CPU_LOAD_BLOCK_SIZE];
+__attribute__((section(".sdram_bss"))) UBYTE preset_name_block[PRESET_NAME_BLOCK_SIZE];
+__attribute__((section(".sdram_bss"))) UBYTE preset_num_block[PRESET_NUM_BLOCK_SIZE];  
+ 
 
-// UBYTE *preset_num_block;
-// UWORD preset_num_black_size = ((PRESET_NUM_BLOCK_WIDTH%2==0)? (PRESET_NUM_BLOCK_WIDTH/2)
-//     : (PRESET_NUM_BLOCK_WIDTH/2+1)) * PRESET_NUM_BLOCK_HEIGHT;
-
-// UBYTE *preset_name_block;
-// UWORD preset_name_black_size = ((PRESET_NAME_BLOCK_WIDTH%2==0)? (PRESET_NAME_BLOCK_WIDTH/2)
-//     : (PRESET_NAME_BLOCK_WIDTH/2+1)) * PRESET_NAME_BLOCK_HEIGHT;
-
-    
-UBYTE *param_block[NUM_PARAM_BLOCKS];
-UWORD param_block_size = ((PARAM_BLOCK_WIDTH%2==0)? (PARAM_BLOCK_WIDTH/2)
-    : (PARAM_BLOCK_WIDTH/2+1)) * PARAM_BLOCK_HEIGHT;
-
-UBYTE *intro_page;
-UWORD intro_page_size = ((FULL_PAGE_WIDTH%2==0)? (FULL_PAGE_WIDTH/2)
-    : (FULL_PAGE_WIDTH/2+1)) * FULL_PAGE_HEIGHT;
-
-UBYTE *wave_buffer;
-UWORD wave_buffer_size = ((32%2==0)? (32/2) : (32/2+1)) * 16; 
-
-UBYTE *cpu_load_block;
-UWORD cpu_load_block_size = ((16%2==0)? (16/2)
-    : (16/2+1)) * 16;
+ImageData intro_page_data;
+ImageData bg_black_data;
+ImageData param_block_data[NUM_PARAM_BLOCKS];
+ImageData wave_buffer_data;
+ImageData cpu_load_block_data;
+ImageData preset_name_block_data;
+ImageData preset_num_block_data;
 
 void InitImages(){
-
-    if((background_black = (UBYTE *)malloc(background_black_size)) == NULL) {
-        printf("Failed to allocate memory for background...\r\n");
-        return; // Вихід з функції, якщо не вдалося виділити пам'ять
-    }
-
+    intro_page_data = {intro_page, INTRO_PAGE_SIZE};
+    bg_black_data = {bg_black, BG_BLACK_SIZE};
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-        if((param_block[i] = (UBYTE *)malloc(param_block_size)) == NULL) {
-            printf("Failed to allocate memory for param block %zu...\r\n", i);
-            return; // Вихід з функції, якщо не вдалося виділити пам'ять
-        }
+        param_block_data[i] = {param_block[i], PARAM_BLOCK_SIZE};
     }
-    if((intro_page = (UBYTE *)malloc(intro_page_size)) == NULL) {
-        printf("Failed to allocate memory for intro page\r\n");
-        return; // Вихід з функції, якщо не вдалося виділити пам'ять
-    }
-
-    if((wave_buffer = (UBYTE *)malloc(wave_buffer_size)) == NULL) {
-        printf("Failed to allocate memory for wave buffer\r\n");
-        return; // Вихід з функції, якщо не вдалося виділити пам'ять
-    }
-
-    // if((preset_name_block = (UBYTE *)malloc(preset_name_black_size)) == NULL) {
-    //     printf("Failed to allocate memory for intro page\r\n");
-    //     return; // Вихід з функції, якщо не вдалося виділити пам'ять
-    // }
-
-    // if((preset_num_block = (UBYTE *)malloc(preset_num_black_size)) == NULL) {
-    //     printf("Failed to allocate memory for intro page\r\n");
-    //     return; // Вихід з функції, якщо не вдалося виділити пам'ять
-    // }
-    if((cpu_load_block = (UBYTE *)malloc(cpu_load_block_size)) == NULL) {
-        printf("Failed to allocate memory for intro page\r\n");
-        return; // Вихід з функції, якщо не вдалося виділити пам'ять
-    }
-
-    printf("Memory allocation successful\r\n");
-}   
+    wave_buffer_data = {wave_buffer, WAVE_BUFFER_SIZE};
+    cpu_load_block_data = {cpu_load_block, CPU_LOAD_BLOCK_SIZE};
+    preset_name_block_data = {preset_name_block, PRESET_NAME_BLOCK_SIZE};
+    preset_num_block_data = {preset_num_block, PRESET_NUM_BLOCK_SIZE};
+}
 
 void DrawMainLines(){
     
@@ -140,17 +113,6 @@ void DrawParamPageLines(){
     }
 }
 
-void DrawParamBlock(uint8_t *block, const char* label, float value){
-    Paint_SelectImage(block);
-    Paint_SetScale(16);
-    Paint_Clear(BLACK);
-    char valStr[16];
-    sprintf(valStr, "%d", (int)value);
-    Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, 24, Font8, WHITE, BLACK);
-    Paint_TextCentered(valStr, 0, PARAM_BLOCK_WIDTH, 48, Font8, WHITE, BLACK);
-    OLED_1in5_Display_Part(block, 0, 0, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT);
-}
-
 // void DrawPresetNumBlock(){
 
 //     Paint_NewImage(preset_num_block, PRESET_NUM_BLOCK_WIDTH, PRESET_NUM_BLOCK_HEIGHT, 0, BLACK);
@@ -158,38 +120,53 @@ void DrawParamBlock(uint8_t *block, const char* label, float value){
 //     Paint_Clear(BLACK);
 //     Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, Font24, WHITE, BLACK);
 //     Paint_TextCentered("Program", 0, FULL_PAGE_WIDTH, 50, Font24, WHITE, BLACK);
-
 // }
 
 // void DrawPresetNameBlock(uint8_t *block){
 // }
 
-void InitDisplayPages(){
-    OLED_1in5_Init();
-    InitImages();
-}
-
 void DrawIntroPage(){
-    Paint_NewImage(intro_page, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_SetScale(16);
+    Paint_NewImage(intro_page_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
     
     Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, Font24, WHITE, BLACK);
     Paint_TextCentered("by abariska", 64, FULL_PAGE_WIDTH, 112, Font8, WHITE, BLACK);
     
-    OLED_1in5_Display(intro_page);
+    OLED_Transmit_DMA(&intro_page_data);
+}   
+    
+void DrawIntroPage2(){
+    while (1)
+    {
+        static int i = 0;
+        char text[12];
+        Paint_NewImage(param_block_data[0].data, 32, 32, 0, BLACK);
+        Paint_Clear(BLACK);
+    
+        sprintf(text, "%d", i);
+        Paint_TextCentered(text, 0, 32, 0, Font8, WHITE, BLACK);
+        Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
+        OLED_Part_Transmit_DMA(&param_block_data[0], 40, 40, 72, 72);
+        i++;
+    }   
+    
+    // Paint_NewImage(param_block_data2.data, 32, 46, 0, BLACK);
+    // Paint_Clear(WHITE);
+    
+    // Paint_TextCentered("B", 0, 32, 0, Font12, WHITE, BLACK);
+    // Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
+    
+    // OLED_Part_Transmit_DMA(&param_block_data2, 80, 80, 112, 106);
 }   
 
 void DrawStaticPage(uint8_t color){
-    Paint_NewImage(background_black, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_SetScale(16); 
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(color); 
     DrawMainLines();
 }
 
 void DrawStaticParamPage(uint8_t color){
-    Paint_NewImage(background_black, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_SetScale(16); 
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(color); 
     DrawParamPageLines();
 }
