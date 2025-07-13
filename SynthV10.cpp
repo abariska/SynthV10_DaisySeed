@@ -53,7 +53,7 @@ int main(void)
     // hw.StartLog(true);
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
-    // cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
+    cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
 
     VoiceInit(samplerate, blocksize);
     EffectsInit(samplerate);
@@ -82,8 +82,6 @@ int main(void)
         ProcessEncoders();
         CheckEditParamOnMain();
         UpdateParamsWithEncoders();
-
-        
         CpuUsageDisplay();
 }
 }
@@ -163,10 +161,10 @@ void ProcessButtons() {
 void ProcessEncoders(){
     
     if (sx1509_encoders.ReadAllPins()) {
-        encoderIncs[0] = sx1509_encoders.EncoderInc(ENC_1_A, ENC_1_B);  
-        encoderIncs[1] = sx1509_encoders.EncoderInc(ENC_2_A, ENC_2_B);  
-        encoderIncs[2] = sx1509_encoders.EncoderInc(ENC_3_A, ENC_3_B);  
-        encoderIncs[3] = sx1509_encoders.EncoderInc(ENC_4_A, ENC_4_B);  
+        encoderIncs[0] = EncoderInc(0, ENC_1_A, ENC_1_B);  
+        encoderIncs[1] = EncoderInc(1, ENC_2_A, ENC_2_B);  
+        encoderIncs[2] = EncoderInc(2, ENC_3_A, ENC_3_B);  
+        encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);  
     }
 }
 

@@ -13,8 +13,8 @@
 #define BUTTON_LFO 5
 #define BUTTON_MTX 6
 #define BUTTON_FX 7
-#define BUTTON_STORE 8
-#define BUTTON_SHIFT 9
+#define BUTTON_STORE 9
+#define BUTTON_SHIFT 8
 #define BUTTON_BACK 10
 #define ENC_1_SW 11
 #define ENC_2_SW 12
@@ -51,7 +51,7 @@ extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
 
 void InitSX1509Extenders();
-
+int8_t EncoderInc(uint8_t enc_index,uint8_t pin_a, uint8_t pin_b);
 
 
 #endif
