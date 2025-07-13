@@ -17,6 +17,13 @@
 using namespace daisy;
 
 extern CpuLoadMeter cpu_load;
+extern ImageData bg_black_data;
+extern ImageData intro_page_data;
+extern ImageData cpu_load_block_data;
+extern ImageData param_block_data[NUM_PARAM_BLOCKS];
+extern ImageData preset_name_block_data;
+extern ImageData preset_num_block_data;
+extern ImageData wave_buffer_data;
 
 extern SynthParams params;
 extern int encoderIncs[4];
@@ -128,8 +135,7 @@ void DrawWaveformImage(int waveform){
 
 void InitOneParamBlock(int blockIndex, float value, const char* label, uint16_t textColor = WHITE, uint16_t bgColor = BLACK){
 
-    Paint_NewImage(param_block[blockIndex], PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor); 
-    Paint_SetScale(16);
+    Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor); 
     Paint_Clear(bgColor);
     
     Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
@@ -144,7 +150,7 @@ void InitOneParamBlock(int blockIndex, float value, const char* label, uint16_t 
                 DrawWaveformImage((Waves)value);
                 break;
             }
-    OLED_1in5_Display_Part(param_block[blockIndex], BLOCK_X_START[blockIndex], 
+    OLED_Part_Transmit_DMA(&param_block_data[blockIndex], BLOCK_X_START[blockIndex], 
         BLOCK_TOP_LINE_Y, BLOCK_X_END[blockIndex], BLOCK_BOTTOM_LINE_Y);
 }
 
@@ -172,8 +178,7 @@ void EditBlockParam(int blockIndex) {
     uint16_t textColor = blinkState ? BLACK : WHITE;
     uint16_t bgColor = blinkState ? 0x01 : BLACK;
     
-    Paint_SelectImage(param_block[blockIndex]); 
-    Paint_SetScale(16);
+    Paint_SelectImage(param_block_data[blockIndex].data); 
     Paint_Clear(bgColor);
     
     int value = (int)slots[blockIndex].assignedParam;
@@ -265,7 +270,6 @@ void DrawMainPage()
 
     sprintf(prog_name, "Program");
     Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
-    InitParamBlocks();
 }
 
 void SetPageName(const char* name) {
@@ -400,11 +404,11 @@ void DrawPages() {
     }
 
     Paint_TextCentered(page_name, 0, 127, 0, Font12, WHITE, BLACK);
-    OLED_1in5_Display(background_black);
+    OLED_Transmit_DMA(&bg_black_data);
 }
 
 void DrawEffectsPage() {
-    Paint_NewImage(background_black, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_SetScale(16); 
     Paint_Clear(BLACK); 
     // Paint_TextCentered("Effects", 0, 127, 0, Font12, WHITE, BLACK);
@@ -445,7 +449,7 @@ void DrawEffectsPage() {
         }
     }
 
-    OLED_1in5_Display(background_black);
+    OLED_Transmit_DMA(&bg_black_data);
 }
 
 void EncoderChangeEffect() {
@@ -466,12 +470,11 @@ void EncoderChangeEffect() {
 void CpuUsageDisplay(){
     
     if (currentPage == MAIN_PAGE) {
-        Paint_SelectImage(cpu_load_block);
-        Paint_SetScale(16);
+        Paint_NewImage(cpu_load_block_data.data, 20, 20, 0, BLACK);
         Paint_Clear(BLACK);
         float cpu_avg_load = cpu_load.GetAvgCpuLoad();
-        Paint_NumCentered(cpu_avg_load, 0, 15, 0, 1, Font8, WHITE, BLACK);
-        OLED_1in5_Display_Part(cpu_load_block, 111, 0, 127, 15);
+        Paint_NumCentered(cpu_avg_load, 0, 20, 0, 1, Font8, WHITE, BLACK);
+        OLED_Part_Transmit_DMA(&cpu_load_block_data, 106, 0, 126, 20);
     }
 }
 

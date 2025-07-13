@@ -53,7 +53,7 @@ int main(void)
     // hw.StartLog(true);
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
-    cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
+    // cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
 
     VoiceInit(samplerate, blocksize);
     EffectsInit(samplerate);
@@ -61,31 +61,34 @@ int main(void)
     MidiInit();
     InitLfo(samplerate);
     InitSynthParams();
+    OLED_1in5_Init();
     InitImages();
-    InitDisplayPages();
     DrawIntroPage();
 
     hw.DelayMs(1000);
+
+    // DrawIntroPage2();
+    // hw.DelayMs(1000);
 
     hw.StartAudio(AudioCallback);
     currentPage = EMPTY;
     SetPage(MAIN_PAGE);
     
-    TimerDisplay();
+    // TimerDisplay();
 
     while (1)
     {
-        // ProcessButtons();
+        ProcessButtons();
         ProcessEncoders();
         CheckEditParamOnMain();
         UpdateParamsWithEncoders();
 
         
-        // CpuUsageDisplay();
+        CpuUsageDisplay();
 }
 }
 
-void ProcessButtons(void *data) {
+void ProcessButtons() {
     if (sx1509_buttons.ReadAllPins()) {
         bool shift_pressed = sx1509_buttons.IsPressed(BUTTON_SHIFT);
 
@@ -167,25 +170,27 @@ void ProcessEncoders(){
     }
 }
 
-void TimerDisplay() {
-    TimerHandle::Config tim_cfg;
+// void TimerDisplay() {
+//     TimerHandle::Config tim_cfg;
 
-    /** TIM5 with IRQ enabled */
-    tim_cfg.periph     = TimerHandle::Config::Peripheral::TIM_5;
-    tim_cfg.enable_irq = true;
+//     /** TIM5 with IRQ enabled */
+//     tim_cfg.periph     = TimerHandle::Config::Peripheral::TIM_5;
+//     tim_cfg.enable_irq = true;
 
-    /** Configure frequency (30Hz) */
-    auto tim_target_freq = 100;
-    auto tim_base_freq   = System::GetPClk2Freq();
-    tim_cfg.period       = tim_base_freq / tim_target_freq;
+//     /** Configure frequency (30Hz) */
+//     auto tim_target_freq = 100;
+//     auto tim_base_freq   = System::GetPClk2Freq();
+//     tim_cfg.period       = tim_base_freq / tim_target_freq;
 
-    /** Initialize timer */
-    tim_display.Init(tim_cfg);
-    tim_display.SetCallback(ProcessButtons);
+//     /** Initialize timer */
+//     tim_display.Init(tim_cfg);
+//     tim_display.SetCallback([](void* data){
+//         ProcessButtons();
+//     });
 
-    /** Start the timer, and generate callbacks at the end of each period */
-    tim_display.Start();
-}
+//     /** Start the timer, and generate callbacks at the end of each period */
+//     tim_display.Start();
+// }
 
 void SelectEffectPage(uint8_t slot){
         EffectName effect_to_show = effectSlot[slot].selectedEffect;
