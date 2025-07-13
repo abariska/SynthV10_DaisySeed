@@ -18,7 +18,7 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
                           AudioHandle::InterleavingOutputBuffer out,
                           size_t                                size)
 {
-    // cpu_load.OnBlockStart();
+    cpu_load.OnBlockStart();
 
     midi.Listen();
     while(midi.HasEvents())
@@ -40,7 +40,7 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
         out[i] = sig_after_fxL;
         out[i + 1] = sig_after_fxR;
     }
-    // cpu_load.OnBlockEnd();  
+    cpu_load.OnBlockEnd();  
 }
 
 int main(void)
@@ -72,7 +72,7 @@ int main(void)
 
     hw.StartAudio(AudioCallback);
     currentPage = EMPTY;
-    SetPage(OSCILLATOR_1_PAGE);
+    SetPage(MAIN_PAGE);
     
     // TimerDisplay();
 

@@ -470,12 +470,11 @@ void EncoderChangeEffect() {
 void CpuUsageDisplay(){
     
     if (currentPage == MAIN_PAGE) {
-        Paint_SelectImage(cpu_load_block);
-        Paint_SetScale(16);
+        Paint_NewImage(cpu_load_block_data.data, 20, 20, 0, BLACK);
         Paint_Clear(BLACK);
         float cpu_avg_load = cpu_load.GetAvgCpuLoad();
-        Paint_NumCentered(cpu_avg_load, 0, 15, 0, 1, Font8, WHITE, BLACK);
-        OLED_Part_Transmit_DMA(&cpu_load_block_data, 111, 0, 127, 15);
+        Paint_NumCentered(cpu_avg_load, 0, 20, 0, 1, Font8, WHITE, BLACK);
+        OLED_Part_Transmit_DMA(&cpu_load_block_data, 106, 0, 126, 20);
     }
 }
 
