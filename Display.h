@@ -62,6 +62,17 @@ ImageData preset_name_block_data;
 ImageData preset_num_block_data;
 
 void InitImages(){
+
+    memset(intro_page, 0, INTRO_PAGE_SIZE);
+    memset(bg_black, 0, BG_BLACK_SIZE);
+    for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+        memset(param_block[i], 0, PARAM_BLOCK_SIZE);
+    }
+    memset(wave_buffer, 0, WAVE_BUFFER_SIZE);
+    memset(cpu_load_block, 0, CPU_LOAD_BLOCK_SIZE);
+    memset(preset_name_block, 0, PRESET_NAME_BLOCK_SIZE);
+    memset(preset_num_block, 0, PRESET_NUM_BLOCK_SIZE);
+    
     intro_page_data = {intro_page, INTRO_PAGE_SIZE};
     bg_black_data = {bg_black, BG_BLACK_SIZE};
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {

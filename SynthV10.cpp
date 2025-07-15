@@ -8,8 +8,6 @@ DaisySeed hw;
 TimerHandle tim_display;
 MidiUsbHandler midi;
 CpuLoadMeter cpu_load;
-extern Mcp23017 mcp_1;
-extern Mcp23017 mcp_2;
 extern SynthParams params;
 
 int encoderIncs[4];
@@ -50,6 +48,7 @@ int main(void)
 
     hw.Configure();
     hw.Init();
+    System::Delay(100);
     // hw.StartLog(true);
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
@@ -71,7 +70,7 @@ int main(void)
     // hw.DelayMs(1000);
 
     hw.StartAudio(AudioCallback);
-    currentPage = EMPTY;
+    InitPageSlots();
     SetPage(MAIN_PAGE);
     
     // TimerDisplay();

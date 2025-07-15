@@ -69,32 +69,31 @@ void InitSX1509Extenders() {
 }
 
 int8_t EncoderInc(uint8_t enc_index,uint8_t pin_a, uint8_t pin_b) {
-    // Update no more than 1kHz
+
     static uint8_t a_[ENCODER_NUM] = {0};
     static uint8_t b_[ENCODER_NUM] = {0};
     static uint32_t last_increment_time_[ENCODER_NUM] = {0};
-    int inc_ = 0;
+    int8_t inc_ = 0;
 
     // Shift Button states to debounce
     a_[enc_index] = (a_[enc_index] << 1) | sx1509_encoders.CurrentPinState(pin_a);
     b_[enc_index] = (b_[enc_index] << 1) | sx1509_encoders.CurrentPinState(pin_b);
 
     // infer increment direction
-    inc_ = 0; // reset inc_ first
     if((a_[enc_index] & 0x03) == 0x02 && (b_[enc_index] & 0x03) == 0x00)
     {
-        inc_ = 1;
+        inc_ = -1;
     }
     else if((b_[enc_index] & 0x03) == 0x02 && (a_[enc_index] & 0x03) == 0x00)
     {
-        inc_ = -1;
+        inc_ = 1;
     }
 	if (inc_ != 0) {
 		// Determine rotation speed
         uint32_t now = System::GetNow();
 		uint32_t time_diff = now - last_increment_time_[enc_index];
 		
-		int    speed_factor_;  
+		int8_t speed_factor_;  
 		// Update speed multiplier
 		if (time_diff < 10) {  // Fast rotation
             if (time_diff < 5) {

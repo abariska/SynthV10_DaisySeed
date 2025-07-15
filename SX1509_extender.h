@@ -23,29 +23,27 @@
 #define ENC_DIAL_SW 15
 
 // sx1509 encoders
-#define ENC_1_B 0
-#define ENC_1_A 1
-#define ENC_2_B 2
-#define ENC_2_A 3
-#define ENC_3_B 4
-#define ENC_3_A 5
-#define ENC_4_B 6
-#define ENC_4_A 7
-#define ENC_DIAL_B 8
-#define ENC_DIAL_A 9
+#define ENC_1_A 0
+#define ENC_1_B 1
+#define ENC_2_A 2
+#define ENC_2_B 3
+#define ENC_3_A 4
+#define ENC_3_B 5
+#define ENC_4_A 6
+#define ENC_4_B 7
+#define ENC_DIAL_A 8
+#define ENC_DIAL_B 9
 
 // sx1509 leds
 #define LED_OSC_1 0
 #define LED_OSC_2 1
 #define LED_OSC_3 2
-#define LED_FLT 3
-#define LED_AMP 4
-#define LED_LFO 5
-#define LED_MTX 6
-#define LED_FX 7
-#define LED_SHIFT 8
-#define LED_BACK 9
-
+#define LED_LFO 3
+#define LED_MTX 4
+#define LED_INPUT 5
+#define LED_OUTPUT 6
+#define LED_MIDI 7
+    
 extern SX1509 sx1509_buttons;
 extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;

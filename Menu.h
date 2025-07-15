@@ -110,7 +110,7 @@ void EncoderChangeEffect();
 void DrawPages();
 void DrawEffectsPage();
 void InitParam(ParamUnitName param, uint8_t slotIndex);
-
+void InitPageSlots();
 void AssignParamsForPage(MenuPage page);
 
 void DrawWaveformImage(int waveform){
@@ -479,40 +479,39 @@ void CpuUsageDisplay(){
 
 // Array of parameter initialization data
 const ParamUnitData paramInitTable[] = {
-    { &params.osc[0].waveform, "Wav", 0, 3, 1, WAVEFORM },
-    { &params.osc[0].pitch, "Sem", -36, 36, 1, X100 },
-    { &params.osc[0].detune, "Det", -0.5, 0.5, 0.01, X100 },
-    { &params.osc[0].amp, "Amp", 0, 1, 0.01, X100 },
-    { &params.osc[1].waveform, "Wav", 0, 3, 1, WAVEFORM },    
-    { &params.osc[1].pitch, "Sem", -36, 36, 1, X100 },
-    { &params.osc[1].detune, "Det", -0.5, 0.5, 0.01, X100 },
-    { &params.osc[1].amp, "Amp", 0, 1, 0.01, X100 },
-    { &params.osc[2].waveform, "Wav", 0, 3, 1, WAVEFORM },    
-    { &params.osc[2].pitch, "Sem", -36, 36, 1, X100 },
-    { &params.osc[2].detune, "Det", -0.5, 0.5, 0.01, X100 },
-    { &params.osc[2].amp, "Amp", 0, 1, 0.01, X100 },
-    { &params.filter.cutoff, "Cut", 50, 15000, 1, REGULAR },
-    { &params.filter.resonance, "Res", 0, 1, 0.01, X100 },
-    { &params.adsr.attack, "Atk", 0, 1, 0.01, X100 },
-    { &params.adsr.decay, "Dec", 0, 1, 0.01, X100 },
-    { &params.adsr.sustain, "Sus", 0, 1, 0.01, X100 },
-    { &params.adsr.release, "Rel", 0, 1, 0.01, X100 },
-    { &params.lfo.freq, "Freq", 0, 1, 0.01, REGULAR },
-    { &params.lfo.depth, "Dpth", 0, 1, 0.01, X100 },
-    { &params.lfo.waveform, "Wav", 0, 3, 1, WAVEFORM },
-    { &params.overdriveParams.drive, "Drv", 0, 1, 0.01, X100 },
-    { &params.chorusParams.freq, "Freq", 0, 1, 0.01, REGULAR },
-    { &params.chorusParams.depth, "Dpth", 0, 1, 0.01, X100 },
-    { &params.chorusParams.delay, "Dly", 0, 1, 0.01, X100 },
-    { &params.chorusParams.feedback, "Fbk", 0, 1, 0.01, X100 },
-    { &params.compressorParams.attack, "Atk", 0, 1, 0.01, X100 },
-    { &params.compressorParams.release, "Rel", 0, 1, 0.01, X100 },
-    { &params.compressorParams.threshold, "Thr", 0, 1, 0.01, X100 },
-    { &params.compressorParams.ratio, "Ratio", 0, 1, 0.01, X100 },
-    // { &params.compressorParams.makeup, "Makeup", 0, 1, 0.01, X100 },
-    { &params.reverbParams.dryWet, "Dry", 0, 1, 0.01, X100 },
-    { &params.reverbParams.feedback, "Fbk", 0, 1, 0.01, X100 },
-    { &params.reverbParams.lpFreq, "LPF", 0, 1, 0.01, X100 }
+    { &params.osc[0].waveform, "Wav", 0, 3, 1, WAVEFORM },   // 0 OSC_WAVEFORM_1
+    { &params.osc[0].pitch,    "Sem", -36, 36, 1, X100 },   // 1 OSC_PITCH_1
+    { &params.osc[0].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //2 OSC_DETUNE_1
+    { &params.osc[0].amp,      "Amp", 0, 1, 0.01, X100 },   //3 OSC_AMP_1
+    { &params.osc[1].waveform, "Wav", 0, 3, 1, WAVEFORM },  //4 OSC_WAVEFORM_2
+    { &params.osc[1].pitch,    "Sem", -36, 36, 1, X100 },   //5 OSC_PITCH_2
+    { &params.osc[1].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //6 OSC_DETUNE_2
+    { &params.osc[1].amp,      "Amp", 0, 1, 0.01, X100 },   //7 OSC_AMP_2
+    { &params.osc[2].waveform, "Wav", 0, 3, 1, WAVEFORM },  //8 OSC_WAVEFORM_3
+    { &params.osc[2].pitch,    "Sem", -36, 36, 1, X100 },   //9 OSC_PITCH_3
+    { &params.osc[2].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //10 OSC_DETUNE_3
+    { &params.osc[2].amp,      "Amp", 0, 1, 0.01, X100 },   //11 OSC_AMP_3
+    { &params.adsr.attack,     "Atk", 0, 1, 0.01, X100 },   //12 ADSR_ATTACK
+    { &params.adsr.decay,      "Dec", 0, 1, 0.01, X100 },   //13 ADSR_DECAY
+    { &params.adsr.sustain,    "Sus", 0, 1, 0.01, X100 },   //14 ADSR_SUSTAIN
+    { &params.adsr.release,    "Rel", 0, 1, 0.01, X100 },   //15 ADSR_RELEASE
+    { &params.filter.cutoff,   "Cut", 50, 15000, 1, REGULAR }, //16 FILTER_CUTOFF
+    { &params.filter.resonance,"Res", 0, 1, 0.01, X100 },   //17 FILTER_RESONANCE
+    { &params.lfo.waveform,    "Wav", 0, 3, 1, WAVEFORM },  //18 LFO_WAVEFORM
+    { &params.lfo.freq,        "Freq", 0, 1, 0.01, REGULAR },//19 LFO_FREQ
+    { &params.lfo.depth,       "Dpth", 0, 1, 0.01, X100 },  //20 LFO_DEPTH
+    { &params.overdriveParams.drive, "Drv", 0, 1, 0.01, X100 }, //21 EFFECT_OVERDRIVE_DRIVE
+    { &params.chorusParams.freq,     "Freq", 0, 1, 0.01, REGULAR }, //22 EFFECT_CHORUS_FREQ
+    { &params.chorusParams.depth,    "Dpth", 0, 1, 0.01, X100 },   //23 EFFECT_CHORUS_DEPTH
+    { &params.chorusParams.feedback, "Fbk", 0, 1, 0.01, X100 },   //24 EFFECT_CHORUS_FBK
+    { &params.chorusParams.delay,    "Dly", 0, 1, 0.01, X100 },   //25 EFFECT_CHORUS_PAN (тимчасово використовуємо delay)
+    { &params.compressorParams.attack,    "Atk", 0, 1, 0.01, X100 }, //26 EFFECT_COMPRESSOR_ATTACK
+    { &params.compressorParams.release,   "Rel", 0, 1, 0.01, X100 }, //27 EFFECT_COMPRESSOR_RELEASE
+    { &params.compressorParams.threshold, "Thr", 0, 1, 0.01, X100 }, //28 EFFECT_COMPRESSOR_THRESHOLD
+    { &params.compressorParams.ratio,     "Ratio",0, 1, 0.01, X100 }, //29 EFFECT_COMPRESSOR_RATIO
+    { &params.reverbParams.dryWet,   "Dry", 0, 1, 0.01, X100 },   //30 EFFECT_REVERB_DRYWET
+    { &params.reverbParams.feedback, "Fbk", 0, 1, 0.01, X100 },   //31 EFFECT_REVERB_FBK
+    { &params.reverbParams.lpFreq,   "LPF", 0, 1, 0.01, X100 }    //32 EFFECT_REVERB_LPFREQ
 };
 
 void InitParam(ParamUnitName param, uint8_t slotIndex) {
@@ -527,7 +526,6 @@ void InitParam(ParamUnitName param, uint8_t slotIndex) {
         allParams[param].sensitivity = paramInitTable[param].sensitivity;
         allParams[param].valueType = paramInitTable[param].valueType;
     } else {
-        // Handle NONE or unknown parameter
         allParams[param].target_param = nullptr;
         allParams[param].label = " - ";
         allParams[param].min = 0;
@@ -535,8 +533,15 @@ void InitParam(ParamUnitName param, uint8_t slotIndex) {
         allParams[param].sensitivity = 0;
         allParams[param].valueType = REGULAR;
     }
+
 }
     
-
+void InitPageSlots() {
+    currentPage = EMPTY;
+    for (int i = 0; i < NUM_PARAM_BLOCKS; i++) {
+        slots[i].assignedParam = NONE;
+        slots[i].need_update = false;
+    }
+}
 
 #endif
