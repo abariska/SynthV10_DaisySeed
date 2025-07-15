@@ -1,9 +1,10 @@
 #include "SX1509_extender.h"
 
+#define ENCODER_NUM 5
+
 SX1509 sx1509_buttons;
 SX1509 sx1509_encoders;
 SX1509 sx1509_leds;
-    
 
 void InitSX1509Buttons() {
 
@@ -16,10 +17,6 @@ void InitSX1509Buttons() {
     i2c_conf_buttons.transport_config.i2c_address = 0x3E;
     sx1509_buttons.Init(i2c_conf_buttons);
     sx1509_buttons.Check();
-
-    for (int i = 0; i < 16; i++) {
-        sx1509_buttons.SetPinMode(i, 1, 1);
-    }
 }
 
 void InitSX1509Encoders() {
@@ -32,12 +29,7 @@ void InitSX1509Encoders() {
     i2c_conf_encoders.transport_config.i2c_config.pin_config.sda = seed::D12;
     i2c_conf_encoders.transport_config.i2c_address = 0x3F;
     sx1509_encoders.Init(i2c_conf_encoders);
-    sx1509_encoders.Check();
-
-    for (int i = 0; i < 16; i++) {
-        sx1509_encoders.SetPinMode(i, 1, 0);
-    }
-    
+    sx1509_encoders.Check();    
 }
 
 void InitSX1509Leds() {
@@ -51,19 +43,73 @@ void InitSX1509Leds() {
     i2c_conf_leds.transport_config.i2c_address = 0x70;
     sx1509_leds.Init(i2c_conf_leds);
     sx1509_leds.Check();
-
-    for (int i = 0; i < 16; i++) {
-        sx1509_leds.SetPinMode(i, 0, 0);
-    }
-
-    sx1509_buttons.DebounceTime(1);
 }
 
 void InitSX1509Extenders() {
-    
+
     InitSX1509Buttons();
     InitSX1509Encoders();
     InitSX1509Leds();
+
+    for (int i = 0; i < 16; i++) {
+        sx1509_buttons.SetPinMode(i, PIN_INPUT_PULLUP, 1);
+        sx1509_buttons.DebouncePin(i);
+    }
+
+    for (int i = 0; i < 16; i++) {
+        sx1509_encoders.SetPinMode(i, PIN_INPUT_PULLUP, 1);
+    }
+
+    for (int i = 0; i < 16; i++) {
+        sx1509_leds.SetPinMode(i, PIN_OUTPUT, 0);
+        sx1509_leds.WritePin(i, 0);
+    }
+
+    sx1509_buttons.DebounceConfig(3);
 }
 
+int8_t EncoderInc(uint8_t enc_index,uint8_t pin_a, uint8_t pin_b) {
 
+    static uint8_t a_[ENCODER_NUM] = {0};
+    static uint8_t b_[ENCODER_NUM] = {0};
+    static uint32_t last_increment_time_[ENCODER_NUM] = {0};
+    int8_t inc_ = 0;
+
+    // Shift Button states to debounce
+    a_[enc_index] = (a_[enc_index] << 1) | sx1509_encoders.CurrentPinState(pin_a);
+    b_[enc_index] = (b_[enc_index] << 1) | sx1509_encoders.CurrentPinState(pin_b);
+
+    // infer increment direction
+    if((a_[enc_index] & 0x03) == 0x02 && (b_[enc_index] & 0x03) == 0x00)
+    {
+        inc_ = -1;
+    }
+    else if((b_[enc_index] & 0x03) == 0x02 && (a_[enc_index] & 0x03) == 0x00)
+    {
+        inc_ = 1;
+    }
+	if (inc_ != 0) {
+		// Determine rotation speed
+        uint32_t now = System::GetNow();
+		uint32_t time_diff = now - last_increment_time_[enc_index];
+		
+		int8_t speed_factor_;  
+		// Update speed multiplier
+		if (time_diff < 10) {  // Fast rotation
+            if (time_diff < 5) {
+                speed_factor_ = 100;
+            }
+            else {
+                speed_factor_ = 10;
+            }
+		} else {  // Slow rotation
+			speed_factor_ = 1;
+		}
+		// Update last change time
+		last_increment_time_[enc_index] = now;
+		
+		// Apply speed multiplier
+		inc_ *=  speed_factor_;
+	}
+    return inc_;
+}
