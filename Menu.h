@@ -6,8 +6,8 @@
 #include "OLED_1.5_Daisy_Seed/GUI_Paint.h"
 #include "OLED_1.5_Daisy_Seed/OLED_Driver.h"
 #include "OLED_1.5_Daisy_Seed/DEV_Config.h"
-#include "Parameters.h"
-#include "Display.h"
+#include "parameters.h"
+#include "display.h"
 
 #include <cstdint>
 

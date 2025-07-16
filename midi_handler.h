@@ -3,8 +3,8 @@
 
 #include "daisy_seed.h"
 #include "daisysp.h"
-#include "Parameters.h"
-#include "Voice.h"
+#include "parameters.h"
+#include "voice.h"
 
 using namespace daisy;
 using namespace daisysp;

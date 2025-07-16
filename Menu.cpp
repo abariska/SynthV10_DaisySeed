@@ -1,12 +1,12 @@
-#include "Menu.h"   
-#include "Display.h"
-#include "Voice.h"
-#include "Parameters.h"
-#include "Effects.h"
-#include "SX1509_extender.h"
-#include "MidiHandler.h"
+#include "menu.h"   
+#include "display.h"
+#include "voice.h"
+#include "parameters.h"
+#include "effects.h"
+#include "sx1509_expander.h"
+#include "midi_handler.h"
 #include "GUI_Paint.h"
-#include "SynthV10.h"
+#include "main.h"
 
 MenuPage currentPage;
 ParamUnitData allParams[ParamUnitName::NONE + 1];

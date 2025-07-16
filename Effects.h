@@ -7,7 +7,7 @@
 #include "daisy_seed.h"
 #include "daisysp.h"      // Для Overdrive, Chorus, Compressor
 #include "daisysp-lgpl.h"      // Для Overdrive, Chorus, Compressor
-#include "Smallreverb.h"  // Для SmallReverb
+#include "smallreverb.h"  // Для SmallReverb
 
 using namespace daisy;
 using namespace daisysp;

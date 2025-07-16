@@ -5,14 +5,14 @@
 #include "daisy_seed.h"
 #include "daisysp.h"
 #include "daisysp-lgpl.h"
-#include "Parameters.h"
-#include "SX1509_extender.h"
-#include "Voice.h"
-#include "Effects.h"
-#include "MidiHandler.h"
+#include "parameters.h"
+#include "sx1509_expander.h"
+#include "voice.h"
+#include "effects.h"
+#include "midi_handler.h"
 #include "daisy_core.h"
-#include "Display.h"
-#include "Menu.h"
+#include "display.h"
+#include "menu.h"
 
 
 using namespace daisy;

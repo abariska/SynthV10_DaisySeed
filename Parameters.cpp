@@ -1,4 +1,4 @@
-#include "Parameters.h"
+#include "parameters.h"
 #include "daisysp.h" // Add for using constants
 
 using namespace daisysp;

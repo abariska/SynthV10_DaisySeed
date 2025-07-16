@@ -1,6 +1,6 @@
-#include "SynthV10.h"
+#include "main.h"
 #include "daisy.h"
-#include "SX1509_extender.h"
+#include "sx1509_expander.h"
 
 using namespace daisy;
 

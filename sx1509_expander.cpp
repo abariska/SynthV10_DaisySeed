@@ -1,4 +1,4 @@
-#include "SX1509_extender.h"
+#include "sx1509_expander.h"
 
 #define ENCODER_NUM 5
 

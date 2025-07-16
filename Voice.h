@@ -7,7 +7,7 @@
 #include "daisy.h"
 #include "daisysp.h"
 #include "daisysp-lgpl.h"  
-#include "Parameters.h"
+#include "parameters.h"
 
 using namespace daisy;  
 using namespace daisysp;

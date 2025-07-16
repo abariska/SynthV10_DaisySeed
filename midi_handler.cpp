@@ -1,5 +1,5 @@
-#include "MidiHandler.h"
-#include "Voice.h"
+#include "midi_handler.h"
+#include "voice.h"
 
 extern DaisySeed hw;
 

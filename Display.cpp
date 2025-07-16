@@ -1,6 +1,6 @@
 
-#include "Display.h"
-#include "Menu.h"
+#include "display.h"
+#include "menu.h"
 
 extern MenuPage currentPage;
 
