@@ -55,17 +55,18 @@ void InitSX1509Extenders() {
         sx1509_buttons.SetPinMode(i, PIN_INPUT_PULLUP, 1);
         sx1509_buttons.DebouncePin(i);
     }
+    sx1509_buttons.DebounceConfig(3);
+    sx1509_buttons.ReadAllPins();
 
     for (int i = 0; i < 16; i++) {
         sx1509_encoders.SetPinMode(i, PIN_INPUT_PULLUP, 1);
     }
+    sx1509_encoders.ReadAllPins();
 
     for (int i = 0; i < 16; i++) {
         sx1509_leds.SetPinMode(i, PIN_OUTPUT, 0);
         sx1509_leds.WritePin(i, 0);
     }
-
-    sx1509_buttons.DebounceConfig(3);
 }
 
 int8_t EncoderInc(uint8_t enc_index,uint8_t pin_a, uint8_t pin_b) {
@@ -82,11 +83,11 @@ int8_t EncoderInc(uint8_t enc_index,uint8_t pin_a, uint8_t pin_b) {
     // infer increment direction
     if((a_[enc_index] & 0x03) == 0x02 && (b_[enc_index] & 0x03) == 0x00)
     {
-        inc_ = -1;
+        inc_ = 1;
     }
     else if((b_[enc_index] & 0x03) == 0x02 && (a_[enc_index] & 0x03) == 0x00)
     {
-        inc_ = 1;
+        inc_ = -1;
     }
 	if (inc_ != 0) {
 		// Determine rotation speed

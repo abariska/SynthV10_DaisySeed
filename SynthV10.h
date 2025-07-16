@@ -8,10 +8,11 @@
 #include "Parameters.h"
 #include "SX1509_extender.h"
 #include "Voice.h"
-#include "Menu.h"
 #include "Effects.h"
 #include "MidiHandler.h"
 #include "daisy_core.h"
+#include "Display.h"
+#include "Menu.h"
 
 
 using namespace daisy;
@@ -34,6 +35,13 @@ void ProcessButtons();
 void ProcessEncoders();
 void SelectEffectPage(uint8_t slot);
 void CheckEditParamOnMain();
+void InitImages();
+void DrawIntroPage();
+void SetPage(MenuPage newPage);
+void UpdateEncoderSwitches();
+void UpdateEncodersParams();
+void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, UWORD color, UWORD backgroundColor);
+void InitParamBlocks();
 
 
 #endif

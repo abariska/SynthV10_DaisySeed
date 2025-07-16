@@ -1,6 +1,7 @@
 #include "SynthV10.h"
 #include "daisy.h"
 #include "SX1509_extender.h"
+
 using namespace daisy;
 
 DaisySeed hw;
@@ -8,7 +9,6 @@ DaisySeed hw;
 TimerHandle tim_display;
 MidiUsbHandler midi;
 CpuLoadMeter cpu_load;
-extern SynthParams params;
 
 int encoderIncs[4];
 
@@ -80,78 +80,91 @@ int main(void)
         ProcessButtons();
         ProcessEncoders();
         CheckEditParamOnMain();
-        UpdateParamsWithEncoders();
-        CpuUsageDisplay();
+        // CpuUsageDisplay();
 }
 }
 
 void ProcessButtons() {
-    if (sx1509_buttons.ReadAllPins()) {
-        bool shift_pressed = sx1509_buttons.IsPressed(BUTTON_SHIFT);
 
+    bool any_button_change = sx1509_buttons.ReadAllPins();
+    bool shift_pressed = sx1509_buttons.IsPressed(BUTTON_SHIFT);
+
+    UpdateEncoderSwitches(); 
+
+    if (any_button_change) {
         if (currentPage == MenuPage::FX_PAGE) {
             if (shift_pressed) {  
-                if (sx1509_buttons.isRisingEdge(ENC_1_SW)) {
+                if (sx1509_buttons.isFallingEdge(ENC_1_SW)) {
                     effectSlot[0].isActive = !effectSlot[0].isActive;
                 }
-                if (sx1509_buttons.isRisingEdge(ENC_4_SW)) {
+                if (sx1509_buttons.isFallingEdge(ENC_4_SW)) {
                     effectSlot[1].isActive = !effectSlot[1].isActive;
                 }
             } else {
-                if (sx1509_buttons.isRisingEdge(ENC_1_SW)) {
+                if (sx1509_buttons.isFallingEdge(ENC_1_SW)) {
                     SelectEffectPage(0);
                 }
-                if (sx1509_buttons.isRisingEdge(ENC_4_SW)) {
+                if (sx1509_buttons.isFallingEdge(ENC_4_SW)) {
                     SelectEffectPage(1);
                 }
             }
         } else if (currentPage == MenuPage::MAIN_PAGE) {
             for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-                if (sx1509_buttons.isRisingEdge(ENC_1_SW + i)) {
+                if (sx1509_buttons.isFallingEdge(ENC_1_SW + i)) {
                     isParamEditMode[i] = !isParamEditMode[i];
                 }
             }
         }
 
         if (shift_pressed) {
-            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_1)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
                 params.osc[0].active = !params.osc[0].active;
                 sx1509_leds.WritePin(LED_OSC_1, params.osc[0].active);
+                Paint_NewImage(osc_on_block_data.data, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT, 0, BLACK);
+                Paint_DrawString_EN(110, 0,params.osc[0].active ? "On" : "Off", &Font8, WHITE, BLACK);
+                OLED_Part_Transmit_DMA(&osc_on_block_data, 0, 0, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT);
+
             }
-            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_2)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
                 params.osc[1].active = !params.osc[1].active;
                 sx1509_leds.WritePin(LED_OSC_2, params.osc[1].active);
+                Paint_NewImage(osc_on_block_data.data, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT, 0, BLACK);
+                Paint_DrawString_EN(110, 0,params.osc[1].active ? "On" : "Off", &Font8, WHITE, BLACK);
+                OLED_Part_Transmit_DMA(&osc_on_block_data, 32, 0, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT);
             }
-            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_3)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
                 params.osc[2].active = !params.osc[2].active;
-                sx1509_leds.WritePin(LED_OSC_3, params.osc[2].active);
+                sx1509_leds.WritePin(LED_OSC_3, params.osc[2].active);      
+                Paint_NewImage(osc_on_block_data.data, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT, 0, BLACK);
+                Paint_DrawString_EN(110, 0,params.osc[2].active ? "On" : "Off", &Font8, WHITE, BLACK);
+                OLED_Part_Transmit_DMA(&osc_on_block_data, 64, 0, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT);
             }
         } else {
-            if (sx1509_buttons.isRisingEdge(BUTTON_BACK)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_BACK)) {
                 SetPage(MenuPage::MAIN_PAGE);
             }
-            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_1)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
                 SetPage(MenuPage::OSCILLATOR_1_PAGE);
             }
-            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_2)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
                 SetPage(MenuPage::OSCILLATOR_2_PAGE);
             }
-            if (sx1509_buttons.isRisingEdge(BUTTON_OSC_3)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
                 SetPage(MenuPage::OSCILLATOR_3_PAGE);
             }
-            if (sx1509_buttons.isRisingEdge(BUTTON_FLT)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_FLT)) {
                 SetPage(MenuPage::FILTER_PAGE);
             }
-            if (sx1509_buttons.isRisingEdge(BUTTON_AMP)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_AMP)) {
                 SetPage(MenuPage::AMPLIFIER_PAGE);
             }
-            if (sx1509_buttons.isRisingEdge(BUTTON_FX)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_FX)) {
                 SetPage(MenuPage::FX_PAGE);
             }
-            if (sx1509_buttons.isRisingEdge(BUTTON_LFO)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_LFO)) {
                 SetPage(MenuPage::LFO_PAGE);
             }
-            if (sx1509_buttons.isRisingEdge(BUTTON_MTX)) {
+            if (sx1509_buttons.isFallingEdge(BUTTON_MTX)) {
                 SetPage(MenuPage::MTX_PAGE);
             }
         }
@@ -159,12 +172,22 @@ void ProcessButtons() {
 }
 void ProcessEncoders(){
     
-    if (sx1509_encoders.ReadAllPins()) {
+    bool any_encoder_change = sx1509_encoders.ReadAllPins();
+
+    if (any_encoder_change) {
         encoderIncs[0] = EncoderInc(0, ENC_1_A, ENC_1_B);  
         encoderIncs[1] = EncoderInc(1, ENC_2_A, ENC_2_B);  
         encoderIncs[2] = EncoderInc(2, ENC_3_A, ENC_3_B);  
         encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);  
     }
+
+    for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+        if (encoderIncs[i] != 0 && !isParamEditMode[i]) {
+            slots[i].need_update = true;
+        }
+    }
+
+    UpdateEncodersParams();
 }
 
 // void TimerDisplay() {
@@ -211,22 +234,22 @@ void SelectEffectPage(uint8_t slot){
 
 void CheckEditParamOnMain() {
     if (currentPage == MenuPage::MAIN_PAGE) {
-        if (sx1509_buttons.isRisingEdge(ENC_1_SW)) {
+        if (sx1509_buttons.isFallingEdge(ENC_1_SW)) {
             isParamEditMode[0] = !isParamEditMode[0];
             InitOneParamBlock(0, *allParams[slots[0].assignedParam].target_param, 
                 allParams[slots[0].assignedParam].label, WHITE, BLACK);
         }
-        if (sx1509_buttons.isRisingEdge(ENC_2_SW)) {
+        if (sx1509_buttons.isFallingEdge(ENC_2_SW)) {
             isParamEditMode[1] = !isParamEditMode[1];
             InitOneParamBlock(1, *allParams[slots[1].assignedParam].target_param, 
                 allParams[slots[1].assignedParam].label, WHITE, BLACK);
         }
-        if (sx1509_buttons.isRisingEdge(ENC_3_SW)) {
+        if (sx1509_buttons.isFallingEdge(ENC_3_SW)) {
             isParamEditMode[2] = !isParamEditMode[2];
             InitOneParamBlock(2, *allParams[slots[2].assignedParam].target_param, 
                 allParams[slots[2].assignedParam].label, WHITE, BLACK);
         }
-        if (sx1509_buttons.isRisingEdge(ENC_4_SW)) {
+        if (sx1509_buttons.isFallingEdge(ENC_4_SW)) {
             isParamEditMode[3] = !isParamEditMode[3];
             InitOneParamBlock(3, *allParams[slots[3].assignedParam].target_param, 
                 allParams[slots[3].assignedParam].label, WHITE, BLACK);

@@ -1,4 +1,5 @@
 #include "Voice.h"
+#include "SynthV10.h"
 
 // Definition of global variables
 std::array<BlOsc, OSC_NUM> osc;

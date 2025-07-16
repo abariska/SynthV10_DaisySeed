@@ -96,9 +96,6 @@ struct SynthParams {
 
 };
 
-// Global variable for accessing parameters
-extern SynthParams params;
-
 // Functions for initializing parameters
 void InitSynthParams();
 void InitEffectParams();
