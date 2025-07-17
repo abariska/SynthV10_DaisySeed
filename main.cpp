@@ -79,8 +79,9 @@ int main(void)
     {
         ProcessButtons();
         ProcessEncoders();
-        CheckEditParamOnMain();
-        // CpuUsageDisplay();
+        // CheckEditParamOnMain();
+        UpdateEncodersParams();
+        CpuUsageDisplay();
 }
 }
 
@@ -92,6 +93,7 @@ void ProcessButtons() {
     UpdateEncoderSwitches(); 
 
     if (any_button_change) {
+        
         if (currentPage == MenuPage::FX_PAGE) {
             if (shift_pressed) {  
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW)) {
@@ -182,12 +184,13 @@ void ProcessEncoders(){
     }
 
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-        if (encoderIncs[i] != 0 && !isParamEditMode[i]) {
+        if (encoderIncs[i] != 0  && !isParamEditMode[i]) {
             slots[i].need_update = true;
         }
     }
-
-    UpdateEncodersParams();
+    // if (!isParamEditMode[0] && !isParamEditMode[1] && !isParamEditMode[2] && !isParamEditMode[3]) {
+    //     return;
+    // }
 }
 
 // void TimerDisplay() {
@@ -232,27 +235,13 @@ void SelectEffectPage(uint8_t slot){
     }
 }
 
-void CheckEditParamOnMain() {
-    if (currentPage == MenuPage::MAIN_PAGE) {
-        if (sx1509_buttons.isFallingEdge(ENC_1_SW)) {
-            isParamEditMode[0] = !isParamEditMode[0];
-            InitOneParamBlock(0, *allParams[slots[0].assignedParam].target_param, 
-                allParams[slots[0].assignedParam].label, WHITE, BLACK);
-        }
-        if (sx1509_buttons.isFallingEdge(ENC_2_SW)) {
-            isParamEditMode[1] = !isParamEditMode[1];
-            InitOneParamBlock(1, *allParams[slots[1].assignedParam].target_param, 
-                allParams[slots[1].assignedParam].label, WHITE, BLACK);
-        }
-        if (sx1509_buttons.isFallingEdge(ENC_3_SW)) {
-            isParamEditMode[2] = !isParamEditMode[2];
-            InitOneParamBlock(2, *allParams[slots[2].assignedParam].target_param, 
-                allParams[slots[2].assignedParam].label, WHITE, BLACK);
-        }
-        if (sx1509_buttons.isFallingEdge(ENC_4_SW)) {
-            isParamEditMode[3] = !isParamEditMode[3];
-            InitOneParamBlock(3, *allParams[slots[3].assignedParam].target_param, 
-                allParams[slots[3].assignedParam].label, WHITE, BLACK);
-        }
+void CpuUsageDisplay(){
+    
+    if (currentPage == MAIN_PAGE) {
+        Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+        Paint_Clear(BLACK);
+        float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+        Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
+        OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
     }
 }

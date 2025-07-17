@@ -1,7 +1,5 @@
 #include "sx1509_expander.h"
 
-#define ENCODER_NUM 5
-
 SX1509 sx1509_buttons;
 SX1509 sx1509_encoders;
 SX1509 sx1509_leds;

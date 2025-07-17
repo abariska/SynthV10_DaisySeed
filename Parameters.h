@@ -94,6 +94,7 @@ struct SynthParams {
         bool isActive;        // Is the effect active
     } reverbParams;
 
+    float none;
 };
 
 // Functions for initializing parameters

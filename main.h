@@ -42,6 +42,7 @@ void UpdateEncoderSwitches();
 void UpdateEncodersParams();
 void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, UWORD color, UWORD backgroundColor);
 void InitParamBlocks();
+void CpuUsageDisplay();
 
 
 #endif

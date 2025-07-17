@@ -72,6 +72,27 @@ void InitParamBlocks(){
 void EditBlockParam(uint8_t blockIndex) {
     static uint32_t lastBlinkTime = 0;
     static bool blinkState = false;
+
+
+    int value = (int)slots[blockIndex].assignedParam;
+        
+    value += encoderIncs[blockIndex];
+        
+    if (value > 32) {
+        value = 32;
+    } else if (value < 0) {
+        value = 0;
+    }
+    for (size_t i = 0; i < ENCODER_NUM; i++) {
+        if (i == blockIndex) continue;
+        if (encoderIncs[blockIndex] == 1 && (ParamUnitName)value == slots[i].assignedParam) {
+            value++;
+        }
+        else if (encoderIncs[blockIndex] == -1 && (ParamUnitName)value == slots[i].assignedParam) {
+            value--;
+        }
+    }
+    encoderIncs[blockIndex] = 0;
     
     int currentTime = System::GetNow();
     
@@ -83,19 +104,6 @@ void EditBlockParam(uint8_t blockIndex) {
     uint16_t textColor = blinkState ? BLACK : WHITE;
     uint16_t bgColor = blinkState ? 0x01 : BLACK;
     
-    Paint_SelectImage(param_block_data[blockIndex].data); 
-    Paint_Clear(bgColor);
-    
-    int value = (int)slots[blockIndex].assignedParam;
-        
-    value += encoderIncs[blockIndex];
-        
-    if (value > (int)NONE) {
-        value = (int)NONE;
-    } else if (value < 0) {
-        value = 0;
-    }
-        
     slots[blockIndex].assignedParam = (ParamUnitName)value;
     InitParam((ParamUnitName)value, blockIndex); 
     InitOneParamBlock(blockIndex, *allParams[slots[blockIndex].assignedParam].target_param, 
@@ -111,8 +119,9 @@ void UpdateEncoderSwitches() {
                 if (isParamEditMode[i]) {
                     static uint8_t isCurrentEditSlot = 0;
 
-                    if (isCurrentEditSlot != i) {
+                    EditBlockParam(i);
 
+                    if (isCurrentEditSlot != i) {
                         isCurrentEditSlot = i;
 
                         for (size_t j = 0; j < NUM_PARAM_BLOCKS; j++) {
@@ -123,7 +132,7 @@ void UpdateEncoderSwitches() {
                         }
                     }
                 }
-                EditBlockParam(i);
+                
             }
         }
         break;
@@ -139,7 +148,7 @@ void UpdateEncoderSwitches() {
 }
 
 void UpdateEncodersParams() {
-        
+
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
 
         if (!slots[i].need_update) continue;
@@ -321,17 +330,6 @@ void EncoderChangeEffect() {
     }
 }
 
-void CpuUsageDisplay(){
-    
-    if (currentPage == MAIN_PAGE) {
-        Paint_NewImage(cpu_load_block_data.data, 20, 20, 0, BLACK);
-        Paint_Clear(BLACK);
-        float cpu_avg_load = cpu_load.GetAvgCpuLoad();
-        Paint_NumCentered(cpu_avg_load, 0, 20, 0, 1, Font8, WHITE, BLACK);
-        OLED_Part_Transmit_DMA(&cpu_load_block_data, 106, 0, 126, 20);
-    }
-}
-
 // Array of parameter initialization data
 const ParamUnitData paramInitTable[] = {
     { &params.osc[0].waveform, "Wav", 0, 3, 1, WAVEFORM },   // 0 OSC_WAVEFORM_1
@@ -366,7 +364,7 @@ const ParamUnitData paramInitTable[] = {
     { &params.compressorParams.ratio,     "Ratio",0, 1, 0.01, X100 }, //29 EFFECT_COMPRESSOR_RATIO
     { &params.reverbParams.dryWet,   "Dry", 0, 1, 0.01, X100 },   //30 EFFECT_REVERB_DRYWET
     { &params.reverbParams.feedback, "Fbk", 0, 1, 0.01, X100 },   //31 EFFECT_REVERB_FBK
-    { &params.reverbParams.lpFreq,   "LPF", 0, 1, 0.01, X100 }    //32 EFFECT_REVERB_LPFREQ
+    { &params.reverbParams.lpFreq,   "LPF", 0, 1, 0.01, X100 },    //32 EFFECT_REVERB_LPFREQ
 };
 
 void InitParam(ParamUnitName param, uint8_t slotIndex) {
