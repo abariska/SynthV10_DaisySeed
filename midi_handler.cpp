@@ -1,13 +1,21 @@
 #include "midi_handler.h"
 #include "voice.h"
 
-extern DaisySeed hw;
+MidiUartHandler midiUart;
+MidiUsbHandler midiUsb;
+bool midi_note_led = false;
 
-void MidiInit() {
-    // MIDI configuration
-    MidiUsbHandler::Config midi_cfg;
-    midi_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
-    midi.Init(midi_cfg);
+void MidiInit()
+{
+    MidiUsbHandler::Config midi_usb_cfg;
+    midi_usb_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
+    midiUsb.Init(midi_usb_cfg);
+
+    MidiUartHandler::Config midi_uart_cfg;
+    midi_uart_cfg.transport_config.periph = UartHandler::Config::Peripheral::USART_1;
+    midi_uart_cfg.transport_config.rx     = {DSY_GPIOB, 15}; // D30 = PB15 = USART1_RX
+    midi_uart_cfg.transport_config.tx     = {DSY_GPIOB, 14}; // D29 = PB14 = USART1_TX (опціонально)
+    midiUart.Init(midi_uart_cfg);
 }
 
 // Handle MIDI messages
@@ -16,17 +24,18 @@ void HandleMidiMessage(MidiEvent m) {
         case NoteOn:
             {
                 HandleNoteOn(m.data[0], m.data[1]);
+                midi_note_led = true;
             }
             break;
         case NoteOff:
             {
                 HandleNoteOff(m.data[0]);
+                midi_note_led = false;
             }
             break;
         default:
             break;
     }
-    // hw.PrintLine("Midi message: %d\n", m.type);
 }
 
 // // Handle Control Change

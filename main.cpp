@@ -1,13 +1,13 @@
 #include "main.h"
 #include "daisy.h"
 #include "sx1509_expander.h"
+#include "midi_handler.h"
 
 using namespace daisy;
 
 DaisySeed hw;
 
 TimerHandle tim_display;
-MidiUsbHandler midi;
 CpuLoadMeter cpu_load;
 
 int encoderIncs[4];
@@ -18,10 +18,16 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
 {
     cpu_load.OnBlockStart();
 
-    midi.Listen();
-    while(midi.HasEvents())
-    {
-        auto msg = midi.PopEvent();
+    midiUart.Listen();
+    midiUsb.Listen();
+
+    while(midiUsb.HasEvents()) {
+        auto msg = midiUsb.PopEvent();
+        HandleMidiMessage(msg);
+    }
+
+    while(midiUart.HasEvents()) {
+        auto msg = midiUart.PopEvent();
         HandleMidiMessage(msg);
     }
     
@@ -82,6 +88,7 @@ int main(void)
         // CheckEditParamOnMain();
         UpdateEncodersParams();
         CpuUsageDisplay();
+        sx1509_leds.WritePin(6, midi_note_led);
 }
 }
 
