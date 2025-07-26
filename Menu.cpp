@@ -22,16 +22,20 @@ void DrawWaveformImage(int waveform){
     
     switch (waveform)
     {
-    case 0: // 0
+    case 0: // SIN
+        Paint_DrawBitMapBlock(sin_wave, 32, 16, 0, 28); 
+        break;
+    case 1: // TRI
         Paint_DrawBitMapBlock(tri_wave, 32, 16, 0, 28); 
         break;
-    case 1: // 1
+    case 2: // SAW
         Paint_DrawBitMapBlock(saw_wave, 32, 16, 0, 28);
         break;
-    case 2: // 2
+    case 3: // SQR
         Paint_DrawBitMapBlock(sqr_wave, 32, 16, 0, 28);
         break;
-    case 3: // 3
+    case 4: // OFF
+    
         break;
     default:
         break;
@@ -331,7 +335,7 @@ void EncoderChangeEffect() {
 }
 
 // Array of parameter initialization data
-const ParamUnitData paramInitTable[] = {
+const ParamUnitData DSY_SDRAM_DATA paramInitTable[] = {
     { &params.osc[0].waveform, "Wav", 0, 3, 1, WAVEFORM },   // 0 OSC_WAVEFORM_1
     { &params.osc[0].pitch,    "Sem", -36, 36, 1, REGULAR },   // 1 OSC_PITCH_1
     { &params.osc[0].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //2 OSC_DETUNE_1
@@ -347,7 +351,7 @@ const ParamUnitData paramInitTable[] = {
     { &params.adsr.attack,     "Atk", 0, 1, 0.01, X100 },   //12 ADSR_ATTACK
     { &params.adsr.decay,      "Dec", 0, 1, 0.01, X100 },   //13 ADSR_DECAY
     { &params.adsr.sustain,    "Sus", 0, 1, 0.01, X100 },   //14 ADSR_SUSTAIN
-    { &params.adsr.release,    "Rel", 0, 1, 0.01, X100 },   //15 ADSR_RELEASE
+    { &params.adsr.release,    "Rel", 0, 10, 0.01, X100 },   //15 ADSR_RELEASE
     { &params.filter.cutoff,   "Cut", 50, 15000, 1, REGULAR }, //16 FILTER_CUTOFF
     { &params.filter.resonance,"Res", 0, 1, 0.01, X100 },   //17 FILTER_RESONANCE
     { &params.lfo.waveform,    "Wav", 0, 3, 1, WAVEFORM },  //18 LFO_WAVEFORM

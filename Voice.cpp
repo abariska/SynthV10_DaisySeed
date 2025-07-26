@@ -2,7 +2,8 @@
 #include "main.h"
 
 // Definition of global variables
-std::array<BlOsc, OSC_NUM> osc;
+std::array<Osc, OSC_NUM> osc;
+PhaseGenerator phaseGenerator;
 Oscillator lfo;
 Adsr adsrMain;
 MoogLadder flt;
@@ -33,6 +34,7 @@ float ProcessLfo() {
 
 void VoiceInit(float samplerate, int blocksize) {
 
+    phaseGenerator.Init(samplerate);
     for (size_t i = 0; i < OSC_NUM; i++) {
         osc[i].Init(samplerate);
     }
@@ -40,34 +42,40 @@ void VoiceInit(float samplerate, int blocksize) {
     adsrMain.Init(samplerate, blocksize);
 }
 
-void HandleNoteOn(uint8_t noteNumber, uint8_t velocity)
+void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 {
+    bool isNotesPlaying = (activeNoteCount > 0); 
 	// Add this note to the list of active notes
 	if(activeNoteCount < maxNotes) {
-		activeNotes[activeNoteCount] = noteNumber;
+		activeNotes[activeNoteCount] = note_in;
 		activeNoteCount++;
 
-		noteNum = noteNumber;
+		noteNum = note_in;
 		
 		// Map velocity to amplitude
 		float velocity_factor = velocity / 127.0f;
-		float freq_compensation = powf(2.0f, (noteNumber - 60.0f) / 48.0f);
+		float freq_compensation = powf(2.0f, (note_in - 60.0f) / 48.0f);
 		amplitude = velocity_factor * freq_compensation;
 
-        if (activeNoteCount == 1){
-            adsrMain.Retrigger(hardRetrigger);
-            gate = true;
-        }
+        if (!(isNotesPlaying && params.global.isLegato)) {
+            // phaseGenerator.Reset();
+            for(size_t i = 0; i < OSC_NUM; i++)
+            {
+                osc[i].Reset();
+            }
+            adsrMain.Retrigger(true); 
+        } 
+        gate = true;
 	}
 }
 
-void HandleNoteOff(uint8_t noteNumber)
+void HandleNoteOff(uint8_t note_in)
 {
 	bool activeNoteChanged = false;
 	
 	// Go through all the active notes and remove any with this number
 	for(int i = activeNoteCount - 1; i >= 0; i--) {
-		if(activeNotes[i] == noteNumber) {
+		if(activeNotes[i] == note_in) {
 
 			// Found a match: is it the most recent note?
 			if (i == activeNoteCount - 1) {
@@ -80,10 +88,9 @@ void HandleNoteOff(uint8_t noteNumber)
 			activeNoteCount--;
 		}
 	}
-    
+
     if(activeNoteCount == 0) {
 		// No notes left
-		amplitude = 0;
         gate = false;
 	}
 	else if(activeNoteChanged) {
@@ -99,39 +106,47 @@ float VoiceProcess(){
 
     float sig = 0.0f;
 
-    // Update oscillator parameters
-    for (size_t i = 0; i < OSC_NUM; i++) {
-        // Update parameters from template
-        osc[i].SetWaveform(params.osc[i].waveform);
-        osc[i].SetPw(params.osc[i].pw);
-        
-        // Add semitone shift (each semitone is 1 MIDI note)
-        frequency = 440.0f * pow(2.0f, ((noteNum + params.osc[i].pitch) - 69) / 12.0f);
-        frequency *= pow(2.0f, (params.osc[i].detune));  // detune in cents
+    // float base_frequency = 440.0f * powf(2.0f, (noteNum - 69) / 12.0f);
+    // phaseGenerator.SetFreq(base_frequency);
+    
+    // Get the master phase ONCE before the loop
+    // float master_phase = phaseGenerator.Process();
 
-        osc[i].SetFreq(frequency);
-        osc[i].SetAmp(params.osc[i].amp * amplitude);
-        
-        // Process only active oscillators
+    for (size_t i = 0; i < OSC_NUM; i++)
+    {
         if (params.osc[i].active) {
+
+            float final_freq = 440.0f * powf(2.0f, ((noteNum + params.osc[i].pitch) - 69) / 12.0f);
+            final_freq *= powf(2.0f, (params.osc[i].detune));
+            
+            osc[i].SetFreq(final_freq);
+            osc[i].SetAmp(params.osc[i].amp * amplitude);
+            osc[i].SetWaveform(params.osc[i].waveform);
+            osc[i].SetPw(params.osc[i].pw);
+            
             sig += osc[i].Process();
         }
+
+           
     }
     sig /= OSC_NUM;
+
+        flt.SetFreq(params.filter.cutoff);
+        flt.SetRes(params.filter.resonance);
+        sig = flt.Process(sig);
+
+        adsrMain.SetAttackTime(params.adsr.attack);
+        adsrMain.SetDecayTime(params.adsr.decay);
+        adsrMain.SetSustainLevel(params.adsr.sustain);
+        adsrMain.SetReleaseTime(params.adsr.release);
     
-    flt.SetFreq(params.filter.cutoff);
-    flt.SetRes(params.filter.resonance);
-    sig = flt.Process(sig);
-    
-    // Apply ADSR
-    adsrMain.SetAttackTime(params.adsr.attack);
-    adsrMain.SetDecayTime(params.adsr.decay);
-    adsrMain.SetSustainLevel(params.adsr.sustain);
-    adsrMain.SetReleaseTime(params.adsr.release);
-    
-    float env = adsrMain.Process(gate);
-    sig *= env;
+        float env = adsrMain.Process(gate);
+        sig *= env;     
 
     return sig;
 }
 
+void VoiceProcessTest(float& sigL, float& sigR){
+
+    
+}

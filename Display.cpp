@@ -1,6 +1,7 @@
 
 #include "display.h"
 #include "menu.h"
+#include "OLED_1.5_Daisy_Seed/fonts.h"
 
 extern MenuPage currentPage;
 
@@ -13,14 +14,14 @@ const UWORD CPU_LOAD_BLOCK_SIZE = (((CPU_LOAD_BLOCK_WIDTH % 2 == 0) ? (CPU_LOAD_
 const UWORD PRESET_NAME_BLOCK_SIZE = (((PRESET_NAME_BLOCK_WIDTH % 2 == 0) ? (PRESET_NAME_BLOCK_WIDTH / 2) : (PRESET_NAME_BLOCK_WIDTH / 2 + 1)) * PRESET_NAME_BLOCK_HEIGHT);
 const UWORD PRESET_NUM_BLOCK_SIZE = (((PRESET_NUM_BLOCK_WIDTH % 2 == 0) ? (PRESET_NUM_BLOCK_WIDTH / 2) : (PRESET_NUM_BLOCK_WIDTH / 2 + 1)) * PRESET_NUM_BLOCK_HEIGHT);
 
-__attribute__((section(".sdram_bss"))) UBYTE intro_page[INTRO_PAGE_SIZE];
-__attribute__((section(".sdram_bss"))) UBYTE bg_black[BG_BLACK_SIZE];
-__attribute__((section(".sdram_bss"))) UBYTE param_block[NUM_PARAM_BLOCKS][PARAM_BLOCK_SIZE];
-__attribute__((section(".sdram_bss"))) UBYTE wave_buffer[WAVE_BUFFER_SIZE];
-__attribute__((section(".sdram_bss"))) UBYTE osc_on_block[OSC_ON_BLOCK_SIZE];
-__attribute__((section(".sdram_bss"))) UBYTE cpu_load_block[CPU_LOAD_BLOCK_SIZE];
-__attribute__((section(".sdram_bss"))) UBYTE preset_name_block[PRESET_NAME_BLOCK_SIZE];
-__attribute__((section(".sdram_bss"))) UBYTE preset_num_block[PRESET_NUM_BLOCK_SIZE];  
+UBYTE DSY_SDRAM_BSS intro_page[INTRO_PAGE_SIZE];
+UBYTE DSY_SDRAM_BSS bg_black[BG_BLACK_SIZE];
+UBYTE DSY_SDRAM_BSS param_block[NUM_PARAM_BLOCKS][PARAM_BLOCK_SIZE];
+UBYTE DSY_SDRAM_BSS wave_buffer[WAVE_BUFFER_SIZE];
+UBYTE DSY_SDRAM_BSS osc_on_block[OSC_ON_BLOCK_SIZE];
+UBYTE DSY_SDRAM_BSS cpu_load_block[CPU_LOAD_BLOCK_SIZE];
+UBYTE DSY_SDRAM_BSS preset_name_block[PRESET_NAME_BLOCK_SIZE];
+UBYTE DSY_SDRAM_BSS preset_num_block[PRESET_NUM_BLOCK_SIZE];  
 
 ImageData intro_page_data;
 ImageData bg_black_data;
@@ -94,7 +95,7 @@ void DrawIntroPage(){
     Paint_NewImage(intro_page_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
     
-    Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, Font24, WHITE, BLACK);
+    Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, Font16, WHITE, BLACK);
     Paint_TextCentered("by abariska", 64, FULL_PAGE_WIDTH, 112, Font8, WHITE, BLACK);
     
     OLED_Transmit_DMA(&intro_page_data);

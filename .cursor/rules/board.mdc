@@ -1,0 +1,6 @@
+---
+description:
+Only propose and advice according to best practices of using development board in current project
+globs:
+alwaysApply: true
+---
