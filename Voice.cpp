@@ -1,7 +1,6 @@
 #include "voice.h"
 #include "main.h"
-
-// Definition of global variables
+ 
 std::array<Osc, OSC_NUM> osc;
 PhaseGenerator phaseGenerator;
 Oscillator lfo;
@@ -19,7 +18,6 @@ int activeNoteCount = 0;
 bool gate = false;
 bool hardRetrigger = false;
 
-// Function definitions
 void InitLfo(float samplerate) {
     lfo.Init(samplerate);
 }
@@ -59,11 +57,8 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 
         if (!(isNotesPlaying && params.global.isLegato)) {
             // phaseGenerator.Reset();
-            for(size_t i = 0; i < OSC_NUM; i++)
-            {
-                osc[i].Reset();
-            }
-            adsrMain.Retrigger(true); 
+
+            adsrMain.Retrigger(false); 
         } 
         gate = true;
 	}
@@ -148,5 +143,34 @@ float VoiceProcess(){
 
 void VoiceProcessTest(float& sigL, float& sigR){
 
+    // float base_frequency = 440.0f * powf(2.0f, (noteNum - 69) / 12.0f);
+    // phaseGenerator.SetFreq(base_frequency);
     
+    // Get the master phase ONCE before the loop
+    // float master_phase = phaseGenerator.Process();
+
+    for (size_t i = 0; i < OSC_NUM; i++)
+    {
+        if (params.osc[i].active) {
+
+            float final_freq = 440.0f * powf(2.0f, ((noteNum + params.osc[i].pitch) - 69) / 12.0f);
+            final_freq *= powf(2.0f, (params.osc[i].detune));
+            
+            osc[i].SetFreq(final_freq);
+            osc[i].SetAmp(params.osc[i].amp * amplitude);
+            osc[i].SetWaveform(params.osc[i].waveform);
+            osc[i].SetPw(params.osc[i].pw);
+            
+            
+        }
+        
+           
+    }
+    adsrMain.SetAttackTime(params.adsr.attack);
+    adsrMain.SetDecayTime(params.adsr.decay);
+    adsrMain.SetSustainLevel(params.adsr.sustain);
+    adsrMain.SetReleaseTime(params.adsr.release);
+    float env = adsrMain.Process(gate);
+    sigL = osc[0].Process() * env;  
+    sigR = osc[1].Process() * env;
 }

@@ -55,7 +55,7 @@ float Osc::Process()
     switch(mode_)
     {
         case WAVE_SIN:
-            out = sinf(current_phase * 2.0f * M_PI);
+            out = sinf((current_phase + 0.25f) * 2.0f * M_PI);
             break;
 
         case WAVE_TRIANGLE:

@@ -8,8 +8,8 @@ SynthParams params;
 void InitSynthParams() {
     // Voice template initialization
     params.osc[0].active = true;
-    params.osc[1].active = true;
-    // params.osc[2].active = false;
+    params.osc[1].active = false;
+    params.osc[2].active = false;
     for (size_t o = 0; o < OSC_NUM; o++) {
         params.osc[o].waveform = 1.0f;
         params.osc[o].freq = 440.0f;
@@ -19,7 +19,7 @@ void InitSynthParams() {
         params.osc[o].detune = 0.0f;
     }
     
-    params.filter.cutoff = 5000.0f;
+    params.filter.cutoff = 15000.0f;
     params.filter.resonance = 0.0f;
     
     params.adsr.attack = 0.01f;

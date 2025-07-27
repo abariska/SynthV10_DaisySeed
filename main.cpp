@@ -38,11 +38,14 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
         float sig_after_fxL, sig_after_fxR;
         float mix = 0.0f;
 
+        // VoiceProcessTest(sig_after_fxL, sig_after_fxR);
         mix = VoiceProcess();
 
         // for (size_t i = 0; i < 2; i++) {
         //     ProcessEffects(effectSlot[i], mix, sig_after_fxL, sig_after_fxR);
         // }
+        // out[i] = sig_after_fxL;
+        // out[i + 1] = sig_after_fxR;
         out[i] = mix;
         out[i + 1] = mix;
     }
@@ -79,7 +82,7 @@ int main(void)
 
     hw.StartAudio(AudioCallback);
     InitPageSlots();
-    SetPage(MAIN_PAGE);
+    SetPage(OSCILLATOR_1_PAGE);
     
     // TimerDisplay();
 
