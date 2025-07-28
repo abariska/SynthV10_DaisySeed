@@ -8,6 +8,8 @@
 // Required for array structures
 #define OSC_NUM 3
 
+
+
 using namespace daisysp;
 
 enum Waves {
@@ -99,6 +101,8 @@ struct SynthParams {
 
     float none;
 };
+
+extern SynthParams params;
 
 // Functions for initializing parameters
 void InitSynthParams();

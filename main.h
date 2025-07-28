@@ -20,8 +20,7 @@ using namespace daisysp;
 
 // Global objects
 extern CpuLoadMeter cpu_load;
-extern FXSlot effectSlot[2];
-extern SynthParams params;
+
 extern int encoderIncs[4];
 extern bool isParamEditMode[4];
 extern SX1509 sx1509_buttons;
