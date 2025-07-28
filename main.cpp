@@ -35,19 +35,19 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
     
     for(size_t i = 0; i < size; i += 2)
     {
-        float sig_after_fxL, sig_after_fxR;
-        float mix = 0.0f;
+        float sig_after_fxL = 0.0f;
+        float sig_after_fxR = 0.0f;
 
         // VoiceProcessTest(sig_after_fxL, sig_after_fxR);
-        mix = VoiceProcess();
+        VoiceProcess(sig_after_fxL, sig_after_fxR);
 
         // for (size_t i = 0; i < 2; i++) {
         //     ProcessEffects(effectSlot[i], mix, sig_after_fxL, sig_after_fxR);
         // }
         // out[i] = sig_after_fxL;
         // out[i + 1] = sig_after_fxR;
-        out[i] = mix;
-        out[i + 1] = mix;
+        out[i] = sig_after_fxL;
+        out[i + 1] = sig_after_fxR;
     }
     cpu_load.OnBlockEnd();  
 }

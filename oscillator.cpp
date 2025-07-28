@@ -29,6 +29,7 @@ void Osc::Init(float sample_rate)
     mode_ = WAVE_SIN;
     phase_ = 0.0f;
     phase_inc_ = 0.0f;
+    pan_ = 0.5f;
 }
 
 void Osc::Reset()
@@ -46,7 +47,7 @@ void Osc::SetFreq(float freq)
 // but their definitions can be added if needed for sync logic.
 // For now, they are omitted to match the "simple + standalone" state.
 
-float Osc::Process()
+float Osc::Process() 
 {
     float out = 0.0f;
     
@@ -55,7 +56,7 @@ float Osc::Process()
     switch(mode_)
     {
         case WAVE_SIN:
-            out = sinf((current_phase + 0.25f) * 2.0f * M_PI);
+            out = sinf((current_phase + 0.25f) * 2.0f * M_PI); // +0.25f - offset to avoid DC offset
             break;
 
         case WAVE_TRIANGLE:
@@ -64,25 +65,19 @@ float Osc::Process()
 
         case WAVE_SAW:
             out = 1.0f - 2.0f * current_phase;
+            out += poly_blep(current_phase, phase_inc_);
             break;
             
         case WAVE_SQUARE:
             out = current_phase < pw_ ? 1.0f : -1.0f;
+            out += poly_blep(current_phase, phase_inc_);
+            out -= poly_blep(fmodf(current_phase + (1.0f - pw_), 1.0f), phase_inc_);
             break;
 
         case WAVE_OFF:
         default:
             out = 0.0f;
             break;
-    }
-
-    // Apply PolyBLEP correction for waveforms with sharp edges
-    if (mode_ == WAVE_SAW) {
-        out += poly_blep(current_phase, phase_inc_);
-    }
-    if (mode_ == WAVE_SQUARE) {
-        out += poly_blep(current_phase, phase_inc_);
-        out -= poly_blep(fmodf(current_phase + (1.0f - pw_), 1.0f), phase_inc_);
     }
 
     // Increment internal phase

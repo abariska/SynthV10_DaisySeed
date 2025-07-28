@@ -17,6 +17,7 @@ void InitSynthParams() {
         params.osc[o].amp = 0.5f;
         params.osc[o].pitch = 0.0f;
         params.osc[o].detune = 0.0f;
+        params.osc[o].pan = 0.5f;
     }
     
     params.filter.cutoff = 15000.0f;

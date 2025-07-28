@@ -50,6 +50,7 @@ class Osc
     /** - Float freq: Set oscillator frequency in Hz.
     */
     void SetFreq(float freq);
+    
     /** - Float amp: Set oscillator amplitude, 0 to 1.
     */
     inline void SetAmp(float amp) { amp_ = amp; };
@@ -69,7 +70,7 @@ class Osc
 
   private:
     float freq_, amp_, pw_,
-        sampling_freq_, phase_, phase_inc_;
+        sampling_freq_, phase_, phase_inc_, pan_;
     uint8_t mode_;
     int     iota_;
 

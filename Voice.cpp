@@ -97,8 +97,7 @@ void HandleNoteOff(uint8_t note_in)
 	}
 }
 
-float VoiceProcess(){
-
+void VoiceProcess(float& sigL, float& sigR){
     float sig = 0.0f;
 
     // float base_frequency = 440.0f * powf(2.0f, (noteNum - 69) / 12.0f);
@@ -120,9 +119,7 @@ float VoiceProcess(){
             osc[i].SetPw(params.osc[i].pw);
             
             sig += osc[i].Process();
-        }
-
-           
+        }  
     }
     sig /= OSC_NUM;
 
@@ -136,41 +133,9 @@ float VoiceProcess(){
         adsrMain.SetReleaseTime(params.adsr.release);
     
         float env = adsrMain.Process(gate);
-        sig *= env;     
+        sig = sig * env;     
 
-    return sig;
+        sigL = sig * params.osc[0].pan;
+        sigR = sig * (1 - params.osc[0].pan);
 }
 
-void VoiceProcessTest(float& sigL, float& sigR){
-
-    // float base_frequency = 440.0f * powf(2.0f, (noteNum - 69) / 12.0f);
-    // phaseGenerator.SetFreq(base_frequency);
-    
-    // Get the master phase ONCE before the loop
-    // float master_phase = phaseGenerator.Process();
-
-    for (size_t i = 0; i < OSC_NUM; i++)
-    {
-        if (params.osc[i].active) {
-
-            float final_freq = 440.0f * powf(2.0f, ((noteNum + params.osc[i].pitch) - 69) / 12.0f);
-            final_freq *= powf(2.0f, (params.osc[i].detune));
-            
-            osc[i].SetFreq(final_freq);
-            osc[i].SetAmp(params.osc[i].amp * amplitude);
-            osc[i].SetWaveform(params.osc[i].waveform);
-            osc[i].SetPw(params.osc[i].pw);
-            
-            
-        }
-        
-           
-    }
-    adsrMain.SetAttackTime(params.adsr.attack);
-    adsrMain.SetDecayTime(params.adsr.decay);
-    adsrMain.SetSustainLevel(params.adsr.sustain);
-    adsrMain.SetReleaseTime(params.adsr.release);
-    float env = adsrMain.Process(gate);
-    sigL = osc[0].Process() * env;  
-    sigR = osc[1].Process() * env;
-}
