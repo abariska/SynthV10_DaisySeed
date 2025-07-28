@@ -9,12 +9,12 @@
 #include "daisysp-lgpl.h"  
 #include "parameters.h"
 #include "oscillator.h"
-#include "phase_generator.h"
+// #include "phase_generator.h"
 
-using namespace daisy;  
+using namespace daisy;
 using namespace daisysp;
 
-extern PhaseGenerator phaseGenerator;
+// extern PhaseGenerator phaseGenerator;
 extern std::array<Osc, OSC_NUM> osc;
 extern Adsr adsrMain;
 extern MoogLadder flt;

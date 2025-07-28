@@ -1,6 +1,6 @@
 #include "menu.h"   
 #include "display.h"
-#include "voice.h"
+
 #include "parameters.h"
 #include "effects.h"
 #include "sx1509_expander.h"

@@ -1,11 +1,11 @@
 #include "voice.h"
-#include "main.h"
- 
+
 std::array<Osc, OSC_NUM> osc;
-PhaseGenerator phaseGenerator;
-Oscillator lfo;
+// PhaseGenerator phaseGenerator;
 Adsr adsrMain;
 MoogLadder flt;
+Oscillator lfo;
+
 
 uint8_t noteNum = 60;
 float phase = 0;
@@ -32,7 +32,7 @@ float ProcessLfo() {
 
 void VoiceInit(float samplerate, int blocksize) {
 
-    phaseGenerator.Init(samplerate);
+    // phaseGenerator.Init(samplerate);
     for (size_t i = 0; i < OSC_NUM; i++) {
         osc[i].Init(samplerate);
     }
