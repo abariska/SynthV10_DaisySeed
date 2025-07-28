@@ -2,7 +2,16 @@
 TARGET = SynthV10
 
 # Sources
-CPP_SOURCES = main.cpp display.cpp menu.cpp parameters.cpp midi_handler.cpp voice.cpp sx1509_expander.cpp effects.cpp \
+CPP_SOURCES = main.cpp \
+			  midi_handler.cpp \
+			  display.cpp \
+			  parameters.cpp \
+			  voice.cpp \
+			  effects.cpp \
+			  menu.cpp \
+			  oscillator.cpp \
+			  phase_generator.cpp \
+			  sx1509_expander.cpp \
 	$(OLED_DIR)/DEV_Config.cpp $(OLED_DIR)/OLED_Driver.cpp $(OLED_DIR)/GUI_Paint.cpp $(OLED_DIR)/font8.cpp \
 	$(OLED_DIR)/font12.cpp $(OLED_DIR)/font16.cpp $(OLED_DIR)/font20.cpp $(OLED_DIR)/font24.cpp $(SX1509_DIR)/SX1509.cpp
 
@@ -12,6 +21,10 @@ C_SOURCES = $(OLED_DIR)/ImageData.c
 USE_DAISYSP_LGPL=1
 LDFLAGS += -u _printf_float
 APP_TYPE = BOOT_NONE
+
+OPT = -Os    # Optimize for size замість -O2
+CPPFLAGS += -ffunction-sections -fdata-sections  # Кожна функція в окрему секцію
+LDFLAGS += -Wl,--gc-sections 
 
 # Add OLED directory to include paths
 C_INCLUDES += -I$(OLED_DIR)

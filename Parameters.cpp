@@ -14,12 +14,13 @@ void InitSynthParams() {
         params.osc[o].waveform = 1.0f;
         params.osc[o].freq = 440.0f;
         params.osc[o].pw = 0.5f;
-        params.osc[o].amp = 0.1f;
+        params.osc[o].amp = 0.5f;
         params.osc[o].pitch = 0.0f;
         params.osc[o].detune = 0.0f;
+        params.osc[o].pan = 0.5f;
     }
     
-    params.filter.cutoff = 99.99f;
+    params.filter.cutoff = 15000.0f;
     params.filter.resonance = 0.0f;
     
     params.adsr.attack = 0.01f;
@@ -34,6 +35,9 @@ void InitSynthParams() {
     params.lfo.waveform = 2.0f;
 
     params.global.isMono = true;
+    params.global.isLegato = false;
+    params.global.portamentoTime = 0.0f;
+    params.global.analogAmount = 0.7f;  // 70% аналогового характеру за замовчуванням
     
     // Effects initialization
     InitEffectParams();

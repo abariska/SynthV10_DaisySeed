@@ -2,6 +2,8 @@
 #include "daisy.h"
 #include "sx1509_expander.h"
 #include "midi_handler.h"
+#include "oscillator.h"
+#include "display.h"
 
 using namespace daisy;
 
@@ -33,14 +35,17 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
     
     for(size_t i = 0; i < size; i += 2)
     {
-        float sig_after_fxL, sig_after_fxR;
-        float mix = 0.0f;
+        float sig_after_fxL = 0.0f;
+        float sig_after_fxR = 0.0f;
 
-        mix += VoiceProcess();
+        // VoiceProcessTest(sig_after_fxL, sig_after_fxR);
+        VoiceProcess(sig_after_fxL, sig_after_fxR);
 
-        for (size_t i = 0; i < 2; i++) {
-            ProcessEffects(effectSlot[i], mix, sig_after_fxL, sig_after_fxR);
-        }
+        // for (size_t i = 0; i < 2; i++) {
+        //     ProcessEffects(effectSlot[i], mix, sig_after_fxL, sig_after_fxR);
+        // }
+        // out[i] = sig_after_fxL;
+        // out[i + 1] = sig_after_fxR;
         out[i] = sig_after_fxL;
         out[i + 1] = sig_after_fxR;
     }
@@ -55,7 +60,7 @@ int main(void)
     hw.Configure();
     hw.Init();
     System::Delay(100);
-    // hw.StartLog(true);
+    // hw.StartLog(false);  // Вимкнути для автономної роботи
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
@@ -77,7 +82,7 @@ int main(void)
 
     hw.StartAudio(AudioCallback);
     InitPageSlots();
-    SetPage(MAIN_PAGE);
+    SetPage(OSCILLATOR_1_PAGE);
     
     // TimerDisplay();
 
@@ -93,7 +98,6 @@ int main(void)
 }
 
 void ProcessButtons() {
-
     bool any_button_change = sx1509_buttons.ReadAllPins();
     bool shift_pressed = sx1509_buttons.IsPressed(BUTTON_SHIFT);
 
@@ -195,9 +199,6 @@ void ProcessEncoders(){
             slots[i].need_update = true;
         }
     }
-    // if (!isParamEditMode[0] && !isParamEditMode[1] && !isParamEditMode[2] && !isParamEditMode[3]) {
-    //     return;
-    // }
 }
 
 // void TimerDisplay() {

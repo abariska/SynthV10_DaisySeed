@@ -15,13 +15,13 @@ using namespace daisysp;
 // Enumeration of effect types
 enum EffectName {
     EFFECT_NONE,
-    EFFECT_OVERDRIVE,
+    EFFECT_OVERDRIVE, 
     EFFECT_CHORUS,
     EFFECT_COMPRESSOR,
     EFFECT_REVERB,
 };
 
-extern const char* effectLabels[];
+extern const char* effectLabels[]; 
 
 struct FXSlot {
     EffectName selectedEffect;

@@ -2,11 +2,13 @@
 #ifndef SMALLREVERB_H
 #define SMALLREVERB_H
 
-#define DSY_SMALLREVERB_MAX_SIZE 16384 // Reduced buffer size
+#define DSY_SMALLREVERB_MAX_SIZE 65536 // Reduced buffer size
 
 #ifndef PI
 #define PI 3.14159265358979323846f
 #endif
+
+extern float DSY_SDRAM_BSS delay_buffer_[DSY_SMALLREVERB_MAX_SIZE];
 
 namespace daisysp
 {
@@ -40,6 +42,7 @@ class SmallReverb
     {
         const int sizes[8] = {1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617};
         
+        delay_lines_ = delay_buffer_; // Point to the large buffer in SDRAM
         sample_rate_ = sample_rate;
         
         for(size_t i = 0; i < 8; i++)
@@ -168,7 +171,7 @@ class SmallReverb
 
   private:
     SmallReverbDl delay_[8];
-    float         delay_lines_[DSY_SMALLREVERB_MAX_SIZE];
+    float*        delay_lines_;
     float         feedback_, lpfreq_, lpcoef_, sample_rate_;
     float         dry_wet_; // Dry/wet ratio (0.0 = 100% dry, 1.0 = 100% wet)
 };

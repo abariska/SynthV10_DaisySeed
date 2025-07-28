@@ -66,5 +66,6 @@
         "typeinfo": "cpp",
         "variant": "cpp"
     },
-    "cortex-debug.variableUseNaturalFormat": true
+    "cortex-debug.variableUseNaturalFormat": true,
+    "workbench.colorTheme": "Visual Studio Dark - C++"
 }

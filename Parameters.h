@@ -59,6 +59,9 @@ struct SynthParams {
 
     struct {
         bool isMono;
+        bool isLegato;
+        float portamentoTime;
+        float analogAmount;  // 0.0 = цифровий, 1.0 = повністю аналоговий характер
     } global;
 
     // Structure for Overdrive effect parameters

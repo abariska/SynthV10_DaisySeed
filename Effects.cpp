@@ -1,5 +1,8 @@
 #include "effects.h"
 
+// Define the reverb buffer here, once, to be used by the SmallReverb class.
+float DSY_SDRAM_BSS delay_buffer_[DSY_SMALLREVERB_MAX_SIZE];
+
 const char* effectLabels[] = {
     " - ",
     "Drive",
