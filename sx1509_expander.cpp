@@ -57,7 +57,7 @@ void InitSX1509Extenders() {
     sx1509_buttons.ReadAllPins();
 
     for (int i = 0; i < 16; i++) {
-        sx1509_encoders.SetPinMode(i, PIN_INPUT_PULLUP, 1);
+        sx1509_encoders.SetPinMode(i, PIN_INPUT_PULLUP, 0);
     }
     sx1509_encoders.ReadAllPins();
 

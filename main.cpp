@@ -158,13 +158,25 @@ void ProcessButtons() {
                 SetPage(MenuPage::MAIN_PAGE);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
-                SetPage(MenuPage::OSCILLATOR_1_PAGE);
+                if (currentPage == MenuPage::OSCILLATOR_1_PAGE) {
+                    SetPage(MenuPage::OSCILLATOR_1_PAGE_2);
+                } else {
+                    SetPage(MenuPage::OSCILLATOR_1_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
-                SetPage(MenuPage::OSCILLATOR_2_PAGE);
+                if (currentPage == MenuPage::OSCILLATOR_2_PAGE) {
+                    SetPage(MenuPage::OSCILLATOR_2_PAGE_2); 
+                } else {
+                    SetPage(MenuPage::OSCILLATOR_2_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
-                SetPage(MenuPage::OSCILLATOR_3_PAGE);
+                if (currentPage == MenuPage::OSCILLATOR_3_PAGE) {
+                    SetPage(MenuPage::OSCILLATOR_3_PAGE_2);
+                } else {
+                    SetPage(MenuPage::OSCILLATOR_3_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_FLT)) {
                 SetPage(MenuPage::FILTER_PAGE);
@@ -247,10 +259,10 @@ void SelectEffectPage(uint8_t slot){
 void CpuUsageDisplay(){
     
     if (currentPage == MAIN_PAGE) {
-        Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+        Paint_NewImage(cpu_load_block_data.data, 30, 16, 0, BLACK);
         Paint_Clear(BLACK);
         float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-        Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
-        OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+        Paint_NumCentered(cpu_avg_load, 0, 30, 0, 1, Font8, WHITE, BLACK);
+        OLED_Part_Transmit_DMA(&cpu_load_block_data, 98, 0, 128, 16);
     }
 }

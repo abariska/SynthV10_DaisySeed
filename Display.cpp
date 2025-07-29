@@ -2,6 +2,7 @@
 #include "display.h"
 #include "menu.h"
 #include "OLED_1.5_Daisy_Seed/fonts.h"
+#include "effects.h"
 
 extern MenuPage currentPage;
 
@@ -100,30 +101,6 @@ void DrawIntroPage(){
     
     OLED_Transmit_DMA(&intro_page_data);
 }   
-    
-// void DrawIntroPage2(){
-//     while (1)
-//     {
-//         static int i = 0;
-//         char text[12];
-//         Paint_NewImage(param_block_data[0].data, 32, 32, 0, BLACK);
-//         Paint_Clear(BLACK);
-    
-//         sprintf(text, "%d", i);
-//         Paint_TextCentered(text, 0, 32, 0, Font8, WHITE, BLACK);
-//         Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
-//         OLED_Part_Transmit_DMA(&param_block_data[0], 40, 40, 72, 72);
-//         i++;
-//     }   
-    
-    // Paint_NewImage(param_block_data2.data, 32, 46, 0, BLACK);
-    // Paint_Clear(WHITE);
-    
-    // Paint_TextCentered("B", 0, 32, 0, Font12, WHITE, BLACK);
-    // Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
-    
-    // OLED_Part_Transmit_DMA(&param_block_data2, 80, 80, 112, 106);
-// }   
 
 void SetPage(MenuPage newPage) {
 
@@ -179,9 +156,88 @@ void DrawParamPage(MenuPage page){
     Paint_Clear(BLACK); 
 
     DrawParamPageLines();
-
     Paint_TextCentered(page_name, 0, 127, 0, Font12, WHITE, BLACK);
+    switch (page)
+    {
+    case OSCILLATOR_1_PAGE | OSCILLATOR_2_PAGE | OSCILLATOR_3_PAGE:
+        Paint_TextCentered("p1", 120, 127, 0, Font8, WHITE, BLACK);
+        break;
+    case OSCILLATOR_1_PAGE_2 | OSCILLATOR_2_PAGE_2 | OSCILLATOR_3_PAGE_2:
+        Paint_TextCentered("p2", 120, 127, 0, Font8, WHITE, BLACK);
+        break;
+    default:
+        break;
+    }
     OLED_Transmit_DMA(&bg_black_data);
 
     InitParamBlocks();
 }  
+
+void DrawEffectsPage() {
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
+    Paint_SetScale(16); 
+    Paint_Clear(BLACK); 
+    // Paint_TextCentered("Effects", 0, 127, 0, Font12, WHITE, BLACK);
+    // Horizontal line under header
+    for (size_t raw = 0; raw < FULL_PAGE_HEIGHT; raw++)
+    {
+        for (size_t column = 0; column < FULL_PAGE_WIDTH; column += 3)
+        {
+            if (raw == 20 || raw == 40)
+                for (size_t i = 0; i < 127; i += 3)
+                    Paint_DrawPoint(i, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT);
+            if (raw > 20 && raw % 3 == 0)
+            {
+                Paint_DrawPoint(64, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT); 
+            }
+        }
+    }
+    
+    Paint_TextCentered("1", 0, 63, 20, Font12, WHITE, BLACK);
+    Paint_TextCentered("2", 64, 127, 20, Font12, WHITE, BLACK);
+
+    for (size_t i = 0; i < 2; i++)
+    {
+        EffectName selected = effectSlot[i].selectedEffect;
+        const int x1 = (i == 0) ? 0 : 64;
+        const int x2 = (i == 0) ? 64 : 127;
+        const int y1 = 64;
+        const int y2 = 80;
+        if (selected != EFFECT_NONE)
+        {
+            Paint_TextCentered(effectLabels[selected], x1, x2, y1, Font12, WHITE, BLACK);
+            Paint_TextCentered(effectSlot[i].isActive ? "On" : "Off", x1, x2, y2, Font12, WHITE, BLACK);
+        }
+        else
+        {
+            Paint_TextCentered(" - ", x1, x2, y1, Font12, WHITE, BLACK);
+            Paint_TextCentered(" - ", x1, x2, y2, Font12, WHITE, BLACK);
+        }
+    }
+
+    OLED_Transmit_DMA(&bg_black_data);
+}
+
+// void DrawIntroPage2(){
+//     while (1)
+//     {
+//         static int i = 0;
+//         char text[12];
+//         Paint_NewImage(param_block_data[0].data, 32, 32, 0, BLACK);
+//         Paint_Clear(BLACK);
+    
+//         sprintf(text, "%d", i);
+//         Paint_TextCentered(text, 0, 32, 0, Font8, WHITE, BLACK);
+//         Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
+//         OLED_Part_Transmit_DMA(&param_block_data[0], 40, 40, 72, 72);
+//         i++;
+//     }   
+    
+    // Paint_NewImage(param_block_data2.data, 32, 46, 0, BLACK);
+    // Paint_Clear(WHITE);
+    
+    // Paint_TextCentered("B", 0, 32, 0, Font12, WHITE, BLACK);
+    // Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
+    
+    // OLED_Part_Transmit_DMA(&param_block_data2, 80, 80, 112, 106);
+// }   

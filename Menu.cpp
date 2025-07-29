@@ -205,6 +205,10 @@ void AssignParamsForPage(MenuPage page) {
             InitParam(OSC_DETUNE_1, 2);
             InitParam(OSC_AMP_1, 3);
             break;      
+        case OSCILLATOR_1_PAGE_2:
+            SetPageName("Oscillator 1");
+            InitParam(OSC_PAN_1, 0);
+            break;
         case OSCILLATOR_2_PAGE:
             SetPageName("Oscillator 2");
             InitParam(OSC_WAVEFORM_2, 0);
@@ -212,6 +216,10 @@ void AssignParamsForPage(MenuPage page) {
             InitParam(OSC_DETUNE_2, 2);
             InitParam(OSC_AMP_2, 3);
             break;      
+        case OSCILLATOR_2_PAGE_2:
+            SetPageName("Oscillator 2");
+            InitParam(OSC_PAN_2, 0);
+            break;
         case OSCILLATOR_3_PAGE:
             SetPageName("Oscillator 3");
             InitParam(OSC_WAVEFORM_3, 0);
@@ -219,6 +227,10 @@ void AssignParamsForPage(MenuPage page) {
             InitParam(OSC_DETUNE_3, 2);
             InitParam(OSC_AMP_3, 3);
             break;  
+        case OSCILLATOR_3_PAGE_2:
+            SetPageName("Oscillator 3");
+            InitParam(OSC_PAN_3, 0);
+            break;
         case AMPLIFIER_PAGE:
             SetPageName("Amplifier");
             InitParam(ADSR_ATTACK, 0);
@@ -274,51 +286,6 @@ void AssignParamsForPage(MenuPage page) {
     }
 }
 
-void DrawEffectsPage() {
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_SetScale(16); 
-    Paint_Clear(BLACK); 
-    // Paint_TextCentered("Effects", 0, 127, 0, Font12, WHITE, BLACK);
-    // Horizontal line under header
-    for (size_t raw = 0; raw < FULL_PAGE_HEIGHT; raw++)
-    {
-        for (size_t column = 0; column < FULL_PAGE_WIDTH; column += 3)
-        {
-            if (raw == 20 || raw == 40)
-                for (size_t i = 0; i < 127; i += 3)
-                    Paint_DrawPoint(i, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT);
-            if (raw > 20 && raw % 3 == 0)
-            {
-                Paint_DrawPoint(64, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT); 
-            }
-        }
-    }
-    
-    Paint_TextCentered("1", 0, 63, 20, Font12, WHITE, BLACK);
-    Paint_TextCentered("2", 64, 127, 20, Font12, WHITE, BLACK);
-
-    for (size_t i = 0; i < 2; i++)
-    {
-        EffectName selected = effectSlot[i].selectedEffect;
-        const int x1 = (i == 0) ? 0 : 64;
-        const int x2 = (i == 0) ? 64 : 127;
-        const int y1 = 64;
-        const int y2 = 80;
-        if (selected != EFFECT_NONE)
-        {
-            Paint_TextCentered(effectLabels[selected], x1, x2, y1, Font12, WHITE, BLACK);
-            Paint_TextCentered(effectSlot[i].isActive ? "On" : "Off", x1, x2, y2, Font12, WHITE, BLACK);
-        }
-        else
-        {
-            Paint_TextCentered(" - ", x1, x2, y1, Font12, WHITE, BLACK);
-            Paint_TextCentered(" - ", x1, x2, y2, Font12, WHITE, BLACK);
-        }
-    }
-
-    OLED_Transmit_DMA(&bg_black_data);
-}
-
 void EncoderChangeEffect() {
     if (encoderIncs[0] != 0) {
         int newEffect = static_cast<int>(effectSlot[0].selectedEffect) + encoderIncs[0];
@@ -340,14 +307,17 @@ const ParamUnitData DSY_SDRAM_DATA paramInitTable[] = {
     { &params.osc[0].pitch,    "Sem", -36, 36, 1, REGULAR },   // 1 OSC_PITCH_1
     { &params.osc[0].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //2 OSC_DETUNE_1
     { &params.osc[0].amp,      "Amp", 0, 1, 0.01, X100 },   //3 OSC_AMP_1
-    { &params.osc[1].waveform, "Wav", 0, 3, 1, WAVEFORM },  //4 OSC_WAVEFORM_2
-    { &params.osc[1].pitch,    "Sem", -36, 36, 1, REGULAR },   //5 OSC_PITCH_2
-    { &params.osc[1].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //6 OSC_DETUNE_2
-    { &params.osc[1].amp,      "Amp", 0, 1, 0.01, X100 },   //7 OSC_AMP_2
+    { &params.osc[0].pan,      "Pan", 0, 1, 0.01, X100 },   //4 OSC_PAN_1
+    { &params.osc[1].waveform, "Wav", 0, 3, 1, WAVEFORM },  //5 OSC_WAVEFORM_2
+    { &params.osc[1].pitch,    "Sem", -36, 36, 1, REGULAR },   //6 OSC_PITCH_2
+    { &params.osc[1].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //7 OSC_DETUNE_2
+    { &params.osc[1].amp,      "Amp", 0, 1, 0.01, X100 },   //8 OSC_AMP_2
+    { &params.osc[1].pan,      "Pan", 0, 1, 0.01, X100 },   //9 OSC_PAN_2
     { &params.osc[2].waveform, "Wav", 0, 3, 1, WAVEFORM },  //8 OSC_WAVEFORM_3
     { &params.osc[2].pitch,    "Sem", -36, 36, 1, REGULAR },   //9 OSC_PITCH_3
     { &params.osc[2].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //10 OSC_DETUNE_3
     { &params.osc[2].amp,      "Amp", 0, 1, 0.01, X100 },   //11 OSC_AMP_3
+    { &params.osc[2].pan,      "Pan", 0, 1, 0.01, X100 },   //12 OSC_PAN_3
     { &params.adsr.attack,     "Atk", 0, 1, 0.01, X100 },   //12 ADSR_ATTACK
     { &params.adsr.decay,      "Dec", 0, 1, 0.01, X100 },   //13 ADSR_DECAY
     { &params.adsr.sustain,    "Sus", 0, 1, 0.01, X100 },   //14 ADSR_SUSTAIN
