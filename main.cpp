@@ -82,8 +82,8 @@ int main(void)
     // hw.DelayMs(1000);
 
     hw.StartAudio(AudioCallback);
-    InitPageSlots();
-    SetPage(OSCILLATOR_1_PAGE);
+    InitSlots();
+    SetPage(MAIN_PAGE);
     
     // TimerDisplay();
 
@@ -91,7 +91,6 @@ int main(void)
     {
         ProcessButtons();
         ProcessEncoders();
-        // CheckEditParamOnMain();
         UpdateEncodersParams();
         CpuUsageDisplay();
         sx1509_leds.WritePin(6, midi_note_led);
@@ -123,9 +122,9 @@ void ProcessButtons() {
                 }
             }
         } else if (currentPage == MenuPage::MAIN_PAGE) {
-            for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+            for (size_t i = 0; i < 4; i++) {  // Тільки 4 енкодери
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW + i)) {
-                    isParamEditMode[i] = !isParamEditMode[i];
+                    menu_slots[i].isEditMode = !menu_slots[i].isEditMode;
                 }
             }
         }
@@ -158,25 +157,49 @@ void ProcessButtons() {
                 SetPage(MenuPage::MAIN_PAGE);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
-                SetPage(MenuPage::OSCILLATOR_1_PAGE);
+                if (currentPage == MenuPage::OSCILLATOR_1_PAGE) {
+                    ToggleActiveRow();  // Перемикання між рядами на тій же сторінці
+                } else {
+                    SetPage(MenuPage::OSCILLATOR_1_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
-                SetPage(MenuPage::OSCILLATOR_2_PAGE);
+                if (currentPage == MenuPage::OSCILLATOR_2_PAGE) {
+                    ToggleActiveRow();
+                } else {
+                    SetPage(MenuPage::OSCILLATOR_2_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
-                SetPage(MenuPage::OSCILLATOR_3_PAGE);
+                if (currentPage == MenuPage::OSCILLATOR_3_PAGE) {
+                    ToggleActiveRow();
+                } else {
+                    SetPage(MenuPage::OSCILLATOR_3_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_FLT)) {
-                SetPage(MenuPage::FILTER_PAGE);
+                if (currentPage == MenuPage::FILTER_PAGE) {
+                    ToggleActiveRow();
+                } else {
+                    SetPage(MenuPage::FILTER_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_AMP)) {
-                SetPage(MenuPage::AMPLIFIER_PAGE);
+                if (currentPage == MenuPage::AMPLIFIER_PAGE) {
+                    ToggleActiveRow();
+                } else {
+                    SetPage(MenuPage::AMPLIFIER_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_FX)) {
                 SetPage(MenuPage::FX_PAGE);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_LFO)) {
-                SetPage(MenuPage::LFO_PAGE);
+                if (currentPage == MenuPage::LFO_PAGE) {
+                    ToggleActiveRow();
+                } else {
+                    SetPage(MenuPage::LFO_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_MTX)) {
                 SetPage(MenuPage::MTX_PAGE);
@@ -195,9 +218,18 @@ void ProcessEncoders(){
         encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);  
     }
 
-    for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-        if (encoderIncs[i] != 0  && !isParamEditMode[i]) {
-            slots[i].need_update = true;
+    if (currentPage == MAIN_PAGE) {
+        for (size_t i = 0; i < NUM_ENCODERS; i++) {  // Тільки 4 енкодери
+            if (encoderIncs[i] != 0) {
+                menu_slots[i].need_update = true;
+            }
+        }
+    } else {
+        for (size_t i = 0; i < 4; i++) {  // Тільки 4 енкодери
+            if (encoderIncs[i] != 0) {
+                uint8_t paramIndex = GetActiveParamIndex(i);  // Отримуємо індекс активного параметра
+                    slots[paramIndex].need_update = true;
+            }
         }
     }
 }

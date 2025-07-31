@@ -44,8 +44,9 @@
 #define LED_OUTPUT 6
 #define LED_MIDI 7
 
-#define ENCODER_NUM 4
-    
+#define NUM_BUTTONS 16
+#define NUM_ENCODERS 4
+#define NUM_LEDS 8
 extern SX1509 sx1509_buttons;
 extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;

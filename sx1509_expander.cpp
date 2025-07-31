@@ -69,9 +69,9 @@ void InitSX1509Extenders() {
 
 int8_t EncoderInc(uint8_t enc_index,uint8_t pin_a, uint8_t pin_b) {
 
-    static uint8_t a_[ENCODER_NUM] = {0};
-    static uint8_t b_[ENCODER_NUM] = {0};
-    static uint32_t last_increment_time_[ENCODER_NUM] = {0};
+    static uint8_t a_[NUM_ENCODERS] = {0};
+    static uint8_t b_[NUM_ENCODERS] = {0};
+    static uint32_t last_increment_time_[NUM_ENCODERS] = {0};
     int8_t inc_ = 0;
 
     // Shift Button states to debounce

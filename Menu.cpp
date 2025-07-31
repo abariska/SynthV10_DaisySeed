@@ -11,12 +11,13 @@
 MenuPage currentPage;
 ParamUnitData allParams[ParamUnitName::NONE + 1];
 ParamSlot slots[NUM_PARAM_BLOCKS];
+MenuSlot menu_slots[NUM_MAIN_SLOTS];
 
 const uint8_t yBlockLabel = 10;
 const uint8_t yBlockValue = 30;
 
-bool isParamEditMode[4] = {false, false, false, false};
 char page_name[16] = "";
+ActiveRow currentActiveRow = ROW_1;  // Початково активний перший ряд
 
 void DrawWaveformImage(int waveform){
     
@@ -44,6 +45,7 @@ void DrawWaveformImage(int waveform){
 
 void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, uint16_t textColor, uint16_t bgColor){
 
+    
     Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor); 
     Paint_Clear(bgColor);
     
@@ -59,68 +61,69 @@ void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, uint1
                 DrawWaveformImage((Waves)value);
                 break;
             }
-    OLED_Part_Transmit_DMA(&param_block_data[blockIndex], BLOCK_X_START[blockIndex], 
-        BLOCK_TOP_LINE_Y, BLOCK_X_END[blockIndex], BLOCK_BOTTOM_LINE_Y);
+    if (currentPage == MAIN_PAGE) {
+        OLED_Part_Transmit_DMA(&param_block_data[blockIndex], 
+            BLOCK_MAIN_X_START[blockIndex], 
+            BLOCK_MAIN_Y_START[blockIndex], 
+            BLOCK_MAIN_X_END[blockIndex], 
+            BLOCK_MAIN_Y_END[blockIndex]);
+    } else {
+        OLED_Part_Transmit_DMA(&param_block_data[blockIndex], 
+            BLOCK_X_START[blockIndex], 
+            BLOCK_Y_START[blockIndex], 
+            BLOCK_X_END[blockIndex], 
+            BLOCK_Y_END[blockIndex]);
+    }
 }
 
-void InitParamBlocks(){
+void InitMainBlocks(){
 
-    for (size_t i = 0; i < 4; i++) {
+    for (size_t i = 0; i < NUM_MAIN_SLOTS; i++) {
+        if (menu_slots[i].assignedParam == NONE) {
+            continue;
+        }
+        InitOneParamBlock(i, *allParams[menu_slots[i].assignedParam].target_param, 
+                         allParams[menu_slots[i].assignedParam].label);   
+    }
+}
+
+void InitAllParamBlocks(){
+
+    for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
         if (slots[i].assignedParam == NONE) {
             continue;
         }
-        InitOneParamBlock(i, *allParams[slots[i].assignedParam].target_param, allParams[slots[i].assignedParam].label);   
+        
+        bool isActiveRow = (i < 4 && currentActiveRow == ROW_1) || (i >= 4 && currentActiveRow == ROW_2);
+        uint16_t textColor = isActiveRow ? WHITE : 0x02; // Активні - білі, неактивні - темні
+        uint16_t bgColor = BLACK;
+        
+        InitOneParamBlock(i, *allParams[slots[i].assignedParam].target_param, 
+                            allParams[slots[i].assignedParam].label, textColor, bgColor);   
     }
 }
 
-void EditBlockParam(uint8_t blockIndex) {
-    static uint32_t lastBlinkTime = 0;
-    static bool blinkState = false;
+uint8_t GetActiveParamIndex(uint8_t encoderIndex) {
+    if (currentActiveRow == ROW_1) {
+        return encoderIndex;        
+    } else {
+        return encoderIndex + 4;    
+    }
+}
 
-
-    int value = (int)slots[blockIndex].assignedParam;
-        
-    value += encoderIncs[blockIndex];
-        
-    if (value > 32) {
-        value = 32;
-    } else if (value < 0) {
-        value = 0;
-    }
-    for (size_t i = 0; i < ENCODER_NUM; i++) {
-        if (i == blockIndex) continue;
-        if (encoderIncs[blockIndex] == 1 && (ParamUnitName)value == slots[i].assignedParam) {
-            value++;
-        }
-        else if (encoderIncs[blockIndex] == -1 && (ParamUnitName)value == slots[i].assignedParam) {
-            value--;
-        }
-    }
-    encoderIncs[blockIndex] = 0;
-    
-    int currentTime = System::GetNow();
-    
-    if (currentTime - lastBlinkTime >= 500) {
-        blinkState = !blinkState;
-        lastBlinkTime = currentTime;
-    }
-    
-    uint16_t textColor = blinkState ? BLACK : WHITE;
-    uint16_t bgColor = blinkState ? 0x01 : BLACK;
-    
-    slots[blockIndex].assignedParam = (ParamUnitName)value;
-    InitParam((ParamUnitName)value, blockIndex); 
-    InitOneParamBlock(blockIndex, *allParams[slots[blockIndex].assignedParam].target_param, 
-        allParams[slots[blockIndex].assignedParam].label, textColor, bgColor);
+void ToggleActiveRow() {
+    currentActiveRow = (currentActiveRow == ROW_1) ? ROW_2 : ROW_1;
+    DrawParamPage(currentPage);
+    InitAllParamBlocks();  
 }
 
 void UpdateEncoderSwitches() {
 
     switch (currentPage) {
         case MAIN_PAGE:
-            for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+            for (size_t i = 0; i < NUM_MAIN_SLOTS; i++) {
 
-                if (isParamEditMode[i]) {
+                if (menu_slots[i].isEditMode) {
                     static uint8_t isCurrentEditSlot = 0;
 
                     EditBlockParam(i);
@@ -128,11 +131,11 @@ void UpdateEncoderSwitches() {
                     if (isCurrentEditSlot != i) {
                         isCurrentEditSlot = i;
 
-                        for (size_t j = 0; j < NUM_PARAM_BLOCKS; j++) {
+                        for (size_t j = 0; j < NUM_MAIN_SLOTS; j++) {
                             if (j != i) {
-                                isParamEditMode[j] = false;
-                                InitOneParamBlock(j, *allParams[slots[j].assignedParam].target_param, 
-                                    allParams[slots[j].assignedParam].label, WHITE, BLACK);
+                                menu_slots[j].isEditMode = false;
+                                InitOneParamBlock(j, *allParams[menu_slots[j].assignedParam].target_param, 
+                                    allParams[menu_slots[j].assignedParam].label, WHITE, BLACK);
                         }
                     }
                 }
@@ -151,37 +154,122 @@ void UpdateEncoderSwitches() {
     }
 }
 
-void UpdateEncodersParams() {
+void EditBlockParam(uint8_t blockIndex) {
+    static uint32_t lastBlinkTime = 0;
+    static bool blinkState = false;
 
-    for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-
-        if (!slots[i].need_update) continue;
-
-        float* target_param = allParams[slots[i].assignedParam].target_param;
-        if (target_param == nullptr) continue;
-
-        if (slots[i].need_update) {
-            float value = *target_param;
-            
-            value += encoderIncs[i] * allParams[slots[i].assignedParam].sensitivity;
-
-            if (value > allParams[slots[i].assignedParam].max) {
-                value = allParams[slots[i].assignedParam].max;
-            } else if (value < allParams[slots[i].assignedParam].min) {
-                value = allParams[slots[i].assignedParam].min;
-            }
-            
-            *target_param = value;
-            InitOneParamBlock(i, value, allParams[slots[i].assignedParam].label);
-            encoderIncs[i] = 0;
-        }
-        slots[i].need_update = false;
-    }
+    if (menu_slots[blockIndex].need_update) {
     
+        int value = (int)menu_slots[blockIndex].assignedParam;
+            
+        value += encoderIncs[blockIndex];
+            
+        if (value > 32) {
+            value = 32;
+        } else if (value < 0) {
+            value = 0;
+        }
+        for (size_t i = 0; i < NUM_ENCODERS; i++) {
+            if (i == blockIndex) continue;
+            if (encoderIncs[blockIndex] == 1 && (ParamUnitName)value == menu_slots[i].assignedParam) {
+                value++;
+            }
+            else if (encoderIncs[blockIndex] == -1 && (ParamUnitName)value == menu_slots[i].assignedParam) {
+                value--;
+            }
+        }
+        encoderIncs[blockIndex] = 0;
+        
+        int currentTime = System::GetNow();
+        
+        if (currentTime - lastBlinkTime >= 500) {
+            blinkState = !blinkState;
+            lastBlinkTime = currentTime;
+        }
+        
+        uint16_t textColor = blinkState ? BLACK : WHITE;
+        uint16_t bgColor = blinkState ? 0x01 : BLACK;
+        
+        menu_slots[blockIndex].assignedParam = (ParamUnitName)value;
+
+        AssignParam(menu_slots[blockIndex].assignedParam, blockIndex); 
+        InitOneParamBlock(blockIndex, *allParams[menu_slots[blockIndex].assignedParam].target_param, 
+            allParams[menu_slots[blockIndex].assignedParam].label, textColor, bgColor);
+    }
+}
+
+void UpdateParamValue(uint8_t encoderIndex, ParamUnitName paramName, float* target_param) {
+
+    if (target_param == nullptr) return;
+
+    float value = *target_param;
+    value += encoderIncs[encoderIndex] * allParams[paramName].sensitivity;
+
+    if (value > allParams[paramName].max) {
+        value = allParams[paramName].max;
+    } else if (value < allParams[paramName].min) {
+        value = allParams[paramName].min;
+    }
+    *target_param = value;
+    encoderIncs[encoderIndex] = 0;
+
+}
+
+void UpdateMainSlots() {
+    for (size_t i = 0; i < 4; i++) {  
+        
+        if (menu_slots[i].isEditMode) {
+            EditBlockParam(i);
+            
+        } else if (menu_slots[i].need_update) {  
+
+            ParamUnitName paramName = menu_slots[i].assignedParam;
+            float* target_param = allParams[paramName].target_param;
+            
+            UpdateParamValue(i, paramName, target_param);
+            InitOneParamBlock(i, *target_param, allParams[paramName].label, WHITE, BLACK);
+            menu_slots[i].need_update = false;
+        }
+    }
+}
+
+void UpdateParamSlots() {
+    for (size_t i = 0; i < 4; i++) {
+        uint8_t paramIndex = GetActiveParamIndex(i);
+        
+        if (slots[paramIndex].need_update) {
+            ParamUnitName paramName = slots[paramIndex].assignedParam;
+            float* target_param = allParams[paramName].target_param;
+            
+            UpdateParamValue(i, paramName, target_param);
+            
+            bool isActiveRow = (paramIndex < 4 && currentActiveRow == ROW_1) || 
+                              (paramIndex >= 4 && currentActiveRow == ROW_2);
+            uint16_t textColor = isActiveRow ? WHITE : 0x02;
+            
+            InitOneParamBlock(paramIndex, *target_param, allParams[paramName].label, textColor, BLACK);
+            slots[paramIndex].need_update = false;
+        }
+    }
+}
+
+void UpdateEncodersParams() {
+    if (currentPage == MAIN_PAGE) {
+        UpdateMainSlots();
+    } else {
+        UpdateParamSlots();
+    }
 }
 
 void SetPageName(const char* name) {
     strcpy(page_name, name);
+}
+
+void AssignMainParams(){
+    SetPageName("");
+    for (int i = 0; i < NUM_MAIN_SLOTS; i++) {
+        AssignParam(menu_slots[i].assignedParam, i);
+    }
 }
 
 void AssignParamsForPage(MenuPage page) {
@@ -189,134 +277,86 @@ void AssignParamsForPage(MenuPage page) {
     for (int i = 0; i < NUM_PARAM_BLOCKS; i++) {
         slots[i].assignedParam = NONE;
     }
-    
     switch (page) {
-        case MAIN_PAGE:
-            SetPageName("");
-            InitParam(FILTER_CUTOFF, 0);
-            InitParam(FILTER_RESONANCE, 1);
-            InitParam(ADSR_ATTACK, 2);
-            InitParam(ADSR_DECAY, 3);
-            break;
         case OSCILLATOR_1_PAGE:
             SetPageName("Oscillator 1");
-            InitParam(OSC_WAVEFORM_1, 0);
-            InitParam(OSC_PITCH_1, 1);
-            InitParam(OSC_DETUNE_1, 2);
-            InitParam(OSC_AMP_1, 3);
+            AssignParam(OSC_WAVEFORM_1, 0);
+            AssignParam(OSC_PITCH_1, 1);
+            AssignParam(OSC_DETUNE_1, 2);
+            AssignParam(OSC_AMP_1, 3);
+            AssignParam(OSC_PAN_1, 4);
             break;      
         case OSCILLATOR_2_PAGE:
             SetPageName("Oscillator 2");
-            InitParam(OSC_WAVEFORM_2, 0);
-            InitParam(OSC_PITCH_2, 1);
-            InitParam(OSC_DETUNE_2, 2);
-            InitParam(OSC_AMP_2, 3);
+            AssignParam(OSC_WAVEFORM_2, 0);
+            AssignParam(OSC_PITCH_2, 1);
+            AssignParam(OSC_DETUNE_2, 2);
+            AssignParam(OSC_AMP_2, 3);
+            AssignParam(OSC_PAN_2, 4);
             break;      
         case OSCILLATOR_3_PAGE:
             SetPageName("Oscillator 3");
-            InitParam(OSC_WAVEFORM_3, 0);
-            InitParam(OSC_PITCH_3, 1);
-            InitParam(OSC_DETUNE_3, 2);
-            InitParam(OSC_AMP_3, 3);
+            AssignParam(OSC_WAVEFORM_3, 0);
+            AssignParam(OSC_PITCH_3, 1);
+            AssignParam(OSC_DETUNE_3, 2);
+            AssignParam(OSC_AMP_3, 3);
+            AssignParam(OSC_PAN_3, 4);
             break;  
         case AMPLIFIER_PAGE:
             SetPageName("Amplifier");
-            InitParam(ADSR_ATTACK, 0);
-            InitParam(ADSR_DECAY, 1);
-            InitParam(ADSR_SUSTAIN, 2);
-            InitParam(ADSR_RELEASE, 3);
+            AssignParam(ADSR_ATTACK, 0);
+            AssignParam(ADSR_DECAY, 1);
+            AssignParam(ADSR_SUSTAIN, 2);
+            AssignParam(ADSR_RELEASE, 3);
             break;  
         case FILTER_PAGE:
             SetPageName("Filter");
-            InitParam(FILTER_CUTOFF, 0);
-            InitParam(FILTER_RESONANCE, 1);
+            AssignParam(FILTER_CUTOFF, 0);
+            AssignParam(FILTER_RESONANCE, 1);
+            AssignParam(NONE, 2);
+            AssignParam(NONE, 3);
             break;  
         case LFO_PAGE:
             SetPageName("LFO");
-            InitParam(LFO_WAVEFORM, 0);
-            InitParam(LFO_FREQ, 1);
-            InitParam(LFO_DEPTH, 2);
+            AssignParam(LFO_WAVEFORM, 0);
+            AssignParam(LFO_FREQ, 1);
+            AssignParam(LFO_DEPTH, 2);
           break;
         case FX_PAGE:
             
             break;
         case OVERDRIVE_PAGE:
             SetPageName("Overdrive");
-            InitParam(EFFECT_OVERDRIVE_DRIVE, 0);
+            AssignParam(EFFECT_OVERDRIVE_DRIVE, 0);
             break;
         case CHORUS_PAGE: 
             SetPageName("Chorus");
-            InitParam(EFFECT_CHORUS_FREQ, 0);
-            InitParam(EFFECT_CHORUS_DEPTH, 1);
-            InitParam(EFFECT_CHORUS_FBK, 2);
-            InitParam(EFFECT_CHORUS_PAN, 3);
+            AssignParam(EFFECT_CHORUS_FREQ, 0);
+            AssignParam(EFFECT_CHORUS_DEPTH, 1);
+            AssignParam(EFFECT_CHORUS_FBK, 2);
+            AssignParam(EFFECT_CHORUS_PAN, 3);
             break;
         case COMPRESSOR_PAGE:
             SetPageName("Compressor");
-            InitParam(EFFECT_COMPRESSOR_ATTACK, 0);
-            InitParam(EFFECT_COMPRESSOR_RELEASE, 1);
-            InitParam(EFFECT_COMPRESSOR_THRESHOLD, 2);
-            InitParam(EFFECT_COMPRESSOR_RATIO, 3);
+            AssignParam(EFFECT_COMPRESSOR_ATTACK, 0);
+            AssignParam(EFFECT_COMPRESSOR_RELEASE, 1);
+            AssignParam(EFFECT_COMPRESSOR_THRESHOLD, 2);
+            AssignParam(EFFECT_COMPRESSOR_RATIO, 3);
             break;
         case REVERB_PAGE:
             SetPageName("Reverb");
-            InitParam(EFFECT_REVERB_FBK, 0);
-            InitParam(EFFECT_REVERB_LPFREQ, 1);
-            InitParam(EFFECT_REVERB_DRYWET, 2);
+            AssignParam(EFFECT_REVERB_FBK, 0);
+            AssignParam(EFFECT_REVERB_LPFREQ, 1);
+            AssignParam(EFFECT_REVERB_DRYWET, 2);
             break;
         default: 
             SetPageName(" - ");
-            InitParam(NONE, 0);
-            InitParam(NONE, 1);
-            InitParam(NONE, 2);
-            InitParam(NONE, 3);
+            AssignParam(NONE, 0);
+            AssignParam(NONE, 1);
+            AssignParam(NONE, 2);
+            AssignParam(NONE, 3);
             break;
     }
-}
-
-void DrawEffectsPage() {
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_SetScale(16); 
-    Paint_Clear(BLACK); 
-    // Paint_TextCentered("Effects", 0, 127, 0, Font12, WHITE, BLACK);
-    // Horizontal line under header
-    for (size_t raw = 0; raw < FULL_PAGE_HEIGHT; raw++)
-    {
-        for (size_t column = 0; column < FULL_PAGE_WIDTH; column += 3)
-        {
-            if (raw == 20 || raw == 40)
-                for (size_t i = 0; i < 127; i += 3)
-                    Paint_DrawPoint(i, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT);
-            if (raw > 20 && raw % 3 == 0)
-            {
-                Paint_DrawPoint(64, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT); 
-            }
-        }
-    }
-    
-    Paint_TextCentered("1", 0, 63, 20, Font12, WHITE, BLACK);
-    Paint_TextCentered("2", 64, 127, 20, Font12, WHITE, BLACK);
-
-    for (size_t i = 0; i < 2; i++)
-    {
-        EffectName selected = effectSlot[i].selectedEffect;
-        const int x1 = (i == 0) ? 0 : 64;
-        const int x2 = (i == 0) ? 64 : 127;
-        const int y1 = 64;
-        const int y2 = 80;
-        if (selected != EFFECT_NONE)
-        {
-            Paint_TextCentered(effectLabels[selected], x1, x2, y1, Font12, WHITE, BLACK);
-            Paint_TextCentered(effectSlot[i].isActive ? "On" : "Off", x1, x2, y2, Font12, WHITE, BLACK);
-        }
-        else
-        {
-            Paint_TextCentered(" - ", x1, x2, y1, Font12, WHITE, BLACK);
-            Paint_TextCentered(" - ", x1, x2, y2, Font12, WHITE, BLACK);
-        }
-    }
-
-    OLED_Transmit_DMA(&bg_black_data);
 }
 
 void EncoderChangeEffect() {
@@ -340,19 +380,22 @@ const ParamUnitData DSY_SDRAM_DATA paramInitTable[] = {
     { &params.osc[0].pitch,    "Sem", -36, 36, 1, REGULAR },   // 1 OSC_PITCH_1
     { &params.osc[0].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //2 OSC_DETUNE_1
     { &params.osc[0].amp,      "Amp", 0, 1, 0.01, X100 },   //3 OSC_AMP_1
+    { &params.osc[0].pan,      "Pan", 0, 1, 0.01, X100 },   //4 OSC_PAN_1
     { &params.osc[1].waveform, "Wav", 0, 3, 1, WAVEFORM },  //4 OSC_WAVEFORM_2
     { &params.osc[1].pitch,    "Sem", -36, 36, 1, REGULAR },   //5 OSC_PITCH_2
     { &params.osc[1].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //6 OSC_DETUNE_2
     { &params.osc[1].amp,      "Amp", 0, 1, 0.01, X100 },   //7 OSC_AMP_2
-    { &params.osc[2].waveform, "Wav", 0, 3, 1, WAVEFORM },  //8 OSC_WAVEFORM_3
+    { &params.osc[1].pan,      "Pan", 0, 1, 0.01, X100 },   //8 OSC_PAN_2
+    { &params.osc[2].waveform, "Wav", 0, 3, 1, WAVEFORM },  //9 OSC_WAVEFORM_3
     { &params.osc[2].pitch,    "Sem", -36, 36, 1, REGULAR },   //9 OSC_PITCH_3
     { &params.osc[2].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //10 OSC_DETUNE_3
     { &params.osc[2].amp,      "Amp", 0, 1, 0.01, X100 },   //11 OSC_AMP_3
+    { &params.osc[2].pan,      "Pan", 0, 1, 0.01, X100 },   //12 OSC_PAN_3
     { &params.adsr.attack,     "Atk", 0, 1, 0.01, X100 },   //12 ADSR_ATTACK
     { &params.adsr.decay,      "Dec", 0, 1, 0.01, X100 },   //13 ADSR_DECAY
     { &params.adsr.sustain,    "Sus", 0, 1, 0.01, X100 },   //14 ADSR_SUSTAIN
     { &params.adsr.release,    "Rel", 0, 10, 0.01, X100 },   //15 ADSR_RELEASE
-    { &params.filter.cutoff,   "Cut", 50, 15000, 1, REGULAR }, //16 FILTER_CUTOFF
+    { &params.filter.cutoff,   "Cut", 50, 15000, 10, REGULAR }, //16 FILTER_CUTOFF
     { &params.filter.resonance,"Res", 0, 1, 0.01, X100 },   //17 FILTER_RESONANCE
     { &params.lfo.waveform,    "Wav", 0, 3, 1, WAVEFORM },  //18 LFO_WAVEFORM
     { &params.lfo.freq,        "Freq", 0, 1, 0.01, X100 },//19 LFO_FREQ
@@ -371,10 +414,13 @@ const ParamUnitData DSY_SDRAM_DATA paramInitTable[] = {
     { &params.reverbParams.lpFreq,   "LPF", 0, 1, 0.01, X100 },    //32 EFFECT_REVERB_LPFREQ
 };
 
-void InitParam(ParamUnitName param, uint8_t slotIndex) {
+void AssignParam(ParamUnitName param, uint8_t slotIndex) {
 
-    slots[slotIndex].assignedParam = param;
-
+    if (currentPage == MAIN_PAGE) {
+        menu_slots[slotIndex].assignedParam = param;
+    } else {
+        slots[slotIndex].assignedParam = param;
+    }
     if (param < NONE && param < sizeof(paramInitTable)/sizeof(paramInitTable[0])) {
         allParams[param].target_param = paramInitTable[param].target_param;
         allParams[param].label = paramInitTable[param].label;
@@ -390,13 +436,22 @@ void InitParam(ParamUnitName param, uint8_t slotIndex) {
         allParams[param].sensitivity = 0;
         allParams[param].valueType = REGULAR;
     }
-
 }
     
-void InitPageSlots() {
+void InitSlots() {
     currentPage = EMPTY;
+    currentActiveRow = ROW_1;  // Скидаємо до першого ряду при ініціалізації
     for (int i = 0; i < NUM_PARAM_BLOCKS; i++) {
         slots[i].assignedParam = NONE;
         slots[i].need_update = false;
     }
+    for (int i = 0; i < NUM_MAIN_SLOTS; i++) {
+        menu_slots[i].isEditMode = false;
+        menu_slots[i].need_update = false;
+    }
+    menu_slots[0].assignedParam = FILTER_CUTOFF;
+    menu_slots[1].assignedParam = FILTER_RESONANCE;
+    menu_slots[2].assignedParam = ADSR_ATTACK;
+    menu_slots[3].assignedParam = ADSR_DECAY;
+
 }
