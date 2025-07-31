@@ -50,17 +50,25 @@ void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, uint1
     Paint_Clear(bgColor);
     
     Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
-    switch (allParams[slots[blockIndex].assignedParam].valueType) {
-            case REGULAR:
-                Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, textColor, bgColor);
-                break;
-            case X100:
-                Paint_NumCentered(value * 100, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, textColor, bgColor);
-                break;
-            case WAVEFORM:
-                DrawWaveformImage((Waves)value);
-                break;
-            }
+
+    ParamUnitData* paramData = nullptr;
+    if (currentPage == MAIN_PAGE) {
+        paramData = &allParams[menu_slots[blockIndex].assignedParam];
+    } else {
+        paramData = &allParams[slots[blockIndex].assignedParam];
+    }
+    switch (paramData->valueType) {
+        case REGULAR:
+            Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, textColor, bgColor);
+            break;
+        case X100:
+            Paint_NumCentered(value * 100, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, textColor, bgColor);
+            break;
+        case WAVEFORM:
+            DrawWaveformImage((Waves)value);
+            break;
+        }
+
     if (currentPage == MAIN_PAGE) {
         OLED_Part_Transmit_DMA(&param_block_data[blockIndex], 
             BLOCK_MAIN_X_START[blockIndex], 
@@ -87,7 +95,7 @@ void InitMainBlocks(){
     }
 }
 
-void InitAllParamBlocks(){
+void InitParamBlocks(){
 
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
         if (slots[i].assignedParam == NONE) {
@@ -114,7 +122,7 @@ uint8_t GetActiveParamIndex(uint8_t encoderIndex) {
 void ToggleActiveRow() {
     currentActiveRow = (currentActiveRow == ROW_1) ? ROW_2 : ROW_1;
     DrawParamPage(currentPage);
-    InitAllParamBlocks();  
+    InitParamBlocks();  
 }
 
 void UpdateEncoderSwitches() {
@@ -157,45 +165,42 @@ void UpdateEncoderSwitches() {
 void EditBlockParam(uint8_t blockIndex) {
     static uint32_t lastBlinkTime = 0;
     static bool blinkState = false;
-
-    if (menu_slots[blockIndex].need_update) {
     
-        int value = (int)menu_slots[blockIndex].assignedParam;
-            
-        value += encoderIncs[blockIndex];
-            
-        if (value > 32) {
-            value = 32;
-        } else if (value < 0) {
-            value = 0;
-        }
-        for (size_t i = 0; i < NUM_ENCODERS; i++) {
-            if (i == blockIndex) continue;
-            if (encoderIncs[blockIndex] == 1 && (ParamUnitName)value == menu_slots[i].assignedParam) {
-                value++;
-            }
-            else if (encoderIncs[blockIndex] == -1 && (ParamUnitName)value == menu_slots[i].assignedParam) {
-                value--;
-            }
-        }
-        encoderIncs[blockIndex] = 0;
+    int value = (int)menu_slots[blockIndex].assignedParam;
         
-        int currentTime = System::GetNow();
+    value += encoderIncs[blockIndex];
         
-        if (currentTime - lastBlinkTime >= 500) {
-            blinkState = !blinkState;
-            lastBlinkTime = currentTime;
-        }
-        
-        uint16_t textColor = blinkState ? BLACK : WHITE;
-        uint16_t bgColor = blinkState ? 0x01 : BLACK;
-        
-        menu_slots[blockIndex].assignedParam = (ParamUnitName)value;
-
-        AssignParam(menu_slots[blockIndex].assignedParam, blockIndex); 
-        InitOneParamBlock(blockIndex, *allParams[menu_slots[blockIndex].assignedParam].target_param, 
-            allParams[menu_slots[blockIndex].assignedParam].label, textColor, bgColor);
+    if (value > 32) {
+        value = 32;
+    } else if (value < 0) {
+        value = 0;
     }
+    for (size_t i = 0; i < NUM_ENCODERS; i++) {
+        if (i == blockIndex) continue;
+        if (encoderIncs[blockIndex] == 1 && (ParamUnitName)value == menu_slots[i].assignedParam) {
+            value++;
+        }
+        else if (encoderIncs[blockIndex] == -1 && (ParamUnitName)value == menu_slots[i].assignedParam) {
+            value--;
+        }
+    }
+    encoderIncs[blockIndex] = 0;
+    
+    int currentTime = System::GetNow();
+    
+    if (currentTime - lastBlinkTime >= 500) {
+        blinkState = !blinkState;
+        lastBlinkTime = currentTime;
+    }
+    
+    uint16_t textColor = blinkState ? BLACK : WHITE;
+    uint16_t bgColor = blinkState ? 0x01 : BLACK;
+    
+    menu_slots[blockIndex].assignedParam = (ParamUnitName)value;
+
+    AssignParam(menu_slots[blockIndex].assignedParam, blockIndex); 
+    InitOneParamBlock(blockIndex, *allParams[menu_slots[blockIndex].assignedParam].target_param, 
+        allParams[menu_slots[blockIndex].assignedParam].label, textColor, bgColor);
 }
 
 void UpdateParamValue(uint8_t encoderIndex, ParamUnitName paramName, float* target_param) {
@@ -212,7 +217,6 @@ void UpdateParamValue(uint8_t encoderIndex, ParamUnitName paramName, float* targ
     }
     *target_param = value;
     encoderIncs[encoderIndex] = 0;
-
 }
 
 void UpdateMainSlots() {
@@ -222,7 +226,6 @@ void UpdateMainSlots() {
             EditBlockParam(i);
             
         } else if (menu_slots[i].need_update) {  
-
             ParamUnitName paramName = menu_slots[i].assignedParam;
             float* target_param = allParams[paramName].target_param;
             
@@ -266,9 +269,10 @@ void SetPageName(const char* name) {
 }
 
 void AssignMainParams(){
+    
     SetPageName("");
     for (int i = 0; i < NUM_MAIN_SLOTS; i++) {
-        AssignParam(menu_slots[i].assignedParam, i);
+        AssignParam((ParamUnitName)menu_slots[i].assignedParam, i);
     }
 }
 
@@ -334,7 +338,7 @@ void AssignParamsForPage(MenuPage page) {
             AssignParam(EFFECT_CHORUS_FREQ, 0);
             AssignParam(EFFECT_CHORUS_DEPTH, 1);
             AssignParam(EFFECT_CHORUS_FBK, 2);
-            AssignParam(EFFECT_CHORUS_PAN, 3);
+            AssignParam(EFFECT_CHORUS_DELAY, 3);
             break;
         case COMPRESSOR_PAGE:
             SetPageName("Compressor");

@@ -23,14 +23,6 @@ enum ActiveRow {
 };
 extern ActiveRow currentActiveRow;
 
-enum EncoderState {
-    ENCODER_IDLE,
-    ENCODER_MAIN_CHANGE,
-    ENCODER_MAIN_EDITING,
-    ENCODER_PARAM_CHANGE,
-};
-extern EncoderState encoderState[NUM_ENCODERS];
-
 enum MenuPage {
     MAIN_PAGE,
     OSCILLATOR_1_PAGE,
@@ -82,7 +74,7 @@ enum ParamUnitName {
     EFFECT_CHORUS_FREQ,
     EFFECT_CHORUS_DEPTH,
     EFFECT_CHORUS_FBK,
-    EFFECT_CHORUS_PAN,
+    EFFECT_CHORUS_DELAY,
     EFFECT_COMPRESSOR_ATTACK,
     EFFECT_COMPRESSOR_RELEASE,
     EFFECT_COMPRESSOR_THRESHOLD,
@@ -136,7 +128,7 @@ void DrawMainPage();
 void DrawEffectsPage();
 void DrawParamPage(MenuPage page);
 void ToggleActiveRow();
-void InitAllParamBlocks();
+void InitParamBlocks();
 uint8_t GetActiveParamIndex(uint8_t encoderIndex);  // Повертає індекс активного параметра для енкодера
 
 

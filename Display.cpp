@@ -58,49 +58,6 @@ void InitImages(){
     preset_num_block_data = {preset_num_block, PRESET_NUM_BLOCK_SIZE};
 }
 
-// void DrawMainLines(){
-    
-//     Paint_DrawLine(4, 34, 123, 34, 0x03, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-//     Paint_DrawLine(4, 36, 123, 36, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-//     Paint_DrawLine(0, 58, 127, 58, 0x01, DOT_PIXEL_1X1, LINE_STYLE_DOTTED);
-    
-//     uint8_t x1 = 4;
-//     uint8_t x2 = 27;
-//     for(int i = 0; i < NUM_PARAM_BLOCKS; i++){
-//         // top line
-//         Paint_DrawLine(x1, BLOCK_TOP_LINE_Y, x2, BLOCK_TOP_LINE_Y, 0x01, DOT_PIXEL_2X2, LINE_STYLE_SOLID);
-//         // bottom line
-//         Paint_DrawLine(x1, BLOCK_BOTTOM_LINE_Y, x2, BLOCK_BOTTOM_LINE_Y, 0x01, DOT_PIXEL_2X2, LINE_STYLE_SOLID);
-//         x1 += 32;
-//         x2 += 32;
-//     }
-// }
-
-// void DrawParamPageLines(){
-//     Paint_DrawLine(4, 20, 123, 20, 0x03, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-//     Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    
-//     // Лінії для першого ряду (блоки 0-3)
-//     uint8_t x1 = 4;
-//     uint8_t x2 = 27;
-//     for(int i = 0; i < 4; i++){
-//         Paint_DrawLine(x1, BLOCK_ROW1_TOP_Y, x2, BLOCK_ROW1_TOP_Y, 0x01, DOT_PIXEL_2X2, LINE_STYLE_SOLID);
-//         Paint_DrawLine(x1, BLOCK_ROW1_BOTTOM_Y, x2, BLOCK_ROW1_BOTTOM_Y, 0x01, DOT_PIXEL_2X2, LINE_STYLE_SOLID);
-//         x1 += 32;
-//         x2 += 32;
-//     }
-    
-//     // Лінії для другого ряду (блоки 4-7)
-//     x1 = 4;
-//     x2 = 27;
-//     for(int i = 0; i < 4; i++){
-//         Paint_DrawLine(x1, BLOCK_ROW2_TOP_Y, x2, BLOCK_ROW2_TOP_Y, 0x01, DOT_PIXEL_2X2, LINE_STYLE_SOLID);
-//         Paint_DrawLine(x1, BLOCK_ROW2_BOTTOM_Y, x2, BLOCK_ROW2_BOTTOM_Y, 0x01, DOT_PIXEL_2X2, LINE_STYLE_SOLID);
-//         x1 += 32;
-//         x2 += 32;
-//     }
-// }
-
 void DrawIntroPage(){
     Paint_NewImage(intro_page_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
@@ -110,30 +67,6 @@ void DrawIntroPage(){
     
     OLED_Transmit_DMA(&intro_page_data);
 }   
-    
-// void DrawIntroPage2(){
-//     while (1)
-//     {
-//         static int i = 0;
-//         char text[12];
-//         Paint_NewImage(param_block_data[0].data, 32, 32, 0, BLACK);
-//         Paint_Clear(BLACK);
-    
-//         sprintf(text, "%d", i);
-//         Paint_TextCentered(text, 0, 32, 0, Font8, WHITE, BLACK);
-//         Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
-//         OLED_Part_Transmit_DMA(&param_block_data[0], 40, 40, 72, 72);
-//         i++;
-//     }   
-    
-    // Paint_NewImage(param_block_data2.data, 32, 46, 0, BLACK);
-    // Paint_Clear(WHITE);
-    
-    // Paint_TextCentered("B", 0, 32, 0, Font12, WHITE, BLACK);
-    // Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
-    
-    // OLED_Part_Transmit_DMA(&param_block_data2, 80, 80, 112, 106);
-// }   
 
 void SetPage(MenuPage newPage) {
 
@@ -187,8 +120,6 @@ void DrawParamPage(MenuPage page){
 
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK); 
-
-    // DrawParamPageLines();
     
     Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
@@ -207,15 +138,16 @@ void DrawParamPage(MenuPage page){
     // }
     OLED_Transmit_DMA(&bg_black_data);
 
-    InitAllParamBlocks();
+    InitParamBlocks();
+    
 }  
 
 void DrawEffectsPage() {
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_SetScale(16); 
     Paint_Clear(BLACK); 
-    // Paint_TextCentered("Effects", 0, 127, 0, Font12, WHITE, BLACK);
-    // Horizontal line under header
+    Paint_TextCentered("Effects", 0, 127, 0, Font12, WHITE, BLACK);
+
     for (size_t raw = 0; raw < FULL_PAGE_HEIGHT; raw++)
     {
         for (size_t column = 0; column < FULL_PAGE_WIDTH; column += 3)
@@ -254,3 +186,27 @@ void DrawEffectsPage() {
 
     OLED_Transmit_DMA(&bg_black_data);
 }
+
+// void DrawIntroPage2(){
+//     while (1)
+//     {
+//         static int i = 0;
+//         char text[12];
+//         Paint_NewImage(param_block_data[0].data, 32, 32, 0, BLACK);
+//         Paint_Clear(BLACK);
+    
+//         sprintf(text, "%d", i);
+//         Paint_TextCentered(text, 0, 32, 0, Font8, WHITE, BLACK);
+//         Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
+//         OLED_Part_Transmit_DMA(&param_block_data[0], 40, 40, 72, 72);
+//         i++;
+//     }   
+    
+    // Paint_NewImage(param_block_data2.data, 32, 46, 0, BLACK);
+    // Paint_Clear(WHITE);
+    
+    // Paint_TextCentered("B", 0, 32, 0, Font12, WHITE, BLACK);
+    // Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
+    
+    // OLED_Part_Transmit_DMA(&param_block_data2, 80, 80, 112, 106);
+// }   

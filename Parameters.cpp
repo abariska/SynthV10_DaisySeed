@@ -20,7 +20,7 @@ void InitSynthParams() {
         params.osc[o].pan = 0.5f;
     }
     
-    params.filter.cutoff = 15000.0f;
+    params.filter.cutoff = 5000.0f;
     params.filter.resonance = 0.0f;
     
     params.adsr.attack = 0.01f;
