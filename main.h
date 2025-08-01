@@ -27,7 +27,7 @@ extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
 
 // Function prototypes
-void TimerDisplay();
+void Timer500ms();
 void ProcessButtons();
 void ProcessEncoders();
 void SelectEffectPage(uint8_t slot);
@@ -37,7 +37,7 @@ void SetPage(MenuPage newPage);
 void UpdateEncoderSwitches();
 void UpdateEncodersParams();
 void InitParamBlocks();
-void CpuUsageDisplay();
+void CpuUsageDisplay(bool on = true);
 
 
 #endif

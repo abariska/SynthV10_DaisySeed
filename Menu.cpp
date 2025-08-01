@@ -15,6 +15,8 @@ MenuSlot menu_slots[NUM_MAIN_SLOTS];
 
 const uint8_t yBlockLabel = 10;
 const uint8_t yBlockValue = 30;
+bool isBlink = false;
+bool blinkStateChanged = false;
 
 char page_name[16] = "";
 ActiveRow currentActiveRow = ROW_1;  // Початково активний перший ряд
@@ -45,7 +47,6 @@ void DrawWaveformImage(int waveform){
 
 void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, uint16_t textColor, uint16_t bgColor){
 
-    
     Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor); 
     Paint_Clear(bgColor);
     
@@ -70,6 +71,9 @@ void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, uint1
         }
 
     if (currentPage == MAIN_PAGE) {
+        if (menu_slots[blockIndex].isEditMode && isBlink) {
+        Paint_DrawRectangle(1, 2, 32, 50, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+        } 
         OLED_Part_Transmit_DMA(&param_block_data[blockIndex], 
             BLOCK_MAIN_X_START[blockIndex], 
             BLOCK_MAIN_Y_START[blockIndex], 
@@ -133,9 +137,6 @@ void UpdateEncoderSwitches() {
 
                 if (menu_slots[i].isEditMode) {
                     static uint8_t isCurrentEditSlot = 0;
-
-                    EditBlockParam(i);
-
                     if (isCurrentEditSlot != i) {
                         isCurrentEditSlot = i;
 
@@ -147,7 +148,7 @@ void UpdateEncoderSwitches() {
                         }
                     }
                 }
-                
+                EditBlockParam(i);
             }
         }
         break;
@@ -163,45 +164,40 @@ void UpdateEncoderSwitches() {
 }
 
 void EditBlockParam(uint8_t blockIndex) {
-    static uint32_t lastBlinkTime = 0;
-    static bool blinkState = false;
     
-    int value = (int)menu_slots[blockIndex].assignedParam;
-        
-    value += encoderIncs[blockIndex];
-        
-    if (value > 32) {
-        value = 32;
-    } else if (value < 0) {
-        value = 0;
-    }
-    for (size_t i = 0; i < NUM_ENCODERS; i++) {
-        if (i == blockIndex) continue;
-        if (encoderIncs[blockIndex] == 1 && (ParamUnitName)value == menu_slots[i].assignedParam) {
-            value++;
+    if (menu_slots[blockIndex].need_update) { // if encoder is turned
+        int value = (int)menu_slots[blockIndex].assignedParam;
+            
+        value += encoderIncs[blockIndex];
+            
+        if (value > 32) {
+            value = 32;
+        } else if (value < 0) {
+            value = 0;
         }
-        else if (encoderIncs[blockIndex] == -1 && (ParamUnitName)value == menu_slots[i].assignedParam) {
-            value--;
+        for (size_t i = 0; i < NUM_ENCODERS; i++) {
+            if (i == blockIndex) continue;
+            if (encoderIncs[blockIndex] == 1 && (ParamUnitName)value == menu_slots[i].assignedParam) {
+                value++;
+            }
+            else if (encoderIncs[blockIndex] == -1 && (ParamUnitName)value == menu_slots[i].assignedParam) {
+                value--;
+            }
         }
-    }
-    encoderIncs[blockIndex] = 0;
-    
-    int currentTime = System::GetNow();
-    
-    if (currentTime - lastBlinkTime >= 500) {
-        blinkState = !blinkState;
-        lastBlinkTime = currentTime;
-    }
-    
-    uint16_t textColor = blinkState ? BLACK : WHITE;
-    uint16_t bgColor = blinkState ? 0x01 : BLACK;
-    
-    menu_slots[blockIndex].assignedParam = (ParamUnitName)value;
+        encoderIncs[blockIndex] = 0;
+        
+        menu_slots[blockIndex].assignedParam = (ParamUnitName)value;
 
-    AssignParam(menu_slots[blockIndex].assignedParam, blockIndex); 
-    InitOneParamBlock(blockIndex, *allParams[menu_slots[blockIndex].assignedParam].target_param, 
-        allParams[menu_slots[blockIndex].assignedParam].label, textColor, bgColor);
+        AssignParam(menu_slots[blockIndex].assignedParam, blockIndex); 
+        InitOneParamBlock(blockIndex, *allParams[menu_slots[blockIndex].assignedParam].target_param, 
+            allParams[menu_slots[blockIndex].assignedParam].label, WHITE, BLACK);
+        // reset need_update flag
+        menu_slots[blockIndex].need_update = false;
+    }
+    UpdateBlinking(blockIndex);
 }
+
+
 
 void UpdateParamValue(uint8_t encoderIndex, ParamUnitName paramName, float* target_param) {
 
@@ -458,4 +454,12 @@ void InitSlots() {
     menu_slots[2].assignedParam = ADSR_ATTACK;
     menu_slots[3].assignedParam = ADSR_DECAY;
 
+}
+
+void UpdateBlinking(uint8_t blockIndex) {
+    if (!blinkStateChanged) return;  // Нічого не змінилось - виходимо
+    
+    blinkStateChanged = false;  // Скидаємо прапор
+    InitOneParamBlock(blockIndex, *allParams[menu_slots[blockIndex].assignedParam].target_param, 
+        allParams[menu_slots[blockIndex].assignedParam].label, WHITE, BLACK);
 }

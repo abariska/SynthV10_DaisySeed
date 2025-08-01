@@ -15,6 +15,8 @@
 using namespace daisy;
 
 extern char page_name[16];
+extern bool isBlink;
+extern bool blinkStateChanged;
 
 // Для перемикання між рядами параметрів
 enum ActiveRow {
@@ -130,7 +132,7 @@ void DrawParamPage(MenuPage page);
 void ToggleActiveRow();
 void InitParamBlocks();
 uint8_t GetActiveParamIndex(uint8_t encoderIndex);  // Повертає індекс активного параметра для енкодера
-
+void UpdateBlinking(uint8_t blockIndex);
 
 
 #endif

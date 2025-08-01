@@ -85,14 +85,14 @@ int main(void)
     InitSlots();
     SetPage(MAIN_PAGE);
     
-    // TimerDisplay();
+    Timer500ms();
 
     while (1)
     {
         ProcessButtons();
         ProcessEncoders();
         UpdateEncodersParams();
-        CpuUsageDisplay();
+
         sx1509_leds.WritePin(6, midi_note_led);
 }
 }
@@ -125,6 +125,8 @@ void ProcessButtons() {
             for (size_t i = 0; i < 4; i++) {  // Тільки 4 енкодери
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW + i)) {
                     menu_slots[i].isEditMode = !menu_slots[i].isEditMode;
+                    InitOneParamBlock(i, *allParams[menu_slots[i].assignedParam].target_param, 
+                        allParams[menu_slots[i].assignedParam].label, WHITE, BLACK);
                 }
             }
         }
@@ -234,27 +236,27 @@ void ProcessEncoders(){
     }
 }
 
-// void TimerDisplay() {
-//     TimerHandle::Config tim_cfg;
+void Callback(void* data)
+{
+    isBlink = !isBlink;
+    blinkStateChanged = true; 
+    CpuUsageDisplay();
+}
 
-//     /** TIM5 with IRQ enabled */
-//     tim_cfg.periph     = TimerHandle::Config::Peripheral::TIM_5;
-//     tim_cfg.enable_irq = true;
+void Timer500ms() {
+    TimerHandle::Config tim_cfg;
 
-//     /** Configure frequency (30Hz) */
-//     auto tim_target_freq = 100;
-//     auto tim_base_freq   = System::GetPClk2Freq();
-//     tim_cfg.period       = tim_base_freq / tim_target_freq;
+    tim_cfg.periph     = TimerHandle::Config::Peripheral::TIM_5;
+    tim_cfg.enable_irq = true;
 
-//     /** Initialize timer */
-//     tim_display.Init(tim_cfg);
-//     tim_display.SetCallback([](void* data){
-//         ProcessButtons();
-//     });
+    auto tim_target_freq = 1;
+    auto tim_base_freq   = System::GetPClk2Freq();
+    tim_cfg.period       = tim_base_freq / tim_target_freq;
 
-//     /** Start the timer, and generate callbacks at the end of each period */
-//     tim_display.Start();
-// }
+    tim_display.Init(tim_cfg);
+    tim_display.SetCallback(Callback);
+    tim_display.Start();
+}
 
 void SelectEffectPage(uint8_t slot){
         EffectName effect_to_show = effectSlot[slot].selectedEffect;
@@ -276,13 +278,19 @@ void SelectEffectPage(uint8_t slot){
     }
 }
 
-void CpuUsageDisplay(){
+void CpuUsageDisplay(bool on){
     
-    if (currentPage == MAIN_PAGE) {
+    if (on) {
+        if (currentPage == MAIN_PAGE) {
+            Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+            Paint_Clear(BLACK);
+            float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+            Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
+            OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+        }
+    } else {
         Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
         Paint_Clear(BLACK);
-        float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-        Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
         OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
     }
 }
