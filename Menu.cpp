@@ -380,17 +380,17 @@ const ParamUnitData DSY_SDRAM_DATA paramInitTable[] = {
     { &params.osc[0].pitch,    "Sem", -36, 36, 1, REGULAR },   // 1 OSC_PITCH_1
     { &params.osc[0].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //2 OSC_DETUNE_1
     { &params.osc[0].amp,      "Amp", 0, 1, 0.01, X100 },   //3 OSC_AMP_1
-    { &params.osc[0].pan,      "Pan", 0, 1, 0.01, X100 },   //4 OSC_PAN_1
+    { &params.osc[0].pan,      "Pan", -1.0, 1.0, 0.01, X100 },   //4 OSC_PAN_1
     { &params.osc[1].waveform, "Wav", 0, 3, 1, WAVEFORM },  //4 OSC_WAVEFORM_2
     { &params.osc[1].pitch,    "Sem", -36, 36, 1, REGULAR },   //5 OSC_PITCH_2
     { &params.osc[1].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //6 OSC_DETUNE_2
     { &params.osc[1].amp,      "Amp", 0, 1, 0.01, X100 },   //7 OSC_AMP_2
-    { &params.osc[1].pan,      "Pan", 0, 1, 0.01, X100 },   //8 OSC_PAN_2
+    { &params.osc[1].pan,      "Pan", -1.0, 1.0, 0.01, X100 },   //8 OSC_PAN_2
     { &params.osc[2].waveform, "Wav", 0, 3, 1, WAVEFORM },  //9 OSC_WAVEFORM_3
     { &params.osc[2].pitch,    "Sem", -36, 36, 1, REGULAR },   //9 OSC_PITCH_3
     { &params.osc[2].detune,   "Det", -0.5, 0.5, 0.01, X100 }, //10 OSC_DETUNE_3
     { &params.osc[2].amp,      "Amp", 0, 1, 0.01, X100 },   //11 OSC_AMP_3
-    { &params.osc[2].pan,      "Pan", 0, 1, 0.01, X100 },   //12 OSC_PAN_3
+    { &params.osc[2].pan,      "Pan", -1.0, 1.0, 0.01, X100 },   //12 OSC_PAN_3
     { &params.adsr.attack,     "Atk", 0, 1, 0.01, X100 },   //12 ADSR_ATTACK
     { &params.adsr.decay,      "Dec", 0, 1, 0.01, X100 },   //13 ADSR_DECAY
     { &params.adsr.sustain,    "Sus", 0, 1, 0.01, X100 },   //14 ADSR_SUSTAIN

@@ -14,6 +14,7 @@ TimerHandle tim_display;
 CpuLoadMeter cpu_load;
 
 int encoderIncs[4];
+int test = 0;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in, 
                           AudioHandle::InterleavingOutputBuffer out,
@@ -61,28 +62,31 @@ int main(void)
     hw.Configure();
     hw.Init();
     System::Delay(100);
-    // hw.StartLog(false);  // Вимкнути для автономної роботи
+    // hw.StartLog(true);  // Вимкнути для автономної роботи
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
 
-    VoiceInit(samplerate, blocksize);
-    EffectsInit(samplerate);
-    InitSX1509Extenders(); 
-    MidiInit();
-    InitLfo(samplerate);
-    InitSynthParams();
     OLED_1in5_Init();
     InitImages();
     DrawIntroPage();
 
+    VoiceInit(samplerate, blocksize);
+    InitSynthParams();
+    EffectsInit(samplerate);
+    
+    InitLfo(samplerate);
+    MidiInit();
+    
     hw.DelayMs(1000);
 
     // DrawIntroPage2();
     // hw.DelayMs(1000);
 
     hw.StartAudio(AudioCallback);
+    
     InitSlots();
+    InitSX1509Extenders(); 
     SetPage(MAIN_PAGE);
     
     Timer500ms();
@@ -218,7 +222,11 @@ void ProcessEncoders(){
         encoderIncs[1] = EncoderInc(1, ENC_2_A, ENC_2_B);  
         encoderIncs[2] = EncoderInc(2, ENC_3_A, ENC_3_B);  
         encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);  
+
+        test += encoderIncs[0];
+    hw.Print("test: ", test);
     }
+    
 
     if (currentPage == MAIN_PAGE) {
         for (size_t i = 0; i < NUM_ENCODERS; i++) {  // Тільки 4 енкодери
