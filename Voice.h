@@ -20,6 +20,7 @@ extern Adsr adsrMain;
 extern MoogLadder flt;
 extern Oscillator lfo;
 
+
 // Declaration of functions
 void InitLfo(float samplerate);
 float ProcessLfo();

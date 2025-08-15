@@ -47,31 +47,28 @@ void Osc::SetFreq(float freq)
 // but their definitions can be added if needed for sync logic.
 // For now, they are omitted to match the "simple + standalone" state.
 
-float Osc::Process() 
+float Osc::Process(float phase) 
 {
-    float out = 0.0f;
-    
-    float current_phase = phase_;
+    float out = 0.0f;   
 
     switch(mode_)
     {
         case WAVE_SIN:
-            out = sinf((current_phase + 0.25f) * 2.0f * M_PI); // +0.25f - offset to avoid DC offset
+            out = sinf((phase + 0.25f) * 2.0f * M_PI); // +0.25f - offset to avoid DC offset
             break;
 
         case WAVE_TRIANGLE:
-            out = 4.0f * (fabsf(current_phase - 0.5f) - 0.25f);
+            out = 4.0f * (fabsf(phase - 0.5f) - 0.25f);
             break;
 
         case WAVE_SAW:
-            out = 1.0f - 2.0f * current_phase;
-            out += poly_blep(current_phase, phase_inc_);
+            out = 1.0f - 2.0f * phase;
+            out += poly_blep(phase, phase_inc_);
             break;
-            
         case WAVE_SQUARE:
-            out = current_phase < pw_ ? 1.0f : -1.0f;
-            out += poly_blep(current_phase, phase_inc_);
-            out -= poly_blep(fmodf(current_phase + (1.0f - pw_), 1.0f), phase_inc_);
+            out = phase < pw_ ? 1.0f : -1.0f;
+            out += poly_blep(phase, phase_inc_);
+            out -= poly_blep(fmodf(phase + (1.0f - pw_), 1.0f), phase_inc_);
             break;
 
         case WAVE_OFF:
@@ -80,11 +77,11 @@ float Osc::Process()
             break;
     }
 
-    // Increment internal phase
-    phase_ += phase_inc_;
-    if (phase_ >= 1.0f) {
-        phase_ -= 1.0f;
-    }
+    // // Increment internal phase
+    // phase += phase_inc_;
+    // if (phase >= 1.0f) {
+    //     phase -= 1.0f;
+    // }
     
     return out * amp_;
 }

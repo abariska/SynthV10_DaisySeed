@@ -1,4 +1,8 @@
 #include "voice.h"
+#include "main.h"
+#include "daisy_seed.h"
+
+extern DaisySeed hw;
 
 std::array<Osc, OSC_NUM> osc;
 // PhaseGenerator phaseGenerator;
@@ -12,6 +16,10 @@ uint8_t noteNum = 60;
 float phase = 0;
 float frequency = 0;
 float amplitude = 0;
+float masterPhase = 0.0f; 
+float phaseOffsets[OSC_NUM] = {0.0f, 0.0f, 0.0f}; 
+float pitch_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
+float detune_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 
 const int maxNotes = 16;
 int activeNotes[maxNotes];
@@ -34,6 +42,7 @@ float ProcessLfo() {
 void VoiceInit(float samplerate, int blocksize) {
 
     // phaseGenerator.Init(samplerate);
+    
     for (size_t i = 0; i < OSC_NUM; i++) {
         osc[i].Init(samplerate);
     }
@@ -51,8 +60,13 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 		activeNoteCount++;
 
 		noteNum = note_in;
+        frequency = 440.0f * powf(2.0f, (note_in - 69) / 12.0f);
+
+        for (size_t i = 0; i < OSC_NUM; i++) {
+            pitch_correction[i] = powf(2.0f, params.osc[i].pitch / 12.0f); 
+            detune_correction[i] = powf(2.0f, params.osc[i].detune);     
+        }
 		
-		// Map velocity to amplitude
 		float velocity_factor = velocity / 127.0f;
 		float freq_compensation = powf(2.0f, (note_in - 60.0f) / 48.0f);
 		amplitude = velocity_factor * freq_compensation;
@@ -102,26 +116,28 @@ void HandleNoteOff(uint8_t note_in)
 void VoiceProcess(float& sigL, float& sigR){
     sigL = 0.0f;
     sigR = 0.0f;
-
+    float sr = hw.AudioSampleRate();
     // float base_frequency = 440.0f * powf(2.0f, (noteNum - 69) / 12.0f);
     // phaseGenerator.SetFreq(base_frequency);
     
     // Get the master phase ONCE before the loop
     // float master_phase = phaseGenerator.Process();
+    
+    float phaseInc = frequency / sr;
 
     for (size_t i = 0; i < OSC_NUM; i++)
     {
         if (params.osc[i].active) {
 
-            float final_freq = 440.0f * powf(2.0f, ((noteNum + params.osc[i].pitch) - 69) / 12.0f);
-            final_freq *= powf(2.0f, (params.osc[i].detune));
+            float final_freq = frequency * pitch_correction[i] * detune_correction[i];
+            float oscPhase = fmodf(masterPhase + phaseOffsets[i], 1.0f);
             
             osc[i].SetFreq(final_freq);
             osc[i].SetAmp(params.osc[i].amp * amplitude);
             osc[i].SetWaveform(params.osc[i].waveform);
             osc[i].SetPw(params.osc[i].pw);
             float sig = 0.0f;
-            sig += osc[i].Process();
+            sig += osc[i].Process(oscPhase);
 
             if (params.osc[i].pan != 0.0f) {
                 float pan = params.osc[i].pan;
@@ -137,6 +153,7 @@ void VoiceProcess(float& sigL, float& sigR){
 
         }  
     }
+    
     sigL /= OSC_NUM;
     sigR /= OSC_NUM;
 
@@ -156,6 +173,9 @@ void VoiceProcess(float& sigL, float& sigR){
     
     sigL *= env;
     sigR *= env;
+
+    masterPhase += phaseInc;
+    if(masterPhase >= 1.0f) masterPhase -= 1.0f;
 
 }
 
