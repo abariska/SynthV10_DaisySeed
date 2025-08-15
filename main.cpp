@@ -129,8 +129,6 @@ void ProcessButtons() {
             for (size_t i = 0; i < 4; i++) {  // Тільки 4 енкодери
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW + i)) {
                     menu_slots[i].isEditMode = !menu_slots[i].isEditMode;
-                    InitOneParamBlock(i, *allParams[menu_slots[i].assignedParam].target_param, 
-                        allParams[menu_slots[i].assignedParam].label, WHITE, BLACK);
                 }
             }
         }
@@ -139,24 +137,14 @@ void ProcessButtons() {
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
                 params.osc[0].active = !params.osc[0].active;
                 sx1509_leds.WritePin(LED_OSC_1, params.osc[0].active);
-                Paint_NewImage(osc_on_block_data.data, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT, 0, BLACK);
-                Paint_DrawString_EN(110, 0,params.osc[0].active ? "On" : "Off", &Font8, WHITE, BLACK);
-                OLED_Part_Transmit_DMA(&osc_on_block_data, 0, 0, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT);
-
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
                 params.osc[1].active = !params.osc[1].active;
                 sx1509_leds.WritePin(LED_OSC_2, params.osc[1].active);
-                Paint_NewImage(osc_on_block_data.data, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT, 0, BLACK);
-                Paint_DrawString_EN(110, 0,params.osc[1].active ? "On" : "Off", &Font8, WHITE, BLACK);
-                OLED_Part_Transmit_DMA(&osc_on_block_data, 32, 0, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
                 params.osc[2].active = !params.osc[2].active;
                 sx1509_leds.WritePin(LED_OSC_3, params.osc[2].active);      
-                Paint_NewImage(osc_on_block_data.data, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT, 0, BLACK);
-                Paint_DrawString_EN(110, 0,params.osc[2].active ? "On" : "Off", &Font8, WHITE, BLACK);
-                OLED_Part_Transmit_DMA(&osc_on_block_data, 64, 0, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT);
             }
         } else {
             if (sx1509_buttons.isFallingEdge(BUTTON_BACK)) {
