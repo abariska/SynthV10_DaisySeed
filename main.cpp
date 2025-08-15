@@ -5,11 +5,9 @@
 #include "oscillator.h"
 #include "display.h"
 
-
 using namespace daisy;
 
 DaisySeed hw;
-
 TimerHandle tim_display;
 CpuLoadMeter cpu_load;
 
@@ -41,7 +39,6 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
         float sig_after_fxL = 0.0f;
         float sig_after_fxR = 0.0f;
 
-        // VoiceProcessTest(sig_after_fxL, sig_after_fxR);
         VoiceProcess(sig_after_fxL, sig_after_fxR);
 
         // for (size_t i = 0; i < 2; i++) {
@@ -70,18 +67,13 @@ int main(void)
     OLED_1in5_Init();
     InitImages();
     DrawIntroPage();
-
     VoiceInit(samplerate, blocksize);
     InitSynthParams();
     EffectsInit(samplerate);
-    
     InitLfo(samplerate);
     MidiInit();
     
     hw.DelayMs(1000);
-
-    // DrawIntroPage2();
-    // hw.DelayMs(1000);
 
     hw.StartAudio(AudioCallback);
     

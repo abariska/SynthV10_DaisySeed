@@ -14,20 +14,15 @@
 #include "display.h"
 #include "menu.h"
 
-
 using namespace daisy;
 using namespace daisysp;
 
-// Global objects
 extern CpuLoadMeter cpu_load;
-
 extern int encoderIncs[4];
 extern SX1509 sx1509_buttons;
 extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
-extern float samplerate;
 
-// Function prototypes
 void Timer500ms();
 void ProcessButtons();
 void ProcessEncoders();
