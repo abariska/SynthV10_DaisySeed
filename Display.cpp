@@ -2,6 +2,7 @@
 #include "display.h"
 #include "menu.h"
 #include "OLED_1.5_Daisy_Seed/fonts.h"
+#include "effects.h"
 
 extern MenuPage currentPage;
 
@@ -57,40 +58,6 @@ void InitImages(){
     preset_num_block_data = {preset_num_block, PRESET_NUM_BLOCK_SIZE};
 }
 
-void DrawMainLines(){
-    
-    Paint_DrawLine(4, 34, 123, 34, 0x03, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(4, 36, 123, 36, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(0, 58, 127, 58, 0x01, DOT_PIXEL_1X1, LINE_STYLE_DOTTED);
-    
-    uint8_t x1 = 4;
-    uint8_t x2 = 27;
-    for(int i = 0; i < NUM_PARAM_BLOCKS; i++){
-        // top line
-        Paint_DrawLine(x1, BLOCK_TOP_LINE_Y, x2, BLOCK_TOP_LINE_Y, 0x01, DOT_PIXEL_2X2, LINE_STYLE_SOLID);
-        // bottom line
-        Paint_DrawLine(x1, BLOCK_BOTTOM_LINE_Y, x2, BLOCK_BOTTOM_LINE_Y, 0x01, DOT_PIXEL_2X2, LINE_STYLE_SOLID);
-        x1 += 32;
-        x2 += 32;
-    }
-}
-
-void DrawParamPageLines(){
-    Paint_DrawLine(4, 20, 123, 20, 0x03, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    
-    uint8_t x1 = 4;
-    uint8_t x2 = 27;
-    for(int i = 0; i < NUM_PARAM_BLOCKS; i++){
-        // top line
-        Paint_DrawLine(x1, BLOCK_TOP_LINE_Y, x2, BLOCK_TOP_LINE_Y, 0x01, DOT_PIXEL_2X2, LINE_STYLE_SOLID);
-        // bottom line
-        Paint_DrawLine(x1, BLOCK_BOTTOM_LINE_Y, x2, BLOCK_BOTTOM_LINE_Y, 0x01, DOT_PIXEL_2X2, LINE_STYLE_SOLID);
-        x1 += 32;
-        x2 += 32;
-    }
-}
-
 void DrawIntroPage(){
     Paint_NewImage(intro_page_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
@@ -100,7 +67,126 @@ void DrawIntroPage(){
     
     OLED_Transmit_DMA(&intro_page_data);
 }   
+
+void SetPage(MenuPage newPage) {
+
+    if (currentPage == newPage) return;
+
+    currentPage = newPage;    
+    currentActiveRow = ROW_1;  // Скидаємо до першого ряду при зміні сторінки
+
+    switch (newPage)
+    {
+    case MAIN_PAGE:
+        DrawMainPage();
+        break;
+    case FX_PAGE:
+        DrawEffectsPage();
+        break;
+    default:
+        DrawParamPage(newPage);
+        break;
+    }
+}
+
+void DrawMainPage()
+{
+    AssignMainParams();  
+
+    char prog_num[PROGRAM_NUMBER_LENGTH];
+    char prog_name[PROGRAM_NAME_LENGTH];
+
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
+    Paint_Clear(BLACK); 
+    // DrawMainLines();
+    Paint_DrawLine(4, 34, 123, 34, 0x03, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(4, 36, 123, 36, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(0, 58, 127, 58, 0x01, DOT_PIXEL_1X1, LINE_STYLE_DOTTED);
     
+    sprintf(prog_num, "%03d", 1);
+    Paint_TextCentered(prog_num, 0, 127, 0, Font16, WHITE, BLACK);
+
+    sprintf(prog_name, "Program");
+    Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
+
+    OLED_Transmit_DMA(&bg_black_data);
+
+    InitMainBlocks();
+}
+
+void DrawParamPage(MenuPage page){
+
+    AssignParamsForPage(page); 
+
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
+    Paint_Clear(BLACK); 
+    
+    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+
+    Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
+    
+    // // Індикатор активного ряду
+    // uint8_t rowIndicator = (currentActiveRow == ROW_1) ? 1 : 2;
+    // switch (rowIndicator)
+    // {
+    // case 1:
+    //     Paint_DrawRectangle(0, 24, 127, 75, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+    //     break;
+    // case 2:
+    //     Paint_DrawRectangle(0, 75, 127, 127, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+    //     break;
+    // }
+    OLED_Transmit_DMA(&bg_black_data);
+
+    InitParamBlocks();
+    
+}  
+
+void DrawEffectsPage() {
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
+    Paint_SetScale(16); 
+    Paint_Clear(BLACK); 
+    Paint_TextCentered("Effects", 0, 127, 0, Font12, WHITE, BLACK);
+
+    for (size_t raw = 0; raw < FULL_PAGE_HEIGHT; raw++)
+    {
+        for (size_t column = 0; column < FULL_PAGE_WIDTH; column += 3)
+        {
+            if (raw == 20 || raw == 40)
+                for (size_t i = 0; i < 127; i += 3)
+                    Paint_DrawPoint(i, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT);
+            if (raw > 20 && raw % 3 == 0)
+            {
+                Paint_DrawPoint(64, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT); 
+            }
+        }
+    }
+    
+    Paint_TextCentered("1", 0, 63, 20, Font12, WHITE, BLACK);
+    Paint_TextCentered("2", 64, 127, 20, Font12, WHITE, BLACK);
+
+    for (size_t i = 0; i < 2; i++)
+    {
+        EffectName selected = effectSlot[i].selectedEffect;
+        const int x1 = (i == 0) ? 0 : 64;
+        const int x2 = (i == 0) ? 64 : 127;
+        const int y1 = 64;
+        const int y2 = 80;
+        if (selected != EFFECT_NONE)
+        {
+            Paint_TextCentered(effectLabels[selected], x1, x2, y1, Font12, WHITE, BLACK);
+            Paint_TextCentered(effectSlot[i].isActive ? "On" : "Off", x1, x2, y2, Font12, WHITE, BLACK);
+        }
+        else
+        {
+            Paint_TextCentered(" - ", x1, x2, y1, Font12, WHITE, BLACK);
+            Paint_TextCentered(" - ", x1, x2, y2, Font12, WHITE, BLACK);
+        }
+    }
+
+    OLED_Transmit_DMA(&bg_black_data);
+}
+
 // void DrawIntroPage2(){
 //     while (1)
 //     {
@@ -124,64 +210,3 @@ void DrawIntroPage(){
     
     // OLED_Part_Transmit_DMA(&param_block_data2, 80, 80, 112, 106);
 // }   
-
-void SetPage(MenuPage newPage) {
-
-    if (currentPage == newPage) return;
-
-    currentPage = newPage;    
-
-    DrawPage(newPage);
-}
-
-void DrawPage(MenuPage page) {
-
-    switch (page)
-    {
-    case MAIN_PAGE:
-        DrawMainPage();
-        break;
-    case FX_PAGE:
-        DrawEffectsPage();
-        break;
-    default:
-        DrawParamPage(page);
-        break;
-    }
-}
-
-void DrawMainPage()
-{
-    char prog_num[PROGRAM_NUMBER_LENGTH];
-    char prog_name[PROGRAM_NAME_LENGTH];
-
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK); 
-    DrawMainLines();
-    
-    sprintf(prog_num, "%03d", 1);
-    Paint_TextCentered(prog_num, 0, 127, 0, Font16, WHITE, BLACK);
-
-    sprintf(prog_name, "Program");
-    Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
-
-    AssignParamsForPage(MAIN_PAGE); 
-
-    OLED_Transmit_DMA(&bg_black_data);
-    InitParamBlocks();
-}
-
-void DrawParamPage(MenuPage page){
-
-    AssignParamsForPage(page); 
-
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK); 
-
-    DrawParamPageLines();
-
-    Paint_TextCentered(page_name, 0, 127, 0, Font12, WHITE, BLACK);
-    OLED_Transmit_DMA(&bg_black_data);
-
-    InitParamBlocks();
-}  

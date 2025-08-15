@@ -3,7 +3,8 @@
 std::array<Osc, OSC_NUM> osc;
 // PhaseGenerator phaseGenerator;
 Adsr adsrMain;
-MoogLadder flt;
+MoogLadder fltL;
+MoogLadder fltR;
 Oscillator lfo;
 
 
@@ -36,7 +37,8 @@ void VoiceInit(float samplerate, int blocksize) {
     for (size_t i = 0; i < OSC_NUM; i++) {
         osc[i].Init(samplerate);
     }
-    flt.Init(samplerate);
+    fltL.Init(samplerate);
+    fltR.Init(samplerate);
     adsrMain.Init(samplerate, blocksize);
 }
 
@@ -98,7 +100,8 @@ void HandleNoteOff(uint8_t note_in)
 }
 
 void VoiceProcess(float& sigL, float& sigR){
-    float sig = 0.0f;
+    sigL = 0.0f;
+    sigR = 0.0f;
 
     // float base_frequency = 440.0f * powf(2.0f, (noteNum - 69) / 12.0f);
     // phaseGenerator.SetFreq(base_frequency);
@@ -117,25 +120,42 @@ void VoiceProcess(float& sigL, float& sigR){
             osc[i].SetAmp(params.osc[i].amp * amplitude);
             osc[i].SetWaveform(params.osc[i].waveform);
             osc[i].SetPw(params.osc[i].pw);
-            
+            float sig = 0.0f;
             sig += osc[i].Process();
+
+            if (params.osc[i].pan != 0.0f) {
+                float pan = params.osc[i].pan;
+                float leftGain = (pan >= 0.0f) ? 1.0f : (1.0f + pan);
+                float rightGain = (pan <= 0.0f) ? 1.0f : (1.0f - pan);
+                
+                sigL += sig * leftGain;
+                sigR += sig * rightGain;
+            } else {
+                sigL += sig;
+                sigR += sig;
+            }
+
         }  
     }
-    sig /= OSC_NUM;
+    sigL /= OSC_NUM;
+    sigR /= OSC_NUM;
 
-        flt.SetFreq(params.filter.cutoff);
-        flt.SetRes(params.filter.resonance);
-        sig = flt.Process(sig);
+    fltL.SetFreq(params.filter.cutoff);
+    fltL.SetRes(params.filter.resonance);
+    fltR.SetFreq(params.filter.cutoff);
+    fltR.SetRes(params.filter.resonance);
+    sigL = fltL.Process(sigL);
+    sigR = fltR.Process(sigR);
 
-        adsrMain.SetAttackTime(params.adsr.attack);
-        adsrMain.SetDecayTime(params.adsr.decay);
-        adsrMain.SetSustainLevel(params.adsr.sustain);
-        adsrMain.SetReleaseTime(params.adsr.release);
+    adsrMain.SetAttackTime(params.adsr.attack);
+    adsrMain.SetDecayTime(params.adsr.decay);
+    adsrMain.SetSustainLevel(params.adsr.sustain);
+    adsrMain.SetReleaseTime(params.adsr.release);
+
+    float env = adsrMain.Process(gate);
     
-        float env = adsrMain.Process(gate);
-        sig = sig * env;     
+    sigL *= env;
+    sigR *= env;
 
-        sigL = sig * params.osc[0].pan;
-        sigR = sig * (1 - params.osc[0].pan);
 }
 

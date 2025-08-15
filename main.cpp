@@ -14,6 +14,7 @@ TimerHandle tim_display;
 CpuLoadMeter cpu_load;
 
 int encoderIncs[4];
+int test = 0;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in, 
                           AudioHandle::InterleavingOutputBuffer out,
@@ -61,39 +62,41 @@ int main(void)
     hw.Configure();
     hw.Init();
     System::Delay(100);
-    // hw.StartLog(false);  // Вимкнути для автономної роботи
+    // hw.StartLog(true);  // Вимкнути для автономної роботи
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
 
-    VoiceInit(samplerate, blocksize);
-    EffectsInit(samplerate);
-    InitSX1509Extenders(); 
-    MidiInit();
-    InitLfo(samplerate);
-    InitSynthParams();
     OLED_1in5_Init();
     InitImages();
     DrawIntroPage();
 
+    VoiceInit(samplerate, blocksize);
+    InitSynthParams();
+    EffectsInit(samplerate);
+    
+    InitLfo(samplerate);
+    MidiInit();
+    
     hw.DelayMs(1000);
 
     // DrawIntroPage2();
     // hw.DelayMs(1000);
 
     hw.StartAudio(AudioCallback);
-    InitPageSlots();
-    SetPage(OSCILLATOR_1_PAGE);
     
-    // TimerDisplay();
+    InitSlots();
+    InitSX1509Extenders(); 
+    SetPage(MAIN_PAGE);
+    
+    Timer500ms();
 
     while (1)
     {
         ProcessButtons();
         ProcessEncoders();
-        // CheckEditParamOnMain();
         UpdateEncodersParams();
-        CpuUsageDisplay();
+
         sx1509_leds.WritePin(6, midi_note_led);
 }
 }
@@ -123,9 +126,9 @@ void ProcessButtons() {
                 }
             }
         } else if (currentPage == MenuPage::MAIN_PAGE) {
-            for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
+            for (size_t i = 0; i < 4; i++) {  // Тільки 4 енкодери
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW + i)) {
-                    isParamEditMode[i] = !isParamEditMode[i];
+                    menu_slots[i].isEditMode = !menu_slots[i].isEditMode;
                 }
             }
         }
@@ -134,49 +137,63 @@ void ProcessButtons() {
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
                 params.osc[0].active = !params.osc[0].active;
                 sx1509_leds.WritePin(LED_OSC_1, params.osc[0].active);
-                Paint_NewImage(osc_on_block_data.data, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT, 0, BLACK);
-                Paint_DrawString_EN(110, 0,params.osc[0].active ? "On" : "Off", &Font8, WHITE, BLACK);
-                OLED_Part_Transmit_DMA(&osc_on_block_data, 0, 0, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT);
-
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
                 params.osc[1].active = !params.osc[1].active;
                 sx1509_leds.WritePin(LED_OSC_2, params.osc[1].active);
-                Paint_NewImage(osc_on_block_data.data, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT, 0, BLACK);
-                Paint_DrawString_EN(110, 0,params.osc[1].active ? "On" : "Off", &Font8, WHITE, BLACK);
-                OLED_Part_Transmit_DMA(&osc_on_block_data, 32, 0, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
                 params.osc[2].active = !params.osc[2].active;
                 sx1509_leds.WritePin(LED_OSC_3, params.osc[2].active);      
-                Paint_NewImage(osc_on_block_data.data, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT, 0, BLACK);
-                Paint_DrawString_EN(110, 0,params.osc[2].active ? "On" : "Off", &Font8, WHITE, BLACK);
-                OLED_Part_Transmit_DMA(&osc_on_block_data, 64, 0, OSC_ON_BLOCK_WIDTH, OSC_ON_BLOCK_HEIGHT);
             }
         } else {
             if (sx1509_buttons.isFallingEdge(BUTTON_BACK)) {
                 SetPage(MenuPage::MAIN_PAGE);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
-                SetPage(MenuPage::OSCILLATOR_1_PAGE);
+                if (currentPage == MenuPage::OSCILLATOR_1_PAGE) {
+                    ToggleActiveRow();  // Перемикання між рядами на тій же сторінці
+                } else {
+                    SetPage(MenuPage::OSCILLATOR_1_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
-                SetPage(MenuPage::OSCILLATOR_2_PAGE);
+                if (currentPage == MenuPage::OSCILLATOR_2_PAGE) {
+                    ToggleActiveRow();
+                } else {
+                    SetPage(MenuPage::OSCILLATOR_2_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
-                SetPage(MenuPage::OSCILLATOR_3_PAGE);
+                if (currentPage == MenuPage::OSCILLATOR_3_PAGE) {
+                    ToggleActiveRow();
+                } else {
+                    SetPage(MenuPage::OSCILLATOR_3_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_FLT)) {
-                SetPage(MenuPage::FILTER_PAGE);
+                if (currentPage == MenuPage::FILTER_PAGE) {
+                    ToggleActiveRow();
+                } else {
+                    SetPage(MenuPage::FILTER_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_AMP)) {
-                SetPage(MenuPage::AMPLIFIER_PAGE);
+                if (currentPage == MenuPage::AMPLIFIER_PAGE) {
+                    ToggleActiveRow();
+                } else {
+                    SetPage(MenuPage::AMPLIFIER_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_FX)) {
                 SetPage(MenuPage::FX_PAGE);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_LFO)) {
-                SetPage(MenuPage::LFO_PAGE);
+                if (currentPage == MenuPage::LFO_PAGE) {
+                    ToggleActiveRow();
+                } else {
+                    SetPage(MenuPage::LFO_PAGE);
+                }
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_MTX)) {
                 SetPage(MenuPage::MTX_PAGE);
@@ -193,36 +210,49 @@ void ProcessEncoders(){
         encoderIncs[1] = EncoderInc(1, ENC_2_A, ENC_2_B);  
         encoderIncs[2] = EncoderInc(2, ENC_3_A, ENC_3_B);  
         encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);  
-    }
 
-    for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-        if (encoderIncs[i] != 0  && !isParamEditMode[i]) {
-            slots[i].need_update = true;
+        test += encoderIncs[0];
+    hw.Print("test: ", test);
+    }
+    
+
+    if (currentPage == MAIN_PAGE) {
+        for (size_t i = 0; i < NUM_ENCODERS; i++) {  // Тільки 4 енкодери
+            if (encoderIncs[i] != 0) {
+                menu_slots[i].need_update = true;
+            }
+        }
+    } else {
+        for (size_t i = 0; i < 4; i++) {  // Тільки 4 енкодери
+            if (encoderIncs[i] != 0) {
+                uint8_t paramIndex = GetActiveParamIndex(i);  // Отримуємо індекс активного параметра
+                    slots[paramIndex].need_update = true;
+            }
         }
     }
 }
 
-// void TimerDisplay() {
-//     TimerHandle::Config tim_cfg;
+void Callback(void* data)
+{
+    isBlink = !isBlink;
+    blinkStateChanged = true; 
+    CpuUsageDisplay();
+}
 
-//     /** TIM5 with IRQ enabled */
-//     tim_cfg.periph     = TimerHandle::Config::Peripheral::TIM_5;
-//     tim_cfg.enable_irq = true;
+void Timer500ms() {
+    TimerHandle::Config tim_cfg;
 
-//     /** Configure frequency (30Hz) */
-//     auto tim_target_freq = 100;
-//     auto tim_base_freq   = System::GetPClk2Freq();
-//     tim_cfg.period       = tim_base_freq / tim_target_freq;
+    tim_cfg.periph     = TimerHandle::Config::Peripheral::TIM_5;
+    tim_cfg.enable_irq = true;
 
-//     /** Initialize timer */
-//     tim_display.Init(tim_cfg);
-//     tim_display.SetCallback([](void* data){
-//         ProcessButtons();
-//     });
+    auto tim_target_freq = 1;
+    auto tim_base_freq   = System::GetPClk2Freq();
+    tim_cfg.period       = tim_base_freq / tim_target_freq;
 
-//     /** Start the timer, and generate callbacks at the end of each period */
-//     tim_display.Start();
-// }
+    tim_display.Init(tim_cfg);
+    tim_display.SetCallback(Callback);
+    tim_display.Start();
+}
 
 void SelectEffectPage(uint8_t slot){
         EffectName effect_to_show = effectSlot[slot].selectedEffect;
@@ -244,13 +274,19 @@ void SelectEffectPage(uint8_t slot){
     }
 }
 
-void CpuUsageDisplay(){
+void CpuUsageDisplay(bool on){
     
-    if (currentPage == MAIN_PAGE) {
+    if (on) {
+        if (currentPage == MAIN_PAGE) {
+            Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+            Paint_Clear(BLACK);
+            float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+            Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
+            OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+        }
+    } else {
         Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
         Paint_Clear(BLACK);
-        float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-        Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
         OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
     }
 }

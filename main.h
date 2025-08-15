@@ -22,25 +22,22 @@ using namespace daisysp;
 extern CpuLoadMeter cpu_load;
 
 extern int encoderIncs[4];
-extern bool isParamEditMode[4];
 extern SX1509 sx1509_buttons;
 extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
 
 // Function prototypes
-void TimerDisplay();
+void Timer500ms();
 void ProcessButtons();
 void ProcessEncoders();
 void SelectEffectPage(uint8_t slot);
-void CheckEditParamOnMain();
 void InitImages();
 void DrawIntroPage();
 void SetPage(MenuPage newPage);
 void UpdateEncoderSwitches();
 void UpdateEncodersParams();
-void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, UWORD color, UWORD backgroundColor);
 void InitParamBlocks();
-void CpuUsageDisplay();
+void CpuUsageDisplay(bool on = true);
 
 
 #endif

@@ -1,4 +1,5 @@
 #include "sx1509_expander.h"
+#include "parameters.h"
 
 SX1509 sx1509_buttons;
 SX1509 sx1509_encoders;
@@ -50,28 +51,34 @@ void InitSX1509Extenders() {
     InitSX1509Leds();
 
     for (int i = 0; i < 16; i++) {
-        sx1509_buttons.SetPinMode(i, PIN_INPUT_PULLUP, 1);
+        sx1509_buttons.SetPinMode(i, SX_PIN_INPUT_PULLUP, 1);
         sx1509_buttons.DebouncePin(i);
     }
     sx1509_buttons.DebounceConfig(3);
     sx1509_buttons.ReadAllPins();
 
     for (int i = 0; i < 16; i++) {
-        sx1509_encoders.SetPinMode(i, PIN_INPUT_PULLUP, 1);
+        sx1509_encoders.SetPinMode(i, SX_PIN_INPUT_PULLUP, 1);
     }
     sx1509_encoders.ReadAllPins();
 
     for (int i = 0; i < 16; i++) {
-        sx1509_leds.SetPinMode(i, PIN_OUTPUT, 0);
-        sx1509_leds.WritePin(i, 0);
+        sx1509_leds.SetPinMode(i, SX_PIN_OUTPUT, 0);
     }
+
+    sx1509_leds.WritePin(LED_OSC_1, params.osc[0].active);
+    sx1509_leds.WritePin(LED_OSC_2, params.osc[1].active);
+    sx1509_leds.WritePin(LED_OSC_3, params.osc[2].active);
+    // sx1509_leds.WritePin(LED_LFO, params.lfo.active);
+    // sx1509_leds.WritePin(LED_MTX, params.mtx.active);
+
 }
 
 int8_t EncoderInc(uint8_t enc_index,uint8_t pin_a, uint8_t pin_b) {
 
-    static uint8_t a_[ENCODER_NUM] = {0};
-    static uint8_t b_[ENCODER_NUM] = {0};
-    static uint32_t last_increment_time_[ENCODER_NUM] = {0};
+    static uint8_t a_[NUM_ENCODERS] = {0};
+    static uint8_t b_[NUM_ENCODERS] = {0};
+    static uint32_t last_increment_time_[NUM_ENCODERS] = {0};
     int8_t inc_ = 0;
 
     // Shift Button states to debounce
