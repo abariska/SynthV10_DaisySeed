@@ -15,6 +15,7 @@ CpuLoadMeter cpu_load;
 
 int encoderIncs[4];
 int test = 0;
+float samplerate = 0;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in, 
                           AudioHandle::InterleavingOutputBuffer out,
@@ -56,7 +57,6 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer  in,
 
 int main(void)
 {
-    float samplerate;
     int blocksize = 4;
 
     hw.Configure();

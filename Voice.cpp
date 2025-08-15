@@ -2,10 +2,7 @@
 #include "main.h"
 #include "daisy_seed.h"
 
-extern DaisySeed hw;
-
 std::array<Osc, OSC_NUM> osc;
-// PhaseGenerator phaseGenerator;
 Adsr adsrMain;
 MoogLadder fltL;
 MoogLadder fltR;
@@ -41,8 +38,6 @@ float ProcessLfo() {
 
 void VoiceInit(float samplerate, int blocksize) {
 
-    // phaseGenerator.Init(samplerate);
-    
     for (size_t i = 0; i < OSC_NUM; i++) {
         osc[i].Init(samplerate);
     }
@@ -72,8 +67,6 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 		amplitude = velocity_factor * freq_compensation;
 
         if (!(isNotesPlaying && params.global.isLegato)) {
-            // phaseGenerator.Reset();
-
             adsrMain.Retrigger(false); 
         } 
         gate = true;
@@ -116,14 +109,8 @@ void HandleNoteOff(uint8_t note_in)
 void VoiceProcess(float& sigL, float& sigR){
     sigL = 0.0f;
     sigR = 0.0f;
-    float sr = hw.AudioSampleRate();
-    // float base_frequency = 440.0f * powf(2.0f, (noteNum - 69) / 12.0f);
-    // phaseGenerator.SetFreq(base_frequency);
     
-    // Get the master phase ONCE before the loop
-    // float master_phase = phaseGenerator.Process();
-    
-    float phaseInc = frequency / sr;
+    float phaseInc = frequency / samplerate;
 
     for (size_t i = 0; i < OSC_NUM; i++)
     {
