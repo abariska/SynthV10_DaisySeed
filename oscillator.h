@@ -45,7 +45,7 @@ class Osc
 
     /** - Get next floating point oscillator sample.
     */
-    float Process();
+    float Process(float phase);
     
     /** - Float freq: Set oscillator frequency in Hz.
     */
