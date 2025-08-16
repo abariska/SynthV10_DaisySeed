@@ -4,16 +4,50 @@
 #include "midi_handler.h"
 #include "oscillator.h"
 #include "display.h"
+#include "log_uart.h"
+
+#define LOG_BUF_SIZE 512
 
 using namespace daisy;
+
+
+char logBuffer[LOG_BUF_SIZE];
+volatile uint16_t logWritePos = 0;
+volatile uint16_t logReadPos = 0;
 
 DaisySeed hw;
 TimerHandle tim_display;
 CpuLoadMeter cpu_load;
+UartHandler uart_serial;
 
 int encoderIncs[4];
 int test = 0;
 float samplerate = 0;
+
+void log_uart(const char* str) {
+    while (*str) {
+        uint16_t next = (logWritePos + 1) % LOG_BUF_SIZE;
+        if (next != logReadPos) { // перевірка переповнення
+            logBuffer[logWritePos] = *str++;
+            logWritePos = next;
+        } else {
+            break; // буфер повний, пропускаємо символи
+        }
+    }
+}
+
+void UartSerialInit() {
+    UartHandler::Config config;
+    config.baudrate = 115200;
+    config.periph = UartHandler::Config::Peripheral::USART_2;
+    config.mode = UartHandler::Config::Mode::TX_RX;
+    config.wordlength = UartHandler::Config::WordLength::BITS_8;
+    config.stopbits = UartHandler::Config::StopBits::BITS_1;
+    config.parity = UartHandler::Config::Parity::NONE;    
+    config.pin_config.tx = Pin(PORTA, 2);
+    config.pin_config.rx = Pin(PORTA, 3);
+    uart_serial.Init(config); 
+}
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in, 
                           AudioHandle::InterleavingOutputBuffer out,
@@ -58,8 +92,12 @@ int main(void)
 
     hw.Configure();
     hw.Init();
+    HAL_Init();
+    UartSerialInit();      // налаштування UART
+    log_init(&uart_serial);
+    
+    
     System::Delay(100);
-    // hw.StartLog(true);  // Вимкнути для автономної роботи
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
@@ -90,6 +128,9 @@ int main(void)
         UpdateEncodersParams();
 
         sx1509_leds.WritePin(6, midi_note_led);
+        log_write("Hello Daisy!\n");
+        log_flush();           // викликаємо регулярно
+        hw.DelayMs(100);
 }
 }
 

@@ -23,6 +23,7 @@ extern SX1509 sx1509_buttons;
 extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
 
+
 void Timer500ms();
 void ProcessButtons();
 void ProcessEncoders();
@@ -34,6 +35,8 @@ void UpdateEncoderSwitches();
 void UpdateEncodersParams();
 void InitParamBlocks();
 void CpuUsageDisplay(bool on = true);
+
+
 
 
 #endif
