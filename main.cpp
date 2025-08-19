@@ -37,16 +37,16 @@ void log_uart(const char* str) {
 }
 
 void UartSerialInit() {
-    UartHandler::Config config;
-    config.baudrate = 115200;
-    config.periph = UartHandler::Config::Peripheral::USART_2;
-    config.mode = UartHandler::Config::Mode::TX_RX;
-    config.wordlength = UartHandler::Config::WordLength::BITS_8;
-    config.stopbits = UartHandler::Config::StopBits::BITS_1;
-    config.parity = UartHandler::Config::Parity::NONE;    
-    config.pin_config.tx = Pin(PORTA, 2);
-    config.pin_config.rx = Pin(PORTA, 3);
-    uart_serial.Init(config); 
+    UartHandler::Config cfg;
+    cfg.periph         = UartHandler::Config::Peripheral::USART_1; // USART1
+    cfg.pin_config.tx  = Pin(PORTB, 14); // D13 -> USART1_TX
+    cfg.pin_config.rx  = Pin(PORTB, 15); // D14 -> USART1_RX
+    cfg.baudrate       = 115200;
+    cfg.wordlength     = UartHandler::Config::WordLength::BITS_8;
+    cfg.stopbits       = UartHandler::Config::StopBits::BITS_1;
+    cfg.parity         = UartHandler::Config::Parity::NONE;
+    cfg.mode           = UartHandler::Config::Mode::TX_RX;
+    uart_serial.Init(cfg);
 }
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in, 
@@ -92,10 +92,7 @@ int main(void)
 
     hw.Configure();
     hw.Init();
-    HAL_Init();
-    UartSerialInit();      // налаштування UART
-    log_init(&uart_serial);
-    
+    UartSerialInit();      
     
     System::Delay(100);
     hw.SetAudioBlockSize(blocksize);
@@ -120,7 +117,9 @@ int main(void)
     SetPage(MAIN_PAGE);
     
     Timer500ms();
-
+    const char* hello = "Hello from Daisy over UART\r\n";
+    uart_serial.BlockingTransmit((uint8_t*)hello, strlen(hello), 1000);
+    int i = 0;
     while (1)
     {
         ProcessButtons();
@@ -128,8 +127,15 @@ int main(void)
         UpdateEncodersParams();
 
         sx1509_leds.WritePin(6, midi_note_led);
-        log_write("Hello Daisy!\n");
-        log_flush();           // викликаємо регулярно
+        
+        char buf[64];
+        size_t len = snprintf(buf, sizeof(buf), "Count=%lu\r\n", (unsigned long)i++);
+        
+        // Блокуюча передача (простіше і надійніше)
+        UartHandler::Result result = uart_serial.BlockingTransmit((uint8_t*)buf, len, 1000);
+        if (result != UartHandler::Result::OK) {
+            hw.PrintLine("UART transmission failed: %d", (int)result);
+        }
         hw.DelayMs(100);
 }
 }
