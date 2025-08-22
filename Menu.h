@@ -47,46 +47,6 @@ enum MenuPage {
 
 extern MenuPage currentPage;
 
-enum ParamUnitName {
-    OSC_WAVEFORM_1,
-    OSC_PITCH_1,
-    OSC_DETUNE_1,
-    OSC_AMP_1,
-    OSC_PAN_1,
-    OSC_WAVEFORM_2,
-    OSC_PITCH_2,
-    OSC_DETUNE_2,
-    OSC_AMP_2,
-    OSC_PAN_2,
-    OSC_WAVEFORM_3,
-    OSC_PITCH_3,
-    OSC_DETUNE_3,
-    OSC_AMP_3,
-    OSC_PAN_3,
-    ADSR_ATTACK,
-    ADSR_DECAY,
-    ADSR_SUSTAIN,
-    ADSR_RELEASE,
-    FILTER_CUTOFF,
-    FILTER_RESONANCE,
-    LFO_WAVEFORM,
-    LFO_FREQ,
-    LFO_DEPTH,
-    EFFECT_OVERDRIVE_DRIVE,
-    EFFECT_CHORUS_FREQ,
-    EFFECT_CHORUS_DEPTH,
-    EFFECT_CHORUS_FBK,
-    EFFECT_CHORUS_DELAY,
-    EFFECT_COMPRESSOR_ATTACK,
-    EFFECT_COMPRESSOR_RELEASE,
-    EFFECT_COMPRESSOR_THRESHOLD,
-    EFFECT_COMPRESSOR_RATIO,
-    EFFECT_REVERB_DRYWET,
-    EFFECT_REVERB_FBK,
-    EFFECT_REVERB_LPFREQ,
-    NONE
-};
-
 struct ParamUnitData{
     float* target_param;
     const char* label;
@@ -95,7 +55,7 @@ struct ParamUnitData{
     float sensitivity;
     ValueType valueType;
 } ;
-extern ParamUnitData allParams[ParamUnitName::NONE + 1];
+extern ParamUnitData allParams[(int)ParamUnitName::NUM_OF_PARAMS];
 
 struct ParamSlot {
     ParamUnitName assignedParam;
