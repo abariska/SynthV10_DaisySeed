@@ -3,13 +3,10 @@
 
 #include <array>
 #include <cstdint>
-#include "daisysp.h"
 
 // Required for array structures
 #define OSC_NUM 3
 #define PARAM_NAME_LENGTH 8
-
-using namespace daisysp;
 
 enum class ParamUnitName {
     OSC_WAVEFORM_1,
@@ -52,7 +49,7 @@ enum class ParamUnitName {
     NUM_OF_PARAMS
 };
 
-float parameters[static_cast<int>(ParamUnitName::NUM_OF_PARAMS)];
+float parameters_array[static_cast<int>(ParamUnitName::NUM_OF_PARAMS)];
 
 enum Waves {
     TRI,
@@ -61,11 +58,11 @@ enum Waves {
     OFF
 };
 
-enum ValueType {
-    REGULAR,
-    X100,
-    WAVEFORM
-};
+// enum ValueType {
+//     REGULAR,
+//     X100,
+//     WAVEFORM
+// };
 
 enum class Curve {
     LINEAR,
@@ -73,58 +70,55 @@ enum class Curve {
     EXPONENTIAL
 };
 
-class DiscreteParameter {
-    private:
-        float norm_value = 0;
-        int physical_value;
-        int max_numbers;
-        const char* name_lable;
-        int param_index;
-        float* param_array;
-    
-    public:
-    
-        DiscreteParameter(int init_value, int max_vals, const char* lable, uint8_t index, float* array);
-    
-        void SetNormalized(float n);
-    
-        void SetPhysical_value(int n);
-    
-        int AdjustByEncoder(int encoder_inc);
-    
-        float GetNormalised() const;
+enum class ParamType {
+    CONTINUOUS,
+    DISCRETE
+};
 
-        int GetInt() const;
-    };
-    
-class Parameter {
-    private:
-        float physical_value;
-        float norm_value;
-        float min;
-        float max;
-        const char* name_lable;
-        int param_index;
-        float* param_array;
-        Curve curve;
-        
-    public:
-    
-    Parameter(float init_value, float min_value, float max_value, const char* lable, 
-        uint8_t index, float* array, Curve defaultCurve = Curve::LINEAR);
+class SynthParameter {
+private:
+    // Загальні поля
+    const char* name_label;
+    int param_index;
+    float* param_array;
+    float norm_value = 0.0f;
 
-        float SetNormalized(float n);
-    
-        float SetPhysicalValue(float n);
-        
-        float AdjustByEncoder(int encoder_inc);
-    
-        float GetFloat() const ;
-        
-        int GetInt() const ;
-        
-        bool GetBool() const ;
-    };
+    // Для continuous
+    float min = 0.0f;
+    float max = 1.0f;
+    Curve curve = Curve::LINEAR;
+    float physical_value = 0.0f;
+
+    // Для discrete
+    int max_numbers = 0;
+    int discrete_value = 0;
+
+    ParamType type;
+
+public:
+
+    SynthParameter() = default;
+    SynthParameter(float init_value, float min_value, float max_value,
+        const char* label, uint8_t index, float* array, Curve defaultCurve = Curve::LINEAR);
+
+    SynthParameter(int init_value, int max_vals,
+        const char* label, uint8_t index, float* array);
+
+    // Універсальні методи
+    float SetNormalized(float n) ;
+
+    float SetPhysicalValue(float v);
+
+    float AdjustByEncoder(int inc);
+
+    // Геттери
+    float GetFloat() const;
+    int GetInt() const;
+    float GetNormalised() const;
+    bool GetBool() const;
+};
+
+extern SynthParameter parameter[static_cast<int>(ParamUnitName::NUM_OF_PARAMS)];
 
 // Structure for storing synthesizer parameters
 struct SynthParams {
