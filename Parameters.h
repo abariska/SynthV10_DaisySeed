@@ -7,6 +7,7 @@
 
 // Required for array structures
 #define OSC_NUM 3
+#define PARAM_NAME_LENGTH 8
 
 using namespace daisysp;
 
@@ -77,12 +78,13 @@ class DiscreteParameter {
         float norm_value = 0;
         int physical_value;
         int max_numbers;
+        const char* name_lable;
         int param_index;
         float* param_array;
     
     public:
     
-        DiscreteParameter(int init_value, int max_vals, uint8_t index, float* array);
+        DiscreteParameter(int init_value, int max_vals, const char* lable, uint8_t index, float* array);
     
         void SetNormalized(float n);
     
@@ -101,13 +103,15 @@ class Parameter {
         float norm_value;
         float min;
         float max;
+        const char* name_lable;
         int param_index;
         float* param_array;
         Curve curve;
         
     public:
     
-    Parameter(float init_value, float min_value, float max_value, uint8_t index, float* array, Curve defaultCurve = Curve::LINEAR);
+    Parameter(float init_value, float min_value, float max_value, const char* lable, 
+        uint8_t index, float* array, Curve defaultCurve = Curve::LINEAR);
 
         float SetNormalized(float n);
     

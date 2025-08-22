@@ -5,8 +5,8 @@ using namespace daisysp;
 
 SynthParams params;
 
-DiscreteParameter::DiscreteParameter(int init_value, int max_vals, uint8_t index, float* array)
-    : physical_value(init_value), max_numbers(max_vals), param_index(index), param_array(array) 
+DiscreteParameter::DiscreteParameter(int init_value, int max_vals, const char* lable, uint8_t index, float* array)
+    : physical_value(init_value), max_numbers(max_vals), name_lable(lable), param_index(index), param_array(array) 
     {
         SetNormalized(norm_value);
     }
@@ -53,10 +53,10 @@ float DiscreteParameter::GetNormalised() const {return norm_value;}
 int DiscreteParameter::GetInt() const {return physical_value;}
 
 
-Parameter::Parameter(float init_value, float min_value, float max_value, uint8_t index, 
-    float* array, Curve defaultCurve = Curve::LINEAR)
-    
-    : physical_value(init_value), min(min_value), max(max_value), param_index(index), 
+Parameter::Parameter(float init_value, float min_value, float max_value, const char* lable, uint8_t index, 
+    float* array, Curve defaultCurve)
+
+    : physical_value(init_value), min(min_value), max(max_value), name_lable(lable), param_index(index), 
     param_array(array), curve(defaultCurve)
     {
         SetPhysicalValue(physical_value);
