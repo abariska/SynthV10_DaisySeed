@@ -47,24 +47,14 @@ enum MenuPage {
 
 extern MenuPage currentPage;
 
-struct ParamUnitData{
-    float* target_param;
-    const char* label;
-    float min;
-    float max;
-    float sensitivity;
-    ValueType valueType;
-} ;
-extern ParamUnitData allParams[(int)ParamUnitName::NUM_OF_PARAMS];
-
 struct ParamSlot {
-    ParamUnitName assignedParam;
+    ParamUnitName target_param;
     bool need_update;   
 };
 extern ParamSlot slots[NUM_PARAM_BLOCKS];
 
 struct MenuSlot {
-    ParamUnitName assignedParam;
+    ParamUnitName target_param;
     bool need_update;
     bool isEditMode;
 };
@@ -72,13 +62,13 @@ extern MenuSlot menu_slots[NUM_MAIN_SLOTS];
 
 void UpdateEncoderSwitches();
 void EditBlockParam(uint8_t blockIndex);
-void UpdateParamValue(uint8_t encoderIndex, ParamUnitName paramName, float* target_param);
+void UpdateParamValue(uint8_t encoderIndex, SynthParameter* target_param);
 void UpdateMainParams();
 void UpdateParamPageParams();
 void UpdateEncodersParams();
 void EncoderChangeEffect();
 
-void AssignParam(ParamUnitName param, uint8_t slotIndex);
+void AssignParam(SynthParameter* param, uint8_t slotIndex);
 void AssignMainParams();
 void InitMainBlocks();
 void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, uint16_t textColor = WHITE, uint16_t bgColor = BLACK);

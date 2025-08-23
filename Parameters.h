@@ -14,25 +14,30 @@ enum class ParamUnitName {
     OSC_DETUNE_1,
     OSC_AMP_1,
     OSC_PAN_1,
+    OSC_ACTIVE_1,
     OSC_WAVEFORM_2,
     OSC_PITCH_2,
     OSC_DETUNE_2,
     OSC_AMP_2,
     OSC_PAN_2,
+    OSC_ACTIVE_2,
     OSC_WAVEFORM_3,
     OSC_PITCH_3,
     OSC_DETUNE_3,
     OSC_AMP_3,
     OSC_PAN_3,
+    OSC_ACTIVE_3,
     ADSR_ATTACK,
     ADSR_DECAY,
     ADSR_SUSTAIN,
     ADSR_RELEASE,
+    ADSR_RETRIGGER,
     FILTER_CUTOFF,
     FILTER_RESONANCE,
     LFO_WAVEFORM,
     LFO_FREQ,
     LFO_DEPTH,
+    LFO_ACTIVE,
     EFFECT_OVERDRIVE_DRIVE,
     EFFECT_CHORUS_FREQ,
     EFFECT_CHORUS_DEPTH,
@@ -42,9 +47,13 @@ enum class ParamUnitName {
     EFFECT_COMPRESSOR_RELEASE,
     EFFECT_COMPRESSOR_THRESHOLD,
     EFFECT_COMPRESSOR_RATIO,
+    EFFECT_COMPRESSOR_MAKEUP,
     EFFECT_REVERB_DRYWET,
-    EFFECT_REVERB_FBK,
+    EFFECT_REVERB_FEEDBACK,
     EFFECT_REVERB_LPFREQ,
+    GLOBAL_MONO,
+    GLOBAL_LEGATO,
+    GLOBAL_PORTAMENTO,
     NONE,
     NUM_OF_PARAMS
 };
@@ -116,9 +125,23 @@ public:
     int GetInt() const;
     float GetNormalised() const;
     bool GetBool() const;
+    const char* GetLabel() const;
+    ParamType GetType() const;
 };
 
-extern SynthParameter parameter[static_cast<int>(ParamUnitName::NUM_OF_PARAMS)];
+class ParameterManager {
+    private:
+        SynthParameter params[static_cast<int>(ParamUnitName::NUM_OF_PARAMS)];
+        
+    public:
+        void Init();
+        SynthParameter& GetParam(ParamUnitName name) { return params[static_cast<int>(name)]; }
+        float GetValue(ParamUnitName name) { return GetParam(name).GetNormalised(); }
+        void SetValue(ParamUnitName name, float val) { GetParam(name).SetNormalized(val); }
+        const char* GetLabel(ParamUnitName name) { return GetParam(name).GetLabel(); }
+    };
+    
+extern ParameterManager paramManager;
 
 // Structure for storing synthesizer parameters
 struct SynthParams {

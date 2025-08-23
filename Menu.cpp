@@ -9,9 +9,9 @@
 #include "main.h"
 
 MenuPage currentPage;
-ParamUnitData allParams[ParamUnitName::NONE + 1];
 ParamSlot slots[NUM_PARAM_BLOCKS];
 MenuSlot menu_slots[NUM_MAIN_SLOTS];
+extern ParameterManager paramManager;
 
 const uint8_t yBlockLabel = 10;
 const uint8_t yBlockValue = 30;
@@ -52,13 +52,13 @@ void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, uint1
     
     Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
 
-    ParamUnitData* paramData = nullptr;
+    SynthParameter* p= nullptr;
     if (currentPage == MAIN_PAGE) {
-        paramData = &allParams[menu_slots[blockIndex].assignedParam];
+        p = &paramManager.GetParam(menu_slots[blockIndex].target_param);
     } else {
-        paramData = &allParams[slots[blockIndex].assignedParam];
+        p = &paramManager.GetParam(slots[blockIndex].target_param);
     }
-    switch (paramData->valueType) {
+    switch (p->GetType()) {
         case REGULAR:
             Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, textColor, bgColor);
             break;
