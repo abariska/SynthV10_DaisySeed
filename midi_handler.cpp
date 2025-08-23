@@ -16,6 +16,8 @@ void MidiInit()
     midi_uart_cfg.transport_config.rx     = {DSY_GPIOB, 15}; // D30 = PB15 = USART1_RX
     midi_uart_cfg.transport_config.tx     = {DSY_GPIOB, 14}; // D29 = PB14 = USART1_TX (опціонально)
     midiUart.Init(midi_uart_cfg);
+
+    System::Delay(10);
 }
 
 // Handle MIDI messages

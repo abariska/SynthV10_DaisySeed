@@ -38,9 +38,9 @@ void log_uart(const char* str) {
 
 void UartSerialInit() {
     UartHandler::Config cfg;
-    cfg.periph         = UartHandler::Config::Peripheral::USART_1; // USART1
-    cfg.pin_config.tx  = Pin(PORTB, 14); // D13 -> USART1_TX
-    cfg.pin_config.rx  = Pin(PORTB, 15); // D14 -> USART1_RX
+    cfg.periph         = UartHandler::Config::Peripheral::LPUART_1; // USART1
+    cfg.pin_config.tx  = Pin(PORTB, 6); // D13 -> USART1_TX
+    cfg.pin_config.rx  = Pin(PORTB, 7); // D14 -> USART1_RX
     cfg.baudrate       = 115200;
     cfg.wordlength     = UartHandler::Config::WordLength::BITS_8;
     cfg.stopbits       = UartHandler::Config::StopBits::BITS_1;
@@ -92,9 +92,11 @@ int main(void)
 
     hw.Configure();
     hw.Init();
-    UartSerialInit();      
+    UartSerialInit();     
+    const char* hello = "Hello from Daisy over UART\r\n";
+    uart_serial.BlockingTransmit((uint8_t*)hello, strlen(hello), 1000);
+    hw.DelayMs(10);
     
-    System::Delay(100);
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
@@ -107,8 +109,6 @@ int main(void)
     EffectsInit(samplerate);
     InitLfo(samplerate);
     MidiInit();
-    
-    hw.DelayMs(1000);
 
     hw.StartAudio(AudioCallback);
     
@@ -117,9 +117,7 @@ int main(void)
     SetPage(MAIN_PAGE);
     
     Timer500ms();
-    const char* hello = "Hello from Daisy over UART\r\n";
-    uart_serial.BlockingTransmit((uint8_t*)hello, strlen(hello), 1000);
-    int i = 0;
+
     while (1)
     {
         ProcessButtons();
@@ -128,15 +126,6 @@ int main(void)
 
         sx1509_leds.WritePin(6, midi_note_led);
         
-        char buf[64];
-        size_t len = snprintf(buf, sizeof(buf), "Count=%lu\r\n", (unsigned long)i++);
-        
-        // Блокуюча передача (простіше і надійніше)
-        UartHandler::Result result = uart_serial.BlockingTransmit((uint8_t*)buf, len, 1000);
-        if (result != UartHandler::Result::OK) {
-            hw.PrintLine("UART transmission failed: %d", (int)result);
-        }
-        hw.DelayMs(100);
 }
 }
 
@@ -251,7 +240,9 @@ void ProcessEncoders(){
         encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);  
 
         test += encoderIncs[0];
-    hw.Print("test: ", test);
+        char buf[64];
+        size_t len = snprintf(buf, sizeof(buf), "test: %d\r\n", test);
+        uart_serial.BlockingTransmit((uint8_t*)buf, len, 40);
     }
     
 
@@ -291,6 +282,8 @@ void Timer500ms() {
     tim_display.Init(tim_cfg);
     tim_display.SetCallback(Callback);
     tim_display.Start();
+
+    System::Delay(10);
 }
 
 void SelectEffectPage(uint8_t slot){
