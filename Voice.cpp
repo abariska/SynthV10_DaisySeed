@@ -8,6 +8,7 @@ MoogLadder fltL;
 MoogLadder fltR;
 Oscillator lfo;
 
+using P = ParamUnitName;
 
 uint8_t noteNum = 60;
 float phase = 0;
@@ -30,9 +31,9 @@ void InitLfo(float samplerate) {
 
 float ProcessLfo() {
     // Apply parameters from template
-    lfo.SetFreq(params.lfo.freq);
-    lfo.SetWaveform(params.lfo.waveform);
-    lfo.SetAmp(params.lfo.depth);
+    lfo.SetFreq(paramManager.GetValue(P::LFO_FREQ));
+    lfo.SetWaveform(paramManager.GetValue(P::LFO_WAVEFORM));
+    lfo.SetAmp(paramManager.GetValue(P::LFO_DEPTH));
     return lfo.Process();
 }
 
@@ -58,15 +59,15 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
         frequency = 440.0f * powf(2.0f, (note_in - 69) / 12.0f);
 
         for (size_t i = 0; i < OSC_NUM; i++) {
-            pitch_correction[i] = powf(2.0f, params.osc[i].pitch / 12.0f); 
-            detune_correction[i] = powf(2.0f, params.osc[i].detune);     
+            pitch_correction[i] = powf(2.0f, paramManager.GetValue(OSC_PITCH[i]) / 12.0f);  
+            detune_correction[i] = powf(2.0f, paramManager.GetValue(OSC_DETUNE[i]));     
         }
 		
 		float velocity_factor = velocity / 127.0f;
 		float freq_compensation = powf(2.0f, (note_in - 60.0f) / 48.0f);
 		amplitude = velocity_factor * freq_compensation;
 
-        if (!(isNotesPlaying && params.global.isLegato)) {
+        if (!(isNotesPlaying && paramManager.GetValue(P::GLOBAL_LEGATO))) {
             adsrMain.Retrigger(false); 
         } 
         gate = true;
@@ -114,20 +115,20 @@ void VoiceProcess(float& sigL, float& sigR){
 
     for (size_t i = 0; i < OSC_NUM; i++)
     {
-        if (params.osc[i].active) {
+        if (paramManager.GetValue(OSC_ACTIVE[i])) {
 
             float final_freq = frequency * pitch_correction[i] * detune_correction[i];
             float oscPhase = fmodf(masterPhase + phaseOffsets[i], 1.0f);
             
             osc[i].SetFreq(final_freq);
-            osc[i].SetAmp(params.osc[i].amp * amplitude);
-            osc[i].SetWaveform(params.osc[i].waveform);
-            osc[i].SetPw(params.osc[i].pw);
+            osc[i].SetAmp(paramManager.GetValue(OSC_AMP[i]) * amplitude);
+            osc[i].SetWaveform(paramManager.GetValue(OSC_WAVEFORM[i]));
+            osc[i].SetPw(paramManager.GetValue(OSC_PWM[i]));
             float sig = 0.0f;
             sig += osc[i].Process(oscPhase);
 
-            if (params.osc[i].pan != 0.0f) {
-                float pan = params.osc[i].pan;
+            if (paramManager.GetValue(OSC_PAN[i]) != 0.0f) {
+                float pan = paramManager.GetValue(OSC_PAN[i]);
                 float leftGain = (pan >= 0.0f) ? 1.0f : (1.0f + pan);
                 float rightGain = (pan <= 0.0f) ? 1.0f : (1.0f - pan);
                 
@@ -144,17 +145,17 @@ void VoiceProcess(float& sigL, float& sigR){
     sigL /= OSC_NUM;
     sigR /= OSC_NUM;
 
-    fltL.SetFreq(params.filter.cutoff);
-    fltL.SetRes(params.filter.resonance);
-    fltR.SetFreq(params.filter.cutoff);
-    fltR.SetRes(params.filter.resonance);
+    fltL.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
+    fltL.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
+    fltR.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
+    fltR.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
     sigL = fltL.Process(sigL);
     sigR = fltR.Process(sigR);
 
-    adsrMain.SetAttackTime(params.adsr.attack);
-    adsrMain.SetDecayTime(params.adsr.decay);
-    adsrMain.SetSustainLevel(params.adsr.sustain);
-    adsrMain.SetReleaseTime(params.adsr.release);
+    adsrMain.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK));
+    adsrMain.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
+    adsrMain.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
+    adsrMain.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
 
     float env = adsrMain.Process(gate);
     

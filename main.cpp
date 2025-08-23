@@ -7,6 +7,8 @@
 
 using namespace daisy;
 
+using P = ParamUnitName;
+
 DaisySeed hw;
 TimerHandle tim_display;
 CpuLoadMeter cpu_load;
@@ -127,16 +129,16 @@ void ProcessButtons() {
 
         if (shift_pressed) {
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
-                params.osc[0].active = !params.osc[0].active;
-                sx1509_leds.WritePin(LED_OSC_1, params.osc[0].active);
+                paramManager.SetValue(P::OSC_ACTIVE_1, !paramManager.GetValue(P::OSC_ACTIVE_1));
+                sx1509_leds.WritePin(LED_OSC_1, paramManager.GetValue(P::OSC_ACTIVE_1));
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
-                params.osc[1].active = !params.osc[1].active;
-                sx1509_leds.WritePin(LED_OSC_2, params.osc[1].active);
+                paramManager.SetValue(P::OSC_ACTIVE_2, !paramManager.GetValue(P::OSC_ACTIVE_2));
+                sx1509_leds.WritePin(LED_OSC_2, paramManager.GetValue(P::OSC_ACTIVE_2));
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
-                params.osc[2].active = !params.osc[2].active;
-                sx1509_leds.WritePin(LED_OSC_3, params.osc[2].active);      
+                paramManager.SetValue(P::OSC_ACTIVE_3, !paramManager.GetValue(P::OSC_ACTIVE_3));
+                sx1509_leds.WritePin(LED_OSC_3, paramManager.GetValue(P::OSC_ACTIVE_3));      
             }
         } else {
             if (sx1509_buttons.isFallingEdge(BUTTON_BACK)) {

@@ -62,16 +62,14 @@ extern MenuSlot menu_slots[NUM_MAIN_SLOTS];
 
 void UpdateEncoderSwitches();
 void EditBlockParam(uint8_t blockIndex);
-void UpdateParamValue(uint8_t encoderIndex, SynthParameter* target_param);
+void UpdateParamValue(uint8_t encoderIndex, ParamUnitName target_param);
 void UpdateMainParams();
 void UpdateParamPageParams();
 void UpdateEncodersParams();
 void EncoderChangeEffect();
 
-void AssignParam(SynthParameter* param, uint8_t slotIndex);
-void AssignMainParams();
 void InitMainBlocks();
-void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, uint16_t textColor = WHITE, uint16_t bgColor = BLACK);
+void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t textColor = WHITE, uint16_t bgColor = BLACK);
 void InitSlots();
 void AssignParamsForPage(MenuPage page);
 void SetPageName(const char* name);
