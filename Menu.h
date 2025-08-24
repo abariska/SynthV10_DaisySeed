@@ -47,64 +47,14 @@ enum MenuPage {
 
 extern MenuPage currentPage;
 
-enum ParamUnitName {
-    OSC_WAVEFORM_1,
-    OSC_PITCH_1,
-    OSC_DETUNE_1,
-    OSC_AMP_1,
-    OSC_PAN_1,
-    OSC_WAVEFORM_2,
-    OSC_PITCH_2,
-    OSC_DETUNE_2,
-    OSC_AMP_2,
-    OSC_PAN_2,
-    OSC_WAVEFORM_3,
-    OSC_PITCH_3,
-    OSC_DETUNE_3,
-    OSC_AMP_3,
-    OSC_PAN_3,
-    ADSR_ATTACK,
-    ADSR_DECAY,
-    ADSR_SUSTAIN,
-    ADSR_RELEASE,
-    FILTER_CUTOFF,
-    FILTER_RESONANCE,
-    LFO_WAVEFORM,
-    LFO_FREQ,
-    LFO_DEPTH,
-    EFFECT_OVERDRIVE_DRIVE,
-    EFFECT_CHORUS_FREQ,
-    EFFECT_CHORUS_DEPTH,
-    EFFECT_CHORUS_FBK,
-    EFFECT_CHORUS_DELAY,
-    EFFECT_COMPRESSOR_ATTACK,
-    EFFECT_COMPRESSOR_RELEASE,
-    EFFECT_COMPRESSOR_THRESHOLD,
-    EFFECT_COMPRESSOR_RATIO,
-    EFFECT_REVERB_DRYWET,
-    EFFECT_REVERB_FBK,
-    EFFECT_REVERB_LPFREQ,
-    NONE
-};
-
-struct ParamUnitData{
-    float* target_param;
-    const char* label;
-    float min;
-    float max;
-    float sensitivity;
-    ValueType valueType;
-} ;
-extern ParamUnitData allParams[ParamUnitName::NONE + 1];
-
 struct ParamSlot {
-    ParamUnitName assignedParam;
+    ParamUnitName target_param;
     bool need_update;   
 };
 extern ParamSlot slots[NUM_PARAM_BLOCKS];
 
 struct MenuSlot {
-    ParamUnitName assignedParam;
+    ParamUnitName target_param;
     bool need_update;
     bool isEditMode;
 };
@@ -112,16 +62,14 @@ extern MenuSlot menu_slots[NUM_MAIN_SLOTS];
 
 void UpdateEncoderSwitches();
 void EditBlockParam(uint8_t blockIndex);
-void UpdateParamValue(uint8_t encoderIndex, ParamUnitName paramName, float* target_param);
+void UpdateParamValue(uint8_t encoderIndex, ParamUnitName target_param);
 void UpdateMainParams();
 void UpdateParamPageParams();
 void UpdateEncodersParams();
 void EncoderChangeEffect();
 
-void AssignParam(ParamUnitName param, uint8_t slotIndex);
-void AssignMainParams();
 void InitMainBlocks();
-void InitOneParamBlock(uint8_t blockIndex, float value, const char* label, uint16_t textColor = WHITE, uint16_t bgColor = BLACK);
+void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t textColor = WHITE, uint16_t bgColor = BLACK);
 void InitSlots();
 void AssignParamsForPage(MenuPage page);
 void SetPageName(const char* name);

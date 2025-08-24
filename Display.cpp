@@ -94,8 +94,6 @@ void SetPage(MenuPage newPage) {
 
 void DrawMainPage()
 {
-    AssignMainParams();  
-
     char prog_num[PROGRAM_NUMBER_LENGTH];
     char prog_name[PROGRAM_NAME_LENGTH];
 
