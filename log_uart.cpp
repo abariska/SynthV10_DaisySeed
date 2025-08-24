@@ -22,6 +22,12 @@ void UartSerialInit() {
 
 }
 
+void UartPrint(uint8_t* num) {
+    char test[40];
+    sprintf(test, "%d\r\n", *num);
+    uart_serial.BlockingTransmit((uint8_t*)test, strlen(test), 1000);
+}
+
 void UartPrint(const char* text) {
     char test[40];
     sprintf(test, "%s\r\n", text);
@@ -37,5 +43,11 @@ void UartPrint(int num) {
 void UartPrint(const char* text, int num) {
     char test[40];
     sprintf(test, "%s %d\r\n", text, num);
+    uart_serial.BlockingTransmit((uint8_t*)test, strlen(test), 1000);
+}
+
+void UartPrint(const char* text, float num) {
+    char test[40];
+    sprintf(test, "%s %.2f\r\n", text, num);
     uart_serial.BlockingTransmit((uint8_t*)test, strlen(test), 1000);
 }
