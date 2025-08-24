@@ -360,6 +360,7 @@ void InitSlots() {
     menu_slots[2].target_param = P::ADSR_ATTACK;
     menu_slots[3].target_param = P::ADSR_DECAY;
 
+    System::Delay(10);
 }
 
 void UpdateBlinking(uint8_t blockIndex) {

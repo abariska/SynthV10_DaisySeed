@@ -45,6 +45,8 @@ void VoiceInit(float samplerate, int blocksize) {
     fltL.Init(samplerate);
     fltR.Init(samplerate);
     adsrMain.Init(samplerate, blocksize);
+    
+    System::Delay(10);
 }
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity)

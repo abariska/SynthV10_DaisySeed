@@ -13,6 +13,7 @@
 #include "daisy_core.h"
 #include "display.h"
 #include "menu.h"
+#include "log_uart.h"
 
 using namespace daisy;
 using namespace daisysp;
@@ -22,6 +23,8 @@ extern int encoderIncs[4];
 extern SX1509 sx1509_buttons;
 extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
+
+extern UartHandler uart_serial;
 extern ParameterManager paramManager;
 
 void Timer500ms();
@@ -35,6 +38,8 @@ void UpdateEncoderSwitches();
 void UpdateEncodersParams();
 void InitParamBlocks();
 void CpuUsageDisplay(bool on = true);
+
+
 
 
 #endif

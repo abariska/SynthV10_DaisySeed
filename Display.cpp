@@ -56,6 +56,8 @@ void InitImages(){
     cpu_load_block_data = {cpu_load_block, CPU_LOAD_BLOCK_SIZE};
     preset_name_block_data = {preset_name_block, PRESET_NAME_BLOCK_SIZE};
     preset_num_block_data = {preset_num_block, PRESET_NUM_BLOCK_SIZE};
+
+    System::Delay(10);
 }
 
 void DrawIntroPage(){
@@ -66,6 +68,7 @@ void DrawIntroPage(){
     Paint_TextCentered("by abariska", 64, FULL_PAGE_WIDTH, 112, Font8, WHITE, BLACK);
     
     OLED_Transmit_DMA(&intro_page_data);
+    System::Delay(10);
 }   
 
 void SetPage(MenuPage newPage) {

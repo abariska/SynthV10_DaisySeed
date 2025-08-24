@@ -72,6 +72,7 @@ void InitSX1509Extenders() {
     // sx1509_leds.WritePin(LED_LFO, params.lfo.active);
     // sx1509_leds.WritePin(LED_MTX, params.mtx.active);
 
+    System::Delay(10);
 }
 
 int8_t EncoderInc(uint8_t enc_index,uint8_t pin_a, uint8_t pin_b) {
