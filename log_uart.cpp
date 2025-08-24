@@ -46,7 +46,7 @@ void UartPrint(const char* text, int num) {
     uart_serial.BlockingTransmit((uint8_t*)test, strlen(test), 1000);
 }
 
-void UartPrint(const char* text, float num) {
+void UartPrintf(const char* text, float num) {
     char test[40];
     sprintf(test, "%s %.2f\r\n", text, num);
     uart_serial.BlockingTransmit((uint8_t*)test, strlen(test), 1000);

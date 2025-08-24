@@ -278,7 +278,7 @@ void SelectEffectPage(uint8_t slot){
 void CpuUsageDisplay(bool on){
 
     float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-    UartPrint("CPU load: ", cpu_avg_load);
+    UartPrintf("CPU load: ", cpu_avg_load);
     
     // if (on) {
     //     if (currentPage == MAIN_PAGE) {
