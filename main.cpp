@@ -5,49 +5,17 @@
 #include "oscillator.h"
 #include "display.h"
 #include "log_uart.h"
-
-#define LOG_BUF_SIZE 512
+#include "system.h"
 
 using namespace daisy;
-
-
-char logBuffer[LOG_BUF_SIZE];
-volatile uint16_t logWritePos = 0;
-volatile uint16_t logReadPos = 0;
 
 DaisySeed hw;
 TimerHandle tim_display;
 CpuLoadMeter cpu_load;
-UartHandler uart_serial;
 
 int encoderIncs[4];
-int test = 0;
+int test = 123;
 float samplerate = 0;
-
-void log_uart(const char* str) {
-    while (*str) {
-        uint16_t next = (logWritePos + 1) % LOG_BUF_SIZE;
-        if (next != logReadPos) { // перевірка переповнення
-            logBuffer[logWritePos] = *str++;
-            logWritePos = next;
-        } else {
-            break; // буфер повний, пропускаємо символи
-        }
-    }
-}
-
-void UartSerialInit() {
-    UartHandler::Config cfg;
-    cfg.periph         = UartHandler::Config::Peripheral::LPUART_1; // USART1
-    cfg.pin_config.tx  = Pin(PORTB, 6); // D13 -> USART1_TX
-    cfg.pin_config.rx  = Pin(PORTB, 7); // D14 -> USART1_RX
-    cfg.baudrate       = 115200;
-    cfg.wordlength     = UartHandler::Config::WordLength::BITS_8;
-    cfg.stopbits       = UartHandler::Config::StopBits::BITS_1;
-    cfg.parity         = UartHandler::Config::Parity::NONE;
-    cfg.mode           = UartHandler::Config::Mode::TX_RX;
-    uart_serial.Init(cfg);
-}
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in, 
                           AudioHandle::InterleavingOutputBuffer out,
@@ -92,10 +60,7 @@ int main(void)
 
     hw.Configure();
     hw.Init();
-    UartSerialInit();     
-    const char* hello = "Hello from Daisy over UART\r\n";
-    uart_serial.BlockingTransmit((uint8_t*)hello, strlen(hello), 1000);
-    hw.DelayMs(10);
+    UartSerialInit();
     
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
@@ -115,8 +80,11 @@ int main(void)
     InitSlots();
     InitSX1509Extenders(); 
     SetPage(MAIN_PAGE);
-    
+
     Timer500ms();
+    System::Delay(10);
+
+    UartPrint("Initialization complete.\r\n");
 
     while (1)
     {
@@ -125,8 +93,7 @@ int main(void)
         UpdateEncodersParams();
 
         sx1509_leds.WritePin(6, midi_note_led);
-        
-}
+    }
 }
 
 void ProcessButtons() {
@@ -231,20 +198,22 @@ void ProcessButtons() {
 }
 void ProcessEncoders(){
     
-    bool any_encoder_change = sx1509_encoders.ReadAllPins();
-
-    if (any_encoder_change) {
-        encoderIncs[0] = EncoderInc(0, ENC_1_A, ENC_1_B);  
-        encoderIncs[1] = EncoderInc(1, ENC_2_A, ENC_2_B);  
-        encoderIncs[2] = EncoderInc(2, ENC_3_A, ENC_3_B);  
-        encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);  
-
-        test += encoderIncs[0];
-        char buf[64];
-        size_t len = snprintf(buf, sizeof(buf), "test: %d\r\n", test);
-        uart_serial.BlockingTransmit((uint8_t*)buf, len, 40);
-    }
     
+    bool any_pin_change = sx1509_encoders.ReadAllPins();
+    
+    if (any_pin_change) {
+        encoderIncs[0] = EncoderInc(0, ENC_1_A, ENC_1_B);
+        encoderIncs[1] = EncoderInc(1, ENC_2_A, ENC_2_B);
+        encoderIncs[2] = EncoderInc(2, ENC_3_A, ENC_3_B);
+        encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);
+    }
+
+
+    
+    // if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0) {
+    //     test += encoderIncs[0];
+    //     UartPrint(test);
+    // }
 
     if (currentPage == MAIN_PAGE) {
         for (size_t i = 0; i < NUM_ENCODERS; i++) {  // Тільки 4 енкодери
@@ -307,18 +276,22 @@ void SelectEffectPage(uint8_t slot){
 }
 
 void CpuUsageDisplay(bool on){
+
+    float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+    UartPrint("CPU load: ", cpu_avg_load);
     
-    if (on) {
-        if (currentPage == MAIN_PAGE) {
-            Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
-            Paint_Clear(BLACK);
-            float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-            Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
-            OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
-        }
-    } else {
-        Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
-        Paint_Clear(BLACK);
-        OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
-    }
+    // if (on) {
+    //     if (currentPage == MAIN_PAGE) {
+    //         Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+    //         Paint_Clear(BLACK);
+    //         float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+    //         Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
+    //         OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+    //         UartPrint("CPU load: ", cpu_avg_load);
+    //     }
+    // } else {
+    //     Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+    //     Paint_Clear(BLACK);
+    //     OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+    // }
 }

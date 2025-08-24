@@ -1,49 +1,41 @@
-#include "log_uart.h"
 #include <string.h>
+#include "daisy.h"
+#include "daisy_core.h"
+#include "log_uart.h"
 
-static UART_HandleTypeDef* uart;
-static char logBuffer[LOG_BUF_SIZE];
-static volatile uint16_t logWritePos = 0;
-static volatile uint16_t logReadPos = 0;
-static volatile uint8_t dmaBusy = 0;
+using namespace daisy;
 
-void log_init(UART_HandleTypeDef* huart_ptr) {
-    uart = huart_ptr;
+UartHandler uart_serial;
+
+void UartSerialInit() {
+    UartHandler::Config cfg;
+    cfg.periph         = UartHandler::Config::Peripheral::LPUART_1; // USART1
+    cfg.pin_config.tx  = Pin(PORTB, 6); // D13 -> USART1_TX
+    cfg.pin_config.rx  = Pin(PORTB, 7); // D14 -> USART1_RX
+    cfg.baudrate       = 115200;
+    cfg.wordlength     = UartHandler::Config::WordLength::BITS_8;
+    cfg.stopbits       = UartHandler::Config::StopBits::BITS_1;
+    cfg.parity         = UartHandler::Config::Parity::NONE;
+    cfg.mode           = UartHandler::Config::Mode::TX_RX;
+    uart_serial.Init(cfg);
+    
+
 }
 
-void log_write(const char* str) {
-    while (*str) {
-        uint16_t next = (logWritePos + 1) % LOG_BUF_SIZE;
-        if (next != logReadPos) { // перевірка переповнення
-            logBuffer[logWritePos] = *str++;
-            logWritePos = next;
-        } else {
-            break; // буфер повний, пропускаємо символи
-        }
-    }
+void UartPrint(const char* text) {
+    char test[40];
+    sprintf(test, "%s\r\n", text);
+    uart_serial.BlockingTransmit((uint8_t*)test, strlen(test), 1000);
 }
 
-static void log_start_dma() {
-    if (dmaBusy) return;
-    if (logReadPos == logWritePos) return;
-
-    uint16_t len = (logWritePos > logReadPos) ? 
-                   (logWritePos - logReadPos) : 
-                   (LOG_BUF_SIZE - logReadPos);
-
-    dmaBusy = 1;
-    HAL_UART_Transmit_DMA(uart, (uint8_t*)&logBuffer[logReadPos], len);
+void UartPrint(int num) {
+    char test[40];
+    sprintf(test, "%d\r\n", num);
+    uart_serial.BlockingTransmit((uint8_t*)test, strlen(test), 1000);
 }
 
-void log_flush() {
-    log_start_dma();
-}
-
-// Викликати в DMA Complete callback:
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-    if (huart == uart) {
-        logReadPos = (logReadPos + (logWritePos > logReadPos ? (logWritePos - logReadPos) : (LOG_BUF_SIZE - logReadPos))) % LOG_BUF_SIZE;
-        dmaBusy = 0;
-        log_start_dma(); // перевіряємо чи є ще дані
-    }
+void UartPrint(const char* text, int num) {
+    char test[40];
+    sprintf(test, "%s %d\r\n", text, num);
+    uart_serial.BlockingTransmit((uint8_t*)test, strlen(test), 1000);
 }
