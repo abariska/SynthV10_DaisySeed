@@ -454,6 +454,7 @@ void InitSlots() {
     menu_slots[2].assignedParam = ADSR_ATTACK;
     menu_slots[3].assignedParam = ADSR_DECAY;
 
+    System::Delay(10);
 }
 
 void UpdateBlinking(uint8_t blockIndex) {

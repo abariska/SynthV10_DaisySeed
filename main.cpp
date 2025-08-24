@@ -4,6 +4,8 @@
 #include "midi_handler.h"
 #include "oscillator.h"
 #include "display.h"
+#include "log_uart.h"
+#include "system.h"
 
 using namespace daisy;
 
@@ -12,7 +14,7 @@ TimerHandle tim_display;
 CpuLoadMeter cpu_load;
 
 int encoderIncs[4];
-int test = 0;
+int test = 123;
 float samplerate = 0;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in, 
@@ -58,8 +60,8 @@ int main(void)
 
     hw.Configure();
     hw.Init();
-    System::Delay(100);
-    // hw.StartLog(true);  // Вимкнути для автономної роботи
+    UartSerialInit();
+    
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate(); 
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
@@ -72,16 +74,17 @@ int main(void)
     EffectsInit(samplerate);
     InitLfo(samplerate);
     MidiInit();
-    
-    hw.DelayMs(1000);
 
     hw.StartAudio(AudioCallback);
     
     InitSlots();
     InitSX1509Extenders(); 
     SetPage(MAIN_PAGE);
-    
+
     Timer500ms();
+    System::Delay(10);
+
+    UartPrint("Initialization complete.\r\n");
 
     while (1)
     {
@@ -90,7 +93,7 @@ int main(void)
         UpdateEncodersParams();
 
         sx1509_leds.WritePin(6, midi_note_led);
-}
+    }
 }
 
 void ProcessButtons() {
@@ -195,18 +198,22 @@ void ProcessButtons() {
 }
 void ProcessEncoders(){
     
-    bool any_encoder_change = sx1509_encoders.ReadAllPins();
-
-    if (any_encoder_change) {
-        encoderIncs[0] = EncoderInc(0, ENC_1_A, ENC_1_B);  
-        encoderIncs[1] = EncoderInc(1, ENC_2_A, ENC_2_B);  
-        encoderIncs[2] = EncoderInc(2, ENC_3_A, ENC_3_B);  
-        encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);  
-
-        test += encoderIncs[0];
-    hw.Print("test: ", test);
-    }
     
+    bool any_pin_change = sx1509_encoders.ReadAllPins();
+    
+    if (any_pin_change) {
+        encoderIncs[0] = EncoderInc(0, ENC_1_A, ENC_1_B);
+        encoderIncs[1] = EncoderInc(1, ENC_2_A, ENC_2_B);
+        encoderIncs[2] = EncoderInc(2, ENC_3_A, ENC_3_B);
+        encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);
+    }
+
+
+    
+    // if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0) {
+    //     test += encoderIncs[0];
+    //     UartPrint(test);
+    // }
 
     if (currentPage == MAIN_PAGE) {
         for (size_t i = 0; i < NUM_ENCODERS; i++) {  // Тільки 4 енкодери
@@ -244,6 +251,8 @@ void Timer500ms() {
     tim_display.Init(tim_cfg);
     tim_display.SetCallback(Callback);
     tim_display.Start();
+
+    System::Delay(10);
 }
 
 void SelectEffectPage(uint8_t slot){
@@ -267,18 +276,22 @@ void SelectEffectPage(uint8_t slot){
 }
 
 void CpuUsageDisplay(bool on){
+
+    float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+    UartPrintf("CPU load: ", cpu_avg_load);
     
-    if (on) {
-        if (currentPage == MAIN_PAGE) {
-            Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
-            Paint_Clear(BLACK);
-            float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-            Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
-            OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
-        }
-    } else {
-        Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
-        Paint_Clear(BLACK);
-        OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
-    }
+    // if (on) {
+    //     if (currentPage == MAIN_PAGE) {
+    //         Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+    //         Paint_Clear(BLACK);
+    //         float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+    //         Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
+    //         OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+    //         UartPrint("CPU load: ", cpu_avg_load);
+    //     }
+    // } else {
+    //     Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+    //     Paint_Clear(BLACK);
+    //     OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+    // }
 }
