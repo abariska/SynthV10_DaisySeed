@@ -13,7 +13,8 @@ using P = ParamUnitName;
 
 DaisySeed hw;
 TimerHandle tim_display;
-CpuLoadMeter cpu_load;
+CpuLoadMeter cpu_load; 
+
 
 int encoderIncs[4];
 int test = 123;
@@ -279,8 +280,8 @@ void SelectEffectPage(uint8_t slot){
 
 void CpuUsageDisplay(bool on){
 
-    float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-    UartPrintf("CPU load: ", cpu_avg_load);
+    // float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+    // UartPrintf("CPU load: ", cpu_avg_load);
     
     // if (on) {
     //     if (currentPage == MAIN_PAGE) {

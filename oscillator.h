@@ -33,7 +33,7 @@ class Osc
         WAVE_TRIANGLE,
         WAVE_SAW,
         WAVE_SQUARE,
-        WAVE_OFF,
+        WAVE_COUNT,
     };
 
 

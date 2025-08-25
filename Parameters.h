@@ -103,17 +103,11 @@ private:
     const char* name_label;
     int param_index;
     float* param_array;
-    float norm_value = 0.0f;
-
-    // Для continuous
-    float min = 0.0f;
-    float max = 1.0f;
-    Curve curve = Curve::LINEAR;
-    float physical_value = 0.0f;
-
-    // Для discrete
-    int max_numbers = 0;
-    int discrete_value = 0;
+    float norm_value;
+    float min;
+    float max;
+    Curve curve;
+    float physical_value;
 
     ParamType type;
 
@@ -132,7 +126,7 @@ public:
 
     float SetPhysicalValue(float v);
 
-    float AdjustByEncoder(int inc);
+    float AdjustByIncrement(int inc);
 
     // Геттери
     float GetFloat() const;
@@ -152,9 +146,17 @@ class ParameterManager {
     public:
         void Init();
         SynthParameter& GetParam(ParamUnitName name) { return params[static_cast<int>(name)]; }
-        float GetValue(ParamUnitName name) { return GetParam(name).GetNormalised(); }
-        void SetValue(ParamUnitName name, float val) { GetParam(name).SetNormalized(val); }
+        float GetFloat(ParamUnitName name) { return GetParam(name).GetFloat(); }
+        int GetInt(ParamUnitName name) { return GetParam(name).GetInt(); }
+        float GetNormalised(ParamUnitName name) { return GetParam(name).GetNormalised(); }
+        bool GetBool(ParamUnitName name) { return GetParam(name).GetBool(); }
         const char* GetLabel(ParamUnitName name) { return GetParam(name).GetLabel(); }
+        ParamType GetType(ParamUnitName name) { return GetParam(name).GetType(); }
+        float GetMin(ParamUnitName name) { return GetParam(name).GetMin(); }
+        float GetMax(ParamUnitName name) { return GetParam(name).GetMax(); }
+        void AdjustByIncrement(ParamUnitName name, int inc) { GetParam(name).AdjustByIncrement(inc); }
+        float GetValue(ParamUnitName name) { return GetParam(name).GetFloat(); }
+        void SetValue(ParamUnitName name, float value) { GetParam(name).SetNormalized(value); }
     };
     
 extern ParameterManager paramManager;
