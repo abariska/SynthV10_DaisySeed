@@ -52,8 +52,13 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor); 
     Paint_Clear(bgColor);
 
+    ParamUnit param_unit = paramManager.GetParam(target_param).GetUnit();
+
     float value = 0; 
+    char value_str[10];
     const char* label = "";
+    const char* unit = "";
+
     if (currentPage == MAIN_PAGE) {
         value = paramManager.GetFloat(menu_slots[blockIndex].target_param);
         label = paramManager.GetLabel(menu_slots[blockIndex].target_param);
@@ -62,21 +67,71 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
         label = paramManager.GetLabel(slots[blockIndex].target_param);
     }
 
-    Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font8, textColor, bgColor);
-    Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue - 6, 0, Font12, textColor, bgColor);
-    Paint_TextCentered("Hz", 0, PARAM_BLOCK_WIDTH, yBlockValue + 10, Font8, textColor, bgColor);
-    // switch (p->GetType()) {
-    //     case REGULAR:
-    //         Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, textColor, bgColor);
-    //         break;
-    //     case X100:
-    //         Paint_NumCentered(value * 100, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, textColor, bgColor);
-    //         break;
-    //     case WAVEFORM:
-    //         DrawWaveformImage((Waves)value); 
-    //         break;
-    //     }
+    if (param_unit == ParamUnit::PICTURE) {
 
+        DrawWaveformImage(value);
+
+    } else {
+
+        switch (param_unit) {
+            case ParamUnit::HZ:
+                if (value >= 1000) {
+                    value = value / 1000;
+                    unit = "kHz";
+                    if (value >= 10.0) {
+                        sprintf(value_str, "%.1f", value);
+                    } else {
+                        sprintf(value_str, "%.2f", value);
+                    }
+                } else {
+                    unit = "Hz";
+                    sprintf(value_str, "%d", (int)value);
+                } 
+                break;
+            case ParamUnit::MS:
+                if (value >= 1000) {
+                    value = value / 1000;
+                    unit = "s";
+                    if (value >= 10.0) {
+                        sprintf(value_str, "%.1f", value);
+                    } else {
+                        sprintf(value_str, "%.2f", value);
+                    }
+                } else {
+                    unit = "ms";
+                    sprintf(value_str, "%d", (int)value);
+                }
+                break;
+            case ParamUnit::SEMITONES:
+                unit = "sem";
+                sprintf(value_str, "%d", (int)value);
+                break;
+            case ParamUnit::CENTS:
+                unit = "cen";
+                sprintf(value_str, "%d", (int)value);
+                break;
+            case ParamUnit::PERCENT:
+                unit = "%";
+                sprintf(value_str, "%d", (int)value);
+                break;
+            case ParamUnit::UNITLESS:
+                unit = "";
+                break;
+            default:
+                unit = "";
+                break;
+        }
+        
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
+        Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue - 4, Font12, textColor, bgColor);
+        Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, yBlockValue + 10, Font8, textColor, bgColor);
+
+        // UartPrint(label);
+        // UartPrint("encoderIncs: ", encoderIncs[blockIndex]);
+        UartPrintf("norm_value: ", paramManager.GetParam(slots[blockIndex].target_param).GetNormalised());
+        UartPrint("physical_value: ", paramManager.GetParam(slots[blockIndex].target_param).GetFloat());
+        // UartPrint("--------------------------------\n");
+    }
     if (currentPage == MAIN_PAGE) {
         if (menu_slots[blockIndex].isEditMode && isBlink) {
         Paint_DrawRectangle(1, 2, 32, 50, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
@@ -223,14 +278,6 @@ void UpdateParamSlots() {
         if (slots[paramIndex].need_update) {
             P paramName = slots[paramIndex].target_param;
             paramManager.GetParam(paramName).AdjustByIncrement(encoderIncs[i]);
-
-            UartPrint(paramManager.GetLabel(paramName));
-            UartPrint("paramIndex: ", paramIndex);
-            UartPrint("encoderIncs: ", encoderIncs[i]);
-            UartPrintf("norm_value: ", paramManager.GetParam(paramName).GetNormalised());
-            UartPrint("physical_value: ", paramManager.GetParam(paramName).GetFloat());
-            UartPrint("--------------------------------\n");
-
 
             bool isActiveRow = (paramIndex < 4 && currentActiveRow == ROW_1) || 
                               (paramIndex >= 4 && currentActiveRow == ROW_2);

@@ -11,17 +11,31 @@ constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
 
 // Continuous
 SynthParameter::SynthParameter(float init_value, float min_value, float max_value, const char* label, 
-    uint8_t index, float* array, Curve defaultCurve)
-    : name_label(label), param_index(index), param_array(array), min(min_value), 
-        max(max_value), curve(defaultCurve), type(ParamType::CONTINUOUS) {
-            SetPhysicalValue(init_value);
-        }
+    uint8_t index, float* array, Curve defaultCurve, ParamUnit param_unit)
+    : name_label(label), 
+        param_index(index), 
+        param_array(array), 
+        min(min_value), 
+        max(max_value), 
+        curve(defaultCurve), 
+        unit(param_unit), 
+        type(ParamType::CONTINUOUS) {
+    SetPhysicalValue(init_value);
+    }
 
 // Discrete
-SynthParameter::SynthParameter(int init_value, int max_vals, const char* label, uint8_t index, float* array)
-    : name_label(label), param_index(index), param_array(array), min(0), max(max_vals), type(ParamType::DISCRETE) {
-            SetPhysicalValue(init_value);
-        }
+SynthParameter::SynthParameter(int init_value, int min_vals, int max_vals, 
+    const char* label, uint8_t index, float* array, Curve defaultCurve, ParamUnit param_unit)
+    : name_label(label),
+      param_index(index),
+      param_array(array),
+      min(min_vals),
+      max(max_vals),
+      curve(defaultCurve),
+      unit(param_unit),
+      type(ParamType::DISCRETE) {
+    SetPhysicalValue(init_value);
+}
 
 // Універсальні методи 
 float SynthParameter::SetNormalized(float n) {
@@ -56,36 +70,51 @@ float SynthParameter::SetNormalized(float n) {
 
 float SynthParameter::SetPhysicalValue(float v) {
     if(type == ParamType::CONTINUOUS) {
-        physical_value = v;
-        float ratio = (physical_value - min) / (max - min);
-        switch(curve) {
-            case Curve::LINEAR:
-                norm_value = ratio;
-                break;
-            case Curve::EXPONENTIAL:
-                norm_value = sqrtf(ratio);
-                break;
-            case Curve::LOGARITHMIC:
-                norm_value = powf(ratio, 2.0f);
-                break;
-        }
-        norm_value = clamp(norm_value, 0.0f, 1.0f);
+        // Просто обрізаємо і зберігаємо фізичне значення
+        physical_value = clamp(v, min, max);
+        
+        // Лінійне перетворення у нормалізоване
+        norm_value = (physical_value - min) / (max - min);
+        
     } else { // DISCRETE
-        physical_value = clamp(static_cast<int>(v), 0, static_cast<int>(max - 1));
+        physical_value = clamp(static_cast<int>(v), static_cast<int>(min), static_cast<int>(max - 1));
         norm_value = (max > 1) ? static_cast<float>(physical_value) / (max - 1) : 0.0f;
     }
+    
     param_array[param_index] = norm_value;
     return GetFloat();
 }
 
 float SynthParameter::AdjustByIncrement(int inc) {
-    if(type == ParamType::CONTINUOUS) {
-        norm_value += inc * 0.01f;
-        return SetNormalized(norm_value);
+    if (type == ParamType::DISCRETE) {
+        float newValue = physical_value + inc;
+        return SetPhysicalValue(newValue);
     } else {
-        physical_value += inc;
-        physical_value = clamp(static_cast<int>(physical_value), 0, static_cast<int>(max - 1));
-        return SetPhysicalValue(physical_value);
+        // Нормалізуємо поточне значення
+        float ratio = (physical_value - min) / (max - min);
+        
+        // Застосовуємо криву до ratio для розрахунку кроку
+        float step_multiplier;
+        switch(curve) {
+            case Curve::LINEAR:
+                step_multiplier = 1.0f;
+                break;
+            case Curve::EXPONENTIAL:
+                step_multiplier = powf(ratio + 0.01f, 0.5f); // Квадратний корінь
+                break;
+            case Curve::LOGARITHMIC:
+                step_multiplier = powf(ratio + 0.01f, 2.0f); // Квадрат
+                break;
+            default:
+                step_multiplier = 1.0f;
+        }
+        
+        // Базовий крок
+        float base_step = (max - min) / 100.0f;
+        float adaptive_step = base_step * step_multiplier;
+        
+        float newValue = physical_value + inc * adaptive_step;
+        return SetPhysicalValue(newValue);
     }
 }
 
@@ -98,6 +127,8 @@ const char* SynthParameter::GetLabel() const { return name_label; }
 ParamType SynthParameter::GetType() const { return type; }
 float SynthParameter::GetMin() const { return static_cast<float>(min); }
 float SynthParameter::GetMax() const { return static_cast<float>(max); }
+void SynthParameter::SetBool(bool value) { physical_value = value ? 1 : 0; }
+ParamUnit SynthParameter::GetUnit() const { return unit; }
 
 ParameterManager paramManager;
 
@@ -105,53 +136,53 @@ void ParameterManager::Init() {
     using P = ParamUnitName;
 // TODO: Finish with parameters
 // TODO: Handle \n in labels
-    params[static_cast<int>(P::OSC_WAVEFORM_1)] = SynthParameter(0, Osc::WAVE_COUNT, "Wave", 0, parameters_array);
-    params[static_cast<int>(P::OSC_PITCH_1)] = SynthParameter(0.0f, -36.0f, 36.0f, "Pitch", 1, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_DETUNE_1)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dtune", 2, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_AMP_1)] = SynthParameter(50.0f, 0.0f, 100.0f, "Amp", 3, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_PWM_1)] = SynthParameter(0.0f, 0.0f, 100.0f, "PWM", 4, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_PAN_1)] = SynthParameter(0.0f, -50.0f, 50.0f, "Pan", 5, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_ACTIVE_1)] = SynthParameter(1.0f, 0.0f, 1.0f, "Active", 6, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_WAVEFORM_2)] = SynthParameter(0, Osc::WAVE_COUNT, "Wave", 7, parameters_array);
-    params[static_cast<int>(P::OSC_PITCH_2)] = SynthParameter(0.0f, -36.0f, 36.0f, "Pitch", 8, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_DETUNE_2)] = SynthParameter(0.0f, 0.0f, 100.0f, "Dtune", 9, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_AMP_2)] = SynthParameter(50.0f, 0.0f, 100.0f, "Amp", 10, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_PWM_2)] = SynthParameter(0.0f, 0.0f, 100.0f, "PWM", 11, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_PAN_2)] = SynthParameter(0.0f, -50.0f, 50.0f, "Pan", 12, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_ACTIVE_2)] = SynthParameter(0.0f, 0.0f, 1.0f, "Active", 13, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_WAVEFORM_3)] = SynthParameter(0, Osc::WAVE_COUNT, "Wave", 14, parameters_array);
-    params[static_cast<int>(P::OSC_PITCH_3)] = SynthParameter(0.0f, -36.0f, 36.0f, "Pitch", 15, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_DETUNE_3)] = SynthParameter(0.0f, 0.0f, 100.0f, "Dtune", 16, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_AMP_3)] = SynthParameter(50.0f, 0.0f, 100.0f, "Amp", 17, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_PWM_3)] = SynthParameter(0.0f, 0.0f, 100.0f, "PWM", 18, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::OSC_PAN_3)] = SynthParameter(0.0f, -50.0f, 50.0f, "Pan", 19, parameters_array, Curve::LINEAR);    
-    params[static_cast<int>(P::OSC_ACTIVE_3)] = SynthParameter(0.0f, 0.0f, 1.0f, "Active", 20, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::FILTER_CUTOFF)] = SynthParameter(1000.0f, 10.0f, 15000.0f, "Cut", 21, parameters_array, Curve::EXPONENTIAL);
-    params[static_cast<int>(P::FILTER_RESONANCE)] = SynthParameter(0.0f, 0.0f, 100.0f, "Res", 22, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::ADSR_ATTACK)] = SynthParameter(0.01f, 0.0f, 1000.0f, "Atck", 23, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::ADSR_DECAY)] = SynthParameter(0.1f, 0.0f, 1000.0f, "Dcay", 24, parameters_array, Curve::EXPONENTIAL);
-    params[static_cast<int>(P::ADSR_SUSTAIN)] = SynthParameter(1.0f, 0.0f, 100.0f, "Sust", 25, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::ADSR_RELEASE)] = SynthParameter(20.0f, 0.0f, 1000.0f, "Rels", 26, parameters_array, Curve::EXPONENTIAL);
-    params[static_cast<int>(P::ADSR_RETRIGGER)] = SynthParameter(0.0f, 0.0f, 1.0f, "Retr", 27, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::LFO_WAVEFORM)] = SynthParameter(0, Osc::WAVE_COUNT, "Wave", 28, parameters_array); 
-    params[static_cast<int>(P::LFO_FREQ)] = SynthParameter(0.0f, 0.0f, 1.0f, "Freq", 29, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::LFO_DEPTH)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dpth", 30, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::LFO_ACTIVE)] = SynthParameter(0.0f, 0.0f, 1.0f, "Active", 31, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::EFFECT_CHORUS_DEPTH)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dpth", 32, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::EFFECT_CHORUS_FBK)] = SynthParameter(0.0f, 0.0f, 1.0f, "Fbk", 33, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::EFFECT_CHORUS_DELAY)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dly", 34, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_ATTACK)] = SynthParameter(0.0f, 0.0f, 1.0f, "Atck", 35, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_RELEASE)] = SynthParameter(0.0f, 0.0f, 1.0f, "Rel", 36, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_THRESHOLD)] = SynthParameter(0.0f, 0.0f, 1.0f, "Thres", 37, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_RATIO)] = SynthParameter(0.0f, 0.0f, 1.0f, "Ratio", 38, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_MAKEUP)] = SynthParameter(0.0f, 0.0f, 1.0f, "Mkup", 39, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::EFFECT_REVERB_DRYWET)] = SynthParameter(0.0f, 0.0f, 1.0f, "DryWt", 40, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::EFFECT_REVERB_FEEDBACK)] = SynthParameter(0.0f, 0.0f, 1.0f, "Fbk", 41, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::EFFECT_REVERB_LPFREQ)] = SynthParameter(0.0f, 0.0f, 1.0f, "LPFreq", 42, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::GLOBAL_MONO)] = SynthParameter(0.0f, 0.0f, 1.0f, "Mono", 43, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::GLOBAL_LEGATO)] = SynthParameter(0.0f, 0.0f, 1.0f, "Lgto", 44, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::GLOBAL_PORTAMENTO)] = SynthParameter(0.0f, 0.0f, 1.0f, "Port", 45, parameters_array, Curve::LINEAR);
-    params[static_cast<int>(P::NONE)] = SynthParameter(0.0f, 0.0f, 1.0f, "None", 46, parameters_array, Curve::LINEAR);
+    params[static_cast<int>(P::OSC_WAVEFORM_1)] = SynthParameter(0, 0, Osc::WAVE_COUNT, "Wav", 0, parameters_array, Curve::LINEAR, ParamUnit::PICTURE);
+    params[static_cast<int>(P::OSC_PITCH_1)] = SynthParameter(0.0f, -36.0f, 36.0f, "Sem", 1, parameters_array, Curve::LINEAR, ParamUnit::SEMITONES);
+    params[static_cast<int>(P::OSC_DETUNE_1)] = SynthParameter(0.0f, 0.0f, 100.0f, "Dtn", 2, parameters_array, Curve::LINEAR, ParamUnit::CENTS);
+    params[static_cast<int>(P::OSC_AMP_1)] = SynthParameter(50.0f, 0.0f, 100.0f, "Amp", 3, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::OSC_PWM_1)] = SynthParameter(0.0f, 0.0f, 100.0f, "PWM", 4, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::OSC_PAN_1)] = SynthParameter(0.0f, -100.0f, 100.0f, "Pan", 5, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::OSC_ACTIVE_1)] = SynthParameter(1, 0, 2, "Actv", 6, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
+    params[static_cast<int>(P::OSC_WAVEFORM_2)] = SynthParameter(0, 0, Osc::WAVE_COUNT, "Wav", 7, parameters_array, Curve::LINEAR, ParamUnit::PICTURE);
+    params[static_cast<int>(P::OSC_PITCH_2)] = SynthParameter(0.0f, -36.0f, 36.0f, "Sem", 8, parameters_array, Curve::LINEAR, ParamUnit::SEMITONES);
+    params[static_cast<int>(P::OSC_DETUNE_2)] = SynthParameter(0.0f, 0.0f, 100.0f, "Dtn", 9, parameters_array, Curve::LINEAR, ParamUnit::CENTS);
+    params[static_cast<int>(P::OSC_AMP_2)] = SynthParameter(50.0f, 0.0f, 100.0f, "Amp", 10, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::OSC_PWM_2)] = SynthParameter(0.0f, 0.0f, 100.0f, "Pwm", 11, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::OSC_PAN_2)] = SynthParameter(0.0f, -100.0f, 100.0f, "Pan", 12, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::OSC_ACTIVE_2)] = SynthParameter(0, 0, 2, "Actv", 13, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
+    params[static_cast<int>(P::OSC_WAVEFORM_3)] = SynthParameter(0, 0, Osc::WAVE_COUNT, "Wav", 14, parameters_array, Curve::LINEAR, ParamUnit::PICTURE);
+    params[static_cast<int>(P::OSC_PITCH_3)] = SynthParameter(0.0f, -36.0f, 36.0f, "Sem", 15, parameters_array, Curve::LINEAR, ParamUnit::SEMITONES);
+    params[static_cast<int>(P::OSC_DETUNE_3)] = SynthParameter(0.0f, 0.0f, 100.0f, "Dtn", 16, parameters_array, Curve::LINEAR, ParamUnit::CENTS);
+    params[static_cast<int>(P::OSC_AMP_3)] = SynthParameter(50.0f, 0.0f, 100.0f, "Amp", 17, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::OSC_PWM_3)] = SynthParameter(0.0f, 0.0f, 100.0f, "PWM", 18, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::OSC_PAN_3)] = SynthParameter(0.0f, -100.0f, 100.0f, "Pan", 19, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);    
+    params[static_cast<int>(P::OSC_ACTIVE_3)] = SynthParameter(0, 0, 2, "Actv", 20, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
+    params[static_cast<int>(P::FILTER_CUTOFF)] = SynthParameter(1000.0f, 10.0f, 15000.0f, "Cut", 21, parameters_array, Curve::EXPONENTIAL, ParamUnit::HZ);
+    params[static_cast<int>(P::FILTER_RESONANCE)] = SynthParameter(0.0f, 0.0f, 100.0f, "Res", 22, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::ADSR_ATTACK)] = SynthParameter(0.01f, 0.0f, 10000.0f, "Atk", 23, parameters_array, Curve::EXPONENTIAL, ParamUnit::MS);
+    params[static_cast<int>(P::ADSR_DECAY)] = SynthParameter(0.1f, 0.0f, 10000.0f, "Dcy", 24, parameters_array, Curve::EXPONENTIAL, ParamUnit::MS);
+    params[static_cast<int>(P::ADSR_SUSTAIN)] = SynthParameter(1.0f, 0.0f, 100.0f, "Sus", 25, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::ADSR_RELEASE)] = SynthParameter(20.0f, 0.0f, 10000.0f, "Rls", 26, parameters_array, Curve::EXPONENTIAL, ParamUnit::MS);
+    params[static_cast<int>(P::ADSR_RETRIGGER)] = SynthParameter(0, 0, 2, "Rtr", 27, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
+    params[static_cast<int>(P::LFO_WAVEFORM)] = SynthParameter(0, 0, Osc::WAVE_COUNT, "Wav", 28, parameters_array, Curve::LINEAR, ParamUnit::PICTURE); 
+    params[static_cast<int>(P::LFO_FREQ)] = SynthParameter(0.0f, 0.0f, 100.0f, "Frq", 29, parameters_array, Curve::LINEAR, ParamUnit::HZ);
+    params[static_cast<int>(P::LFO_DEPTH)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dpt", 30, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::LFO_ACTIVE)] = SynthParameter(0, 0, 2, "Actv", 31, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
+    params[static_cast<int>(P::EFFECT_CHORUS_DEPTH)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dpt", 32, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_CHORUS_FBK)] = SynthParameter(0.0f, 0.0f, 1.0f, "Fbk", 33, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_CHORUS_DELAY)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dly", 34, parameters_array, Curve::LINEAR, ParamUnit::MS);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_ATTACK)] = SynthParameter(0.0f, 0.0f, 1.0f, "Atk", 35, parameters_array, Curve::LINEAR, ParamUnit::MS);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_RELEASE)] = SynthParameter(0.0f, 0.0f, 1.0f, "Rls", 36, parameters_array, Curve::LINEAR, ParamUnit::MS);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_THRESHOLD)] = SynthParameter(0.0f, 0.0f, 1.0f, "Thr", 37, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_RATIO)] = SynthParameter(0.0f, 0.0f, 1.0f, "Rat", 38, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_MAKEUP)] = SynthParameter(0.0f, 0.0f, 1.0f, "Mk", 39, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_REVERB_DRYWET)] = SynthParameter(0.0f, 0.0f, 1.0f, "DrW", 40, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_REVERB_FEEDBACK)] = SynthParameter(0.0f, 0.0f, 1.0f, "Fbk", 41, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_REVERB_LPFREQ)] = SynthParameter(0.0f, 0.0f, 1.0f, "LpF", 42, parameters_array, Curve::LINEAR, ParamUnit::HZ);
+    params[static_cast<int>(P::GLOBAL_MONO)] = SynthParameter(0, 0, 2, "Mon", 43, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
+    params[static_cast<int>(P::GLOBAL_LEGATO)] = SynthParameter(0, 0, 2, "Lgt", 44, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
+    params[static_cast<int>(P::GLOBAL_PORTAMENTO)] = SynthParameter(0.0f, 0.0f, 1.0f, "Prt", 45, parameters_array, Curve::LINEAR, ParamUnit::MS);
+    params[static_cast<int>(P::NONE)] = SynthParameter(0, 0, 0, "", 46, parameters_array);
 }
 
 // Використання:

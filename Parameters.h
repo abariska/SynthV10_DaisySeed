@@ -97,6 +97,17 @@ enum class ParamType {
     DISCRETE
 };
 
+
+enum class ParamUnit {
+    HZ,
+    MS,
+    PERCENT,
+    SEMITONES,
+    CENTS,
+    PICTURE,
+    UNITLESS
+};
+
 class SynthParameter {
 private:
     // Загальні поля
@@ -107,6 +118,7 @@ private:
     float min;
     float max;
     Curve curve;
+    ParamUnit unit;
     float physical_value;
 
     ParamType type;
@@ -116,15 +128,19 @@ public:
     SynthParameter() = default;
 
     SynthParameter(float init_value, float min_value, float max_value,
-        const char* label, uint8_t index, float* array, Curve defaultCurve);
+        const char* label, uint8_t index, float* array, 
+        Curve defaultCurve, 
+        ParamUnit param_unit);
 
-    SynthParameter(int init_value, int max_vals,
-        const char* label, uint8_t index, float* array);
+        SynthParameter(int init_value, int min_vals, int max_vals,
+            const char* label, uint8_t index, float* array,  
+            Curve defaultCurve = Curve::LINEAR, 
+            ParamUnit param_unit = ParamUnit::UNITLESS);
 
     // Універсальні методи
     float SetNormalized(float n) ;
 
-    float SetPhysicalValue(float v);
+    float SetPhysicalValue(float v);    
 
     float AdjustByIncrement(int inc);
 
@@ -137,6 +153,8 @@ public:
     ParamType GetType() const;
     float GetMin() const;
     float GetMax() const;
+    ParamUnit GetUnit() const;
+    void SetBool(bool value);
 };
 
 class ParameterManager {
@@ -157,6 +175,8 @@ class ParameterManager {
         void AdjustByIncrement(ParamUnitName name, int inc) { GetParam(name).AdjustByIncrement(inc); }
         float GetValue(ParamUnitName name) { return GetParam(name).GetFloat(); }
         void SetValue(ParamUnitName name, float value) { GetParam(name).SetNormalized(value); }
+        void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
+        ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).GetUnit(); }
     };
     
 extern ParameterManager paramManager;
