@@ -49,6 +49,10 @@ void DrawWaveformImage(int waveform){
 
 void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t textColor, uint16_t bgColor){
 
+    if (target_param == ParamUnitName::NONE) {
+        return;
+    }
+
     Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor); 
     Paint_Clear(bgColor);
 
@@ -69,6 +73,7 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 
     if (param_unit == ParamUnit::PICTURE) {
 
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
         DrawWaveformImage(value);
 
     } else {

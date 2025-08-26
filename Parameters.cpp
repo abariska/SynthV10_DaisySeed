@@ -86,6 +86,7 @@ float SynthParameter::SetPhysicalValue(float v) {
 }
 
 float SynthParameter::AdjustByIncrement(int inc) {
+
     if (type == ParamType::DISCRETE) {
         float newValue = physical_value + inc;
         return SetPhysicalValue(newValue);
