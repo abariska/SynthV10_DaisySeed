@@ -125,13 +125,8 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
         Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue - 4, Font12, textColor, bgColor);
         Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, yBlockValue + 10, Font8, textColor, bgColor);
-
-        // UartPrint(label);
-        // UartPrint("encoderIncs: ", encoderIncs[blockIndex]);
-        UartPrintf("norm_value: ", paramManager.GetParam(slots[blockIndex].target_param).GetNormalised());
-        UartPrint("physical_value: ", paramManager.GetParam(slots[blockIndex].target_param).GetFloat());
-        // UartPrint("--------------------------------\n");
     }
+
     if (currentPage == MAIN_PAGE) {
         if (menu_slots[blockIndex].isEditMode && isBlink) {
         Paint_DrawRectangle(1, 2, 32, 50, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);

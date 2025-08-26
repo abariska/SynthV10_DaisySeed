@@ -100,7 +100,7 @@ float SynthParameter::AdjustByIncrement(int inc) {
                 step_multiplier = 1.0f;
                 break;
             case Curve::EXPONENTIAL:
-                step_multiplier = powf(ratio + 0.01f, 0.5f); // Квадратний корінь
+                step_multiplier = powf(ratio + 0.01f, 0.7f); // Квадратний корінь
                 break;
             case Curve::LOGARITHMIC:
                 step_multiplier = powf(ratio + 0.01f, 2.0f); // Квадрат
