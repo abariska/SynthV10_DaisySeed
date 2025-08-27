@@ -33,7 +33,7 @@ float ProcessLfo() {
     // Apply parameters from template
     lfo.SetFreq(paramManager.GetValue(P::LFO_FREQ));
     lfo.SetWaveform(paramManager.GetValue(P::LFO_WAVEFORM));
-    lfo.SetAmp(paramManager.GetValue(P::LFO_DEPTH));
+    lfo.SetAmp(paramManager.GetNormalised(P::LFO_DEPTH));
     return lfo.Process();
 }
 
@@ -61,15 +61,15 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
         frequency = 440.0f * powf(2.0f, (note_in - 69) / 12.0f);
 
         for (size_t i = 0; i < OSC_NUM; i++) {
-            pitch_correction[i] = powf(2.0f, paramManager.GetValue(OSC_PITCH[i]) / 12.0f);  
-            detune_correction[i] = powf(2.0f, paramManager.GetValue(OSC_DETUNE[i]));     
+            pitch_correction[i] = powf(2.0f, paramManager.GetInt(OSC_PITCH[i]) / 12.0f);  
+            detune_correction[i] = powf(2.0f, paramManager.GetInt(OSC_DETUNE[i]));     
         }
 		
 		float velocity_factor = velocity / 127.0f;
 		float freq_compensation = powf(2.0f, (note_in - 60.0f) / 48.0f);
 		amplitude = velocity_factor * freq_compensation;
 
-        if (!(isNotesPlaying && paramManager.GetValue(P::GLOBAL_LEGATO))) {
+        if (!(isNotesPlaying && paramManager.GetBool(P::GLOBAL_LEGATO))) {
             adsrMain.Retrigger(false); 
         } 
         gate = true;
@@ -123,16 +123,16 @@ void VoiceProcess(float& sigL, float& sigR){
             float oscPhase = fmodf(masterPhase + phaseOffsets[i], 1.0f);
             
             osc[i].SetFreq(final_freq);
-            osc[i].SetAmp(paramManager.GetValue(OSC_AMP[i]) * amplitude);
+            osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]) * amplitude);
             osc[i].SetWaveform(paramManager.GetValue(OSC_WAVEFORM[i]));
-            osc[i].SetPw(paramManager.GetValue(OSC_PWM[i]));
+            osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
             float sig = 0.0f;
             sig += osc[i].Process(oscPhase);
 
-            if (paramManager.GetValue(OSC_PAN[i]) != 0.0f) {
-                float pan = paramManager.GetValue(OSC_PAN[i]);
-                float leftGain = (pan >= 0.0f) ? 1.0f : (1.0f + pan);
-                float rightGain = (pan <= 0.0f) ? 1.0f : (1.0f - pan);
+            if (paramManager.GetNormalised(OSC_PAN[i]) != 0.5f) {
+                float pan = paramManager.GetNormalised(OSC_PAN[i]);
+                float leftGain = (pan >= 0.5f) ? 1.0f : (1.0f + pan);
+                float rightGain = (pan <= 0.5f) ? 1.0f : (1.0f - pan);
                 
                 sigL += sig * leftGain;
                 sigR += sig * rightGain;
@@ -148,15 +148,16 @@ void VoiceProcess(float& sigL, float& sigR){
     sigR /= OSC_NUM;
 
     fltL.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
-    fltL.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
+    fltL.SetRes(paramManager.GetNormalised(P::FILTER_RESONANCE));
     fltR.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
-    fltR.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
+    fltR.SetRes(paramManager.GetNormalised(P::FILTER_RESONANCE));
     sigL = fltL.Process(sigL);
     sigR = fltR.Process(sigR);
 
+    // TODO: fix the real curve. it sounds shorter than it should be.
     adsrMain.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK));
     adsrMain.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
-    adsrMain.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
+    adsrMain.SetSustainLevel(paramManager.GetNormalised(P::ADSR_SUSTAIN));
     adsrMain.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
 
     float env = adsrMain.Process(gate);

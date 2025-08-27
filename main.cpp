@@ -89,6 +89,7 @@ int main(void)
     System::Delay(10);
 
     UartPrint("Initialization complete.\r\n");
+    sx1509_leds.WritePin(6, 0);
 
     while (1)
     {

@@ -94,15 +94,13 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
                 } 
                 break;
             case ParamUnit::MS:
-                if (value >= 1000) {
-                    value = value / 1000;
+                
+                if (value >= 1) {
                     unit = "s";
-                    if (value >= 10.0) {
-                        sprintf(value_str, "%.1f", value);
-                    } else {
-                        sprintf(value_str, "%.2f", value);
-                    }
+                    sprintf(value_str, "%.2f", value);
+
                 } else {
+                    value = value * 1000;
                     unit = "ms";
                     sprintf(value_str, "%d", (int)value);
                 }
@@ -126,6 +124,10 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
                 unit = "";
                 break;
         }
+
+        UartPrintf("Pitch: ", paramManager.GetInt(P::OSC_PITCH_1));
+        UartPrintf("Detune: ", paramManager.GetInt(P::OSC_DETUNE_1));
+
         
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
         Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue - 4, Font12, textColor, bgColor);
