@@ -25,27 +25,8 @@ enum ActiveRow {
 };
 extern ActiveRow currentActiveRow;
 
-enum MenuPage {
-    MAIN_PAGE,
-    OSCILLATOR_1_PAGE,
-    OSCILLATOR_2_PAGE,
-    OSCILLATOR_3_PAGE,
-    FILTER_PAGE,
-    AMPLIFIER_PAGE,
-    LFO_PAGE,
-    FX_PAGE,
-    OVERDRIVE_PAGE,
-    CHORUS_PAGE,
-    COMPRESSOR_PAGE,
-    REVERB_PAGE,
-    MTX_PAGE,
-    SETTINGS_PAGE,
-    STORE_PAGE,
-    LOAD_PAGE,
-    EMPTY
-};
 
-extern MenuPage currentPage;
+
 
 struct ParamSlot {
     ParamUnitName target_param;
@@ -62,9 +43,6 @@ extern MenuSlot menu_slots[NUM_MAIN_SLOTS];
 
 void UpdateEncoderSwitches();
 void EditBlockParam(uint8_t blockIndex);
-void UpdateParamValue(uint8_t encoderIndex, ParamUnitName target_param);
-void UpdateMainParams();
-void UpdateParamPageParams();
 void UpdateEncodersParams();
 void EncoderChangeEffect();
 
@@ -73,10 +51,6 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 void InitSlots();
 void AssignParamsForPage(MenuPage page);
 void SetPageName(const char* name);
-void DrawPage(MenuPage page);
-void DrawMainPage();
-void DrawEffectsPage();
-void DrawParamPage(MenuPage page);
 void ToggleActiveRow();
 void InitParamBlocks();
 uint8_t GetActiveParamIndex(uint8_t encoderIndex);  // Повертає індекс активного параметра для енкодера

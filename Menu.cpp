@@ -7,10 +7,10 @@
 #include "midi_handler.h"
 #include "GUI_Paint.h"
 #include "main.h"
+#include "log_uart.h"
 
 using P = ParamUnitName;
 
-MenuPage currentPage;
 ParamSlot slots[NUM_PARAM_BLOCKS];
 MenuSlot menu_slots[NUM_MAIN_SLOTS];
 extern ParameterManager paramManager;
@@ -49,30 +49,90 @@ void DrawWaveformImage(int waveform){
 
 void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t textColor, uint16_t bgColor){
 
-    Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor); 
-    Paint_Clear(bgColor);
-    
-    Paint_TextCentered(paramManager.GetLabel(target_param), 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
-
-    float value = 0;
-    if (currentPage == MAIN_PAGE) {
-        value = paramManager.GetValue(menu_slots[blockIndex].target_param);
-    } else {
-        value = paramManager.GetValue(slots[blockIndex].target_param);
+    if (target_param == ParamUnitName::NONE) {
+        return;
     }
 
-    Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, textColor, bgColor);
-    // switch (p->GetType()) {
-    //     case REGULAR:
-    //         Paint_NumCentered(value, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, textColor, bgColor);
-    //         break;
-    //     case X100:
-    //         Paint_NumCentered(value * 100, 0, PARAM_BLOCK_WIDTH, yBlockValue, 0, Font12, textColor, bgColor);
-    //         break;
-    //     case WAVEFORM:
-    //         DrawWaveformImage((Waves)value); 
-    //         break;
-    //     }
+    Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor); 
+    Paint_Clear(bgColor);
+
+    ParamUnit param_unit = paramManager.GetParam(target_param).GetUnit();
+
+    float value = 0; 
+    char value_str[10];
+    const char* label = "";
+    const char* unit = "";
+
+    if (currentPage == MAIN_PAGE) {
+        value = paramManager.GetFloat(menu_slots[blockIndex].target_param);
+        label = paramManager.GetLabel(menu_slots[blockIndex].target_param);
+    } else {
+        value = paramManager.GetFloat(slots[blockIndex].target_param);
+        label = paramManager.GetLabel(slots[blockIndex].target_param);
+    }
+
+    if (param_unit == ParamUnit::PICTURE) {
+
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
+        DrawWaveformImage(value);
+
+    } else {
+
+        switch (param_unit) {
+            case ParamUnit::HZ:
+                if (value >= 1000) {
+                    value = value / 1000;
+                    unit = "kHz";
+                    if (value >= 10.0) {
+                        sprintf(value_str, "%.1f", value);
+                    } else {
+                        sprintf(value_str, "%.2f", value);
+                    }
+                } else {
+                    unit = "Hz";
+                    sprintf(value_str, "%d", (int)value);
+                } 
+                break;
+            case ParamUnit::MS:
+                
+                if (value >= 1) {
+                    unit = "s";
+                    sprintf(value_str, "%.2f", value);
+
+                } else {
+                    value = value * 1000;
+                    unit = "ms";
+                    sprintf(value_str, "%d", (int)value);
+                }
+                break;
+            case ParamUnit::SEMITONES:
+                unit = "sem";
+                sprintf(value_str, "%d", (int)value);
+                break;
+            case ParamUnit::CENTS:
+                unit = "cen";
+                sprintf(value_str, "%d", (int)value);
+                break;
+            case ParamUnit::PERCENT:
+                unit = "%";
+                sprintf(value_str, "%d", (int)value);
+                break;
+            case ParamUnit::UNITLESS:
+                unit = "";
+                break;
+            default:
+                unit = "";
+                break;
+        }
+
+        UartPrintf("Pitch: ", paramManager.GetInt(P::OSC_PITCH_1));
+        UartPrintf("Detune: ", paramManager.GetInt(P::OSC_DETUNE_1));
+
+        
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
+        Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue - 4, Font12, textColor, bgColor);
+        Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, yBlockValue + 10, Font8, textColor, bgColor);
+    }
 
     if (currentPage == MAIN_PAGE) {
         if (menu_slots[blockIndex].isEditMode && isBlink) {
@@ -205,9 +265,10 @@ void UpdateMainSlots() {
         } else if (menu_slots[i].need_update) {  
             P paramName = menu_slots[i].target_param;
             
-            paramManager.GetParam(paramName).AdjustByEncoder(encoderIncs[i]);
+            paramManager.GetParam(paramName).AdjustByIncrement(encoderIncs[i]);
             InitOneParamBlock(i, paramName, WHITE, BLACK);
             menu_slots[i].need_update = false;
+            encoderIncs[i] = 0;
         }
     }
 }
@@ -218,14 +279,15 @@ void UpdateParamSlots() {
         
         if (slots[paramIndex].need_update) {
             P paramName = slots[paramIndex].target_param;
-            paramManager.GetParam(paramName).AdjustByEncoder(encoderIncs[i]);
-            
+            paramManager.GetParam(paramName).AdjustByIncrement(encoderIncs[i]);
+
             bool isActiveRow = (paramIndex < 4 && currentActiveRow == ROW_1) || 
                               (paramIndex >= 4 && currentActiveRow == ROW_2);
             uint16_t textColor = isActiveRow ? WHITE : 0x02;
             
             InitOneParamBlock(paramIndex, paramName, textColor, BLACK);
             slots[paramIndex].need_update = false;
+            encoderIncs[i] = 0;
         }
     }
 }
@@ -369,3 +431,4 @@ void UpdateBlinking(uint8_t blockIndex) {
     blinkStateChanged = false;  // Скидаємо прапор
     InitOneParamBlock(blockIndex, menu_slots[blockIndex].target_param);
 }
+

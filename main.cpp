@@ -13,7 +13,8 @@ using P = ParamUnitName;
 
 DaisySeed hw;
 TimerHandle tim_display;
-CpuLoadMeter cpu_load;
+CpuLoadMeter cpu_load; 
+
 
 int encoderIncs[4];
 int test = 123;
@@ -71,8 +72,9 @@ int main(void)
     OLED_1in5_Init();
     InitImages();
     DrawIntroPage();
-    VoiceInit(samplerate, blocksize);
+    
     InitSynthParams();
+    VoiceInit(samplerate, blocksize);
     EffectsInit(samplerate);
     InitLfo(samplerate);
     MidiInit();
@@ -87,6 +89,7 @@ int main(void)
     System::Delay(10);
 
     UartPrint("Initialization complete.\r\n");
+    sx1509_leds.WritePin(6, 0);
 
     while (1)
     {
@@ -132,16 +135,16 @@ void ProcessButtons() {
 
         if (shift_pressed) {
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
-                paramManager.SetValue(P::OSC_ACTIVE_1, !paramManager.GetValue(P::OSC_ACTIVE_1));
-                sx1509_leds.WritePin(LED_OSC_1, paramManager.GetValue(P::OSC_ACTIVE_1));
+                paramManager.SetBool(P::OSC_ACTIVE_1, !paramManager.GetBool(P::OSC_ACTIVE_1));
+                sx1509_leds.WritePin(LED_OSC_1, paramManager.GetBool(P::OSC_ACTIVE_1));
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
-                paramManager.SetValue(P::OSC_ACTIVE_2, !paramManager.GetValue(P::OSC_ACTIVE_2));
-                sx1509_leds.WritePin(LED_OSC_2, paramManager.GetValue(P::OSC_ACTIVE_2));
+                paramManager.SetBool(P::OSC_ACTIVE_2, !paramManager.GetBool(P::OSC_ACTIVE_2));
+                sx1509_leds.WritePin(LED_OSC_2, paramManager.GetBool(P::OSC_ACTIVE_2));
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
-                paramManager.SetValue(P::OSC_ACTIVE_3, !paramManager.GetValue(P::OSC_ACTIVE_3));
-                sx1509_leds.WritePin(LED_OSC_3, paramManager.GetValue(P::OSC_ACTIVE_3));      
+                paramManager.SetBool(P::OSC_ACTIVE_3, !paramManager.GetBool(P::OSC_ACTIVE_3));
+                sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(P::OSC_ACTIVE_3));      
             }
         } else {
             if (sx1509_buttons.isFallingEdge(BUTTON_BACK)) {
@@ -279,8 +282,8 @@ void SelectEffectPage(uint8_t slot){
 
 void CpuUsageDisplay(bool on){
 
-    float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-    UartPrintf("CPU load: ", cpu_avg_load);
+    // float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+    // UartPrintf("CPU load: ", cpu_avg_load);
     
     // if (on) {
     //     if (currentPage == MAIN_PAGE) {

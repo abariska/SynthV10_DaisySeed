@@ -33,7 +33,7 @@ class Osc
         WAVE_TRIANGLE,
         WAVE_SAW,
         WAVE_SQUARE,
-        WAVE_OFF,
+        WAVE_COUNT,
     };
 
 
@@ -64,9 +64,9 @@ class Osc
 
     /** - Resets the phase to 0. */
     void Reset();
-    void Sync(float phase, int iota);
-    float GetPhase() const;
-    int GetIota() const;
+    // void Sync(float phase, int iota);
+    // float GetPhase() const;
+    // int GetIota() const;
 
   private:
     float freq_, amp_, pw_,

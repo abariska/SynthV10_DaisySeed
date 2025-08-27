@@ -18,6 +18,8 @@
 using namespace daisy;
 using namespace daisysp;
 
+extern MenuPage currentPage;
+
 extern CpuLoadMeter cpu_load;
 extern int encoderIncs[4];
 extern SX1509 sx1509_buttons;

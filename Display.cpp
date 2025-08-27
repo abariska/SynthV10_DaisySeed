@@ -4,7 +4,7 @@
 #include "OLED_1.5_Daisy_Seed/fonts.h"
 #include "effects.h"
 
-extern MenuPage currentPage;
+
 
 const UWORD INTRO_PAGE_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
 const UWORD BG_BLACK_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
@@ -32,6 +32,8 @@ ImageData osc_on_block_data;
 ImageData cpu_load_block_data;
 ImageData preset_name_block_data;
 ImageData preset_num_block_data;
+
+MenuPage currentPage = MAIN_PAGE; 
 
 void InitImages(){
 

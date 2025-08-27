@@ -71,7 +71,7 @@ float Osc::Process(float phase)
             out -= poly_blep(fmodf(phase + (1.0f - pw_), 1.0f), phase_inc_);
             break;
 
-        case WAVE_OFF:
+        case WAVE_COUNT:
         default:
             out = 0.0f;
             break;

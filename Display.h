@@ -32,6 +32,27 @@
 #include "OLED_1.5_Daisy_Seed/GUI_Paint.h"
 #include <cstdint>
 
+enum MenuPage {
+    MAIN_PAGE,
+    OSCILLATOR_1_PAGE,
+    OSCILLATOR_2_PAGE,
+    OSCILLATOR_3_PAGE,
+    FILTER_PAGE,
+    AMPLIFIER_PAGE,
+    LFO_PAGE,
+    FX_PAGE,
+    OVERDRIVE_PAGE,
+    CHORUS_PAGE,
+    COMPRESSOR_PAGE,
+    REVERB_PAGE,
+    MTX_PAGE,
+    SETTINGS_PAGE,
+    STORE_PAGE,
+    LOAD_PAGE,
+    EMPTY
+};
+extern MenuPage currentPage;
+
 // Константи для двох рядів параметрів
 const uint8_t BLOCK_ROW1_TOP_Y = 25;
 const uint8_t BLOCK_ROW1_BOTTOM_Y = 70;
@@ -57,6 +78,11 @@ extern ImageData cpu_load_block_data;
 extern ImageData preset_name_block_data;
 extern ImageData preset_num_block_data;
 
-
+void SetPage(MenuPage newPage);
+void DrawMainPage();
+void DrawEffectsPage();
+void DrawParamPage(MenuPage page);
+void DrawIntroPage();
+void InitImages();
 
 #endif

@@ -97,23 +97,29 @@ enum class ParamType {
     DISCRETE
 };
 
+
+enum class ParamUnit {
+    HZ,
+    MS,
+    PERCENT,
+    SEMITONES,
+    CENTS,
+    PICTURE,
+    UNITLESS
+};
+
 class SynthParameter {
 private:
     // Загальні поля
     const char* name_label;
     int param_index;
     float* param_array;
-    float norm_value = 0.0f;
-
-    // Для continuous
-    float min = 0.0f;
-    float max = 1.0f;
-    Curve curve = Curve::LINEAR;
-    float physical_value = 0.0f;
-
-    // Для discrete
-    int max_numbers = 0;
-    int discrete_value = 0;
+    float norm_value;
+    float min;
+    float max;
+    Curve curve;
+    ParamUnit unit;
+    float physical_value;
 
     ParamType type;
 
@@ -122,17 +128,21 @@ public:
     SynthParameter() = default;
 
     SynthParameter(float init_value, float min_value, float max_value,
-        const char* label, uint8_t index, float* array, Curve defaultCurve);
+        const char* label, uint8_t index, float* array, 
+        Curve defaultCurve, 
+        ParamUnit param_unit);
 
-    SynthParameter(int init_value, int max_vals,
-        const char* label, uint8_t index, float* array);
+        SynthParameter(int init_value, int min_vals, int max_vals,
+            const char* label, uint8_t index, float* array,  
+            Curve defaultCurve = Curve::LINEAR, 
+            ParamUnit param_unit = ParamUnit::UNITLESS);
 
     // Універсальні методи
     float SetNormalized(float n) ;
 
-    float SetPhysicalValue(float v);
+    float SetPhysicalValue(float v);    
 
-    float AdjustByEncoder(int inc);
+    float AdjustByIncrement(int inc);
 
     // Геттери
     float GetFloat() const;
@@ -143,6 +153,8 @@ public:
     ParamType GetType() const;
     float GetMin() const;
     float GetMax() const;
+    ParamUnit GetUnit() const;
+    void SetBool(bool value);
 };
 
 class ParameterManager {
@@ -152,9 +164,19 @@ class ParameterManager {
     public:
         void Init();
         SynthParameter& GetParam(ParamUnitName name) { return params[static_cast<int>(name)]; }
-        float GetValue(ParamUnitName name) { return GetParam(name).GetNormalised(); }
-        void SetValue(ParamUnitName name, float val) { GetParam(name).SetNormalized(val); }
+        float GetFloat(ParamUnitName name) { return GetParam(name).GetFloat(); }
+        int GetInt(ParamUnitName name) { return GetParam(name).GetInt(); }
+        float GetNormalised(ParamUnitName name) { return GetParam(name).GetNormalised(); }
+        bool GetBool(ParamUnitName name) { return GetParam(name).GetBool(); }
         const char* GetLabel(ParamUnitName name) { return GetParam(name).GetLabel(); }
+        ParamType GetType(ParamUnitName name) { return GetParam(name).GetType(); }
+        float GetMin(ParamUnitName name) { return GetParam(name).GetMin(); }
+        float GetMax(ParamUnitName name) { return GetParam(name).GetMax(); }
+        void AdjustByIncrement(ParamUnitName name, int inc) { GetParam(name).AdjustByIncrement(inc); }
+        float GetValue(ParamUnitName name) { return GetParam(name).GetFloat(); }
+        void SetValue(ParamUnitName name, float value) { GetParam(name).SetNormalized(value); }
+        void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
+        ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).GetUnit(); }
     };
     
 extern ParameterManager paramManager;
