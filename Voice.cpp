@@ -137,7 +137,6 @@ void VoiceProcess(float& sigL, float& sigR){
             float sig = 0.0f;
             sig += osc[i].Process(oscPhase[i]);
 
-            // TODO: fix panning
             if (paramManager.GetValue(OSC_PAN[i]) != 0.0f) {
                 float pan = paramManager.GetValue(OSC_PAN[i]);
                 float leftGain = (pan <= 0.0f) ? 1.0f : (1.0f - pan / 100.0f);
