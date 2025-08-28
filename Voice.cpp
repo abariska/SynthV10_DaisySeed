@@ -15,6 +15,8 @@ float phase = 0;
 float frequency = 0;
 float amplitude = 0;
 float masterPhase = 0.0f; 
+float oscPhase[OSC_NUM] = {0.0f, 0.0f, 0.0f};
+float oscPhaseInc[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float phaseOffsets[OSC_NUM] = {0.0f, 0.0f, 0.0f}; 
 float pitch_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float detune_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
@@ -62,7 +64,8 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 
         for (size_t i = 0; i < OSC_NUM; i++) {
             pitch_correction[i] = powf(2.0f, paramManager.GetInt(OSC_PITCH[i]) / 12.0f);  
-            detune_correction[i] = powf(2.0f, paramManager.GetInt(OSC_DETUNE[i]));     
+            detune_correction[i] = powf(2.0f, paramManager.GetInt(OSC_DETUNE[i]) / 1200.0f);     
+            oscPhase[i] = masterPhase + phaseOffsets[i];
         }
 		
 		float velocity_factor = velocity / 127.0f;
@@ -120,20 +123,24 @@ void VoiceProcess(float& sigL, float& sigR){
         if (paramManager.GetValue(OSC_ACTIVE[i])) {
 
             float final_freq = frequency * pitch_correction[i] * detune_correction[i];
-            float oscPhase = fmodf(masterPhase + phaseOffsets[i], 1.0f);
+            oscPhaseInc[i] = final_freq / samplerate;
+
+            oscPhase[i] += oscPhaseInc[i];
+            if(oscPhase[i] >= 1.0f) {
+                oscPhase[i] -= 1.0f;
+            }
             
             osc[i].SetFreq(final_freq);
             osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]) * amplitude);
             osc[i].SetWaveform(paramManager.GetValue(OSC_WAVEFORM[i]));
             osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
             float sig = 0.0f;
-            sig += osc[i].Process(oscPhase);
+            sig += osc[i].Process(oscPhase[i]);
 
-            // TODO: fix panning
-            if (paramManager.GetNormalised(OSC_PAN[i]) != 0.5f) {
-                float pan = paramManager.GetNormalised(OSC_PAN[i]);
-                float leftGain = (pan >= 0.5f) ? 1.0f : (1.0f + pan);
-                float rightGain = (pan <= 0.5f) ? 1.0f : (1.0f - pan);
+            if (paramManager.GetValue(OSC_PAN[i]) != 0.0f) {
+                float pan = paramManager.GetValue(OSC_PAN[i]);
+                float leftGain = (pan <= 0.0f) ? 1.0f : (1.0f - pan / 100.0f);
+                float rightGain = (pan >= 0.0f) ? 1.0f : (1.0f + pan / 100.0f);
                 
                 sigL += sig * leftGain;
                 sigR += sig * rightGain;
@@ -156,7 +163,7 @@ void VoiceProcess(float& sigL, float& sigR){
     sigR = fltR.Process(sigR);
 
     // TODO: fix the real curve. it sounds shorter than it should be.
-    adsrMain.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK));
+    adsrMain.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
     adsrMain.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
     adsrMain.SetSustainLevel(paramManager.GetNormalised(P::ADSR_SUSTAIN));
     adsrMain.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));

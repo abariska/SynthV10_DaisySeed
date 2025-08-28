@@ -72,6 +72,7 @@ int main(void)
     OLED_1in5_Init();
     InitImages();
     DrawIntroPage();
+    System::Delay(1000);
     
     InitSynthParams();
     VoiceInit(samplerate, blocksize);

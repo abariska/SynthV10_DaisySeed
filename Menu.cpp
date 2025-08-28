@@ -317,6 +317,7 @@ void AssignParamsForPage(MenuPage page) {
             slots[2].target_param = P::OSC_DETUNE_1;
             slots[3].target_param = P::OSC_AMP_1;
             slots[4].target_param = P::OSC_PAN_1;
+            slots[5].target_param = P::OSC_PWM_1;
             break;      
         case OSCILLATOR_2_PAGE:
             SetPageName("Oscillator 2");
@@ -325,6 +326,7 @@ void AssignParamsForPage(MenuPage page) {
             slots[2].target_param = P::OSC_DETUNE_2;
             slots[3].target_param = P::OSC_AMP_2;
             slots[4].target_param = P::OSC_PAN_2;
+            slots[5].target_param = P::OSC_PWM_2;
             break;      
         case OSCILLATOR_3_PAGE:
             SetPageName("Oscillator 3");
@@ -333,6 +335,7 @@ void AssignParamsForPage(MenuPage page) {
             slots[2].target_param = P::OSC_DETUNE_3;
             slots[3].target_param = P::OSC_AMP_3;
             slots[4].target_param = P::OSC_PAN_3;
+            slots[5].target_param = P::OSC_PWM_3;
             break;  
         case AMPLIFIER_PAGE:
             SetPageName("Amplifier");
