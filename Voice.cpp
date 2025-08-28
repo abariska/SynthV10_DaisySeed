@@ -7,6 +7,7 @@ Adsr adsrMain;
 MoogLadder fltL;
 MoogLadder fltR;
 Oscillator lfo;
+SlewLimiter freqSlew[OSC_NUM];
 
 using P = ParamUnitName;
 
@@ -20,6 +21,8 @@ float oscPhaseInc[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float phaseOffsets[OSC_NUM] = {0.0f, 0.0f, 0.0f}; 
 float pitch_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float detune_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
+
+float smoothedFreq[OSC_NUM] = {0.0f};
 
 const int maxNotes = 16;
 int activeNotes[maxNotes];
@@ -47,8 +50,11 @@ void VoiceInit(float samplerate, int blocksize) {
     fltL.Init(samplerate);
     fltR.Init(samplerate);
     adsrMain.Init(samplerate, blocksize);
-    
-    System::Delay(10);
+    // SlewLimiter for frequency
+    for (size_t i = 0; i < OSC_NUM; i++) {
+        freqSlew[i].Init(0.00001f, samplerate);  // 1 мс згладжування
+        freqSlew[i].SetCurrent(frequency);     // початкове значення
+    }
 }
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity)
@@ -65,7 +71,7 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
         for (size_t i = 0; i < OSC_NUM; i++) {
             pitch_correction[i] = powf(2.0f, paramManager.GetInt(OSC_PITCH[i]) / 12.0f);  
             detune_correction[i] = powf(2.0f, paramManager.GetInt(OSC_DETUNE[i]) / 1200.0f);     
-            oscPhase[i] = masterPhase + phaseOffsets[i];
+
         }
 		
 		float velocity_factor = velocity / 127.0f;
@@ -123,19 +129,20 @@ void VoiceProcess(float& sigL, float& sigR){
         if (paramManager.GetValue(OSC_ACTIVE[i])) {
 
             float final_freq = frequency * pitch_correction[i] * detune_correction[i];
-            oscPhaseInc[i] = final_freq / samplerate;
-
+            
+            smoothedFreq[i] = freqSlew[i].Process(final_freq); 
+            
+            oscPhaseInc[i] = smoothedFreq[i] / samplerate;
             oscPhase[i] += oscPhaseInc[i];
             if(oscPhase[i] >= 1.0f) {
                 oscPhase[i] -= 1.0f;
             }
             
-            osc[i].SetFreq(final_freq);
+            osc[i].SetFreq(smoothedFreq[i]);
             osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]) * amplitude);
             osc[i].SetWaveform(paramManager.GetValue(OSC_WAVEFORM[i]));
             osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
-            float sig = 0.0f;
-            sig += osc[i].Process(oscPhase[i]);
+            float sig = osc[i].Process(oscPhase[i]);
 
             if (paramManager.GetValue(OSC_PAN[i]) != 0.0f) {
                 float pan = paramManager.GetValue(OSC_PAN[i]);

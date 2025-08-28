@@ -78,4 +78,18 @@ class Osc
     float half_sr_, quarter_sr_, sec_per_sample_, two_over_sr_, four_over_sr_;
 };
 
+class SlewLimiter
+{
+    float current = 0.0f;   // поточне значення
+    float alpha = 0.0f;     // коефіцієнт згладжування
+
+public:
+    // smoothingTime в секундах, samplerate у Hz
+    void Init(float smoothingTime, float samplerate);
+
+    // targetValue — нове бажане значення
+    float Process(float targetValue);
+
+    void SetCurrent(float value);
+};
 #endif

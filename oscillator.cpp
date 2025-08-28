@@ -85,3 +85,14 @@ float Osc::Process(float phase)
     
     return out * amp_;
 }
+
+void SlewLimiter::Init(float smoothingTime, float samplerate) {
+    alpha = expf(-1.0f / (smoothingTime * samplerate));
+}
+
+float SlewLimiter::Process(float targetValue) {
+    current += (1.0f - alpha) * (targetValue - current);
+    return current;
+}
+
+void SlewLimiter::SetCurrent(float value) { current = value; }
