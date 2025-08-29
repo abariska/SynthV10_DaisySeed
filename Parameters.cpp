@@ -166,9 +166,9 @@ void ParameterManager::Init() {
     params[static_cast<int>(P::ADSR_RELEASE)] = SynthParameter(0.2f, 0.001f, 10.0f, "Rls", 26, parameters_array, Curve::EXPONENTIAL, ParamUnit::MS);
     params[static_cast<int>(P::ADSR_RETRIGGER)] = SynthParameter(0, 0, 2, "Rtr", 27, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
     params[static_cast<int>(P::LFO_WAVEFORM)] = SynthParameter(0, 0, Osc::WAVE_COUNT, "Wav", 28, parameters_array, Curve::LINEAR, ParamUnit::PICTURE); 
-    params[static_cast<int>(P::LFO_FREQ)] = SynthParameter(0.1f, 0.0f, 100.0f, "Frq", 29, parameters_array, Curve::LINEAR, ParamUnit::HZ);
-    params[static_cast<int>(P::LFO_DEPTH)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dpt", 30, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::LFO_ACTIVE)] = SynthParameter(0, 0, 2, "Actv", 31, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
+    params[static_cast<int>(P::LFO_FREQ)] = SynthParameter(1.0f, 0.0f, 100.0f, "Frq", 29, parameters_array, Curve::LINEAR, ParamUnit::HZ);
+    params[static_cast<int>(P::LFO_DEPTH)] = SynthParameter(0.0f, 0.0f, 100.0f, "Dpt", 30, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::LFO_ACTIVE)] = SynthParameter(1, 0, 2, "Actv", 31, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
     params[static_cast<int>(P::EFFECT_CHORUS_DEPTH)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dpt", 32, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_CHORUS_FBK)] = SynthParameter(0.0f, 0.0f, 1.0f, "Fbk", 33, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_CHORUS_DELAY)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dly", 34, parameters_array, Curve::LINEAR, ParamUnit::MS);
@@ -181,7 +181,7 @@ void ParameterManager::Init() {
     params[static_cast<int>(P::EFFECT_REVERB_FEEDBACK)] = SynthParameter(0.0f, 0.0f, 1.0f, "Fbk", 41, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_REVERB_LPFREQ)] = SynthParameter(0.0f, 0.0f, 1.0f, "LpF", 42, parameters_array, Curve::LINEAR, ParamUnit::HZ);
     params[static_cast<int>(P::GLOBAL_MONO)] = SynthParameter(0, 0, 2, "Mon", 43, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
-    params[static_cast<int>(P::GLOBAL_LEGATO)] = SynthParameter(1, 0, 2, "Lgt", 44, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
+    params[static_cast<int>(P::GLOBAL_LEGATO)] = SynthParameter(0, 0, 2, "Lgt", 44, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
     params[static_cast<int>(P::GLOBAL_PORTAMENTO)] = SynthParameter(0.0f, 0.0f, 1.0f, "Prt", 45, parameters_array, Curve::LINEAR, ParamUnit::MS);
     params[static_cast<int>(P::NONE)] = SynthParameter(0, 0, 0, "", 46, parameters_array);
 }

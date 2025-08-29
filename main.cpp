@@ -242,6 +242,7 @@ void Callback(void* data)
     isBlink = !isBlink;
     blinkStateChanged = true; 
     CpuUsageDisplay();
+    UartPrintf("Filter: ", paramManager.GetValue(P::FILTER_CUTOFF));
 }
 
 void Timer500ms() {
@@ -293,7 +294,7 @@ void CpuUsageDisplay(bool on){
             float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
             Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
             OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
-            UartPrint("CPU load: ", cpu_avg_load);
+            // UartPrint("CPU load: ", cpu_avg_load);
         }
     } else {
         Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);

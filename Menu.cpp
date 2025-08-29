@@ -123,12 +123,7 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             default:
                 unit = "";
                 break;
-        }
-
-        UartPrintf("Pitch: ", paramManager.GetInt(P::OSC_PITCH_1));
-        UartPrintf("Detune: ", paramManager.GetInt(P::OSC_DETUNE_1));
-
-        
+        }        
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
         Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue - 4, Font12, textColor, bgColor);
         Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, yBlockValue + 10, Font8, textColor, bgColor);

@@ -7,6 +7,7 @@ Adsr adsrMain;
 MoogLadder fltL;
 MoogLadder fltR;
 Oscillator lfo;
+Random rnd[OSC_NUM];
 
 using P = ParamUnitName;
 
@@ -34,8 +35,9 @@ void InitLfo(float samplerate) {
 float ProcessLfo() {
     // Apply parameters from template
     lfo.SetFreq(paramManager.GetValue(P::LFO_FREQ));
-    lfo.SetWaveform(paramManager.GetValue(P::LFO_WAVEFORM));
+    lfo.SetWaveform(paramManager.GetInt(P::LFO_WAVEFORM));
     lfo.SetAmp(paramManager.GetNormalised(P::LFO_DEPTH));
+    if (paramManager.GetInt(P::LFO_ACTIVE) == 0) return 0.0f;
     return lfo.Process();
 }
 
@@ -47,7 +49,9 @@ void VoiceInit(float samplerate, int blocksize) {
     fltL.Init(samplerate);
     fltR.Init(samplerate);
     adsrMain.Init(samplerate, blocksize);
-    
+    for (size_t i = 0; i < OSC_NUM; i++) {
+        rnd[i].Init();
+    }
     System::Delay(10);
 }
 
@@ -63,9 +67,10 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
         frequency = 440.0f * powf(2.0f, (note_in - 69) / 12.0f);
 
         for (size_t i = 0; i < OSC_NUM; i++) {
+            phaseOffsets[i] = rnd[i].GetFloat(0.0f, 0.1f);
             pitch_correction[i] = powf(2.0f, paramManager.GetInt(OSC_PITCH[i]) / 12.0f);  
             detune_correction[i] = powf(2.0f, paramManager.GetInt(OSC_DETUNE[i]) / 1200.0f);     
-            oscPhase[i] = masterPhase + phaseOffsets[i];
+            oscPhase[i] = masterPhase;
         }
 		
 		float velocity_factor = velocity / 127.0f;
@@ -120,22 +125,20 @@ void VoiceProcess(float& sigL, float& sigR){
 
     for (size_t i = 0; i < OSC_NUM; i++)
     {
-       
+        float final_freq = frequency * pitch_correction[i] * detune_correction[i] + phaseOffsets[i];
+        oscPhaseInc[i] = final_freq / samplerate;
 
-            float final_freq = frequency * pitch_correction[i] * detune_correction[i];
-            oscPhaseInc[i] = final_freq / samplerate;
+        oscPhase[i] += oscPhaseInc[i];
+        if(oscPhase[i] >= 1.0f) {
+            oscPhase[i] -= 1.0f;
+        }
+        
+        osc[i].SetFreq(final_freq);
+        osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]) * amplitude);
+        osc[i].SetWaveform(paramManager.GetValue(OSC_WAVEFORM[i]));
+        osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
 
-            oscPhase[i] += oscPhaseInc[i];
-            if(oscPhase[i] >= 1.0f) {
-                oscPhase[i] -= 1.0f;
-            }
-            
-            osc[i].SetFreq(final_freq);
-            osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]) * amplitude);
-            osc[i].SetWaveform(paramManager.GetValue(OSC_WAVEFORM[i]));
-            osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
-
-            if (paramManager.GetValue(OSC_ACTIVE[i])) {
+        if (paramManager.GetValue(OSC_ACTIVE[i])) {
             float sig = 0.0f;
             sig += osc[i].Process(oscPhase[i]);
 
@@ -156,6 +159,8 @@ void VoiceProcess(float& sigL, float& sigR){
     
     sigL /= OSC_NUM;
     sigR /= OSC_NUM;
+
+
 
     fltL.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
     fltL.SetRes(paramManager.GetNormalised(P::FILTER_RESONANCE));
