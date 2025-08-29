@@ -120,7 +120,7 @@ void VoiceProcess(float& sigL, float& sigR){
 
     for (size_t i = 0; i < OSC_NUM; i++)
     {
-        if (paramManager.GetValue(OSC_ACTIVE[i])) {
+       
 
             float final_freq = frequency * pitch_correction[i] * detune_correction[i];
             oscPhaseInc[i] = final_freq / samplerate;
@@ -134,6 +134,8 @@ void VoiceProcess(float& sigL, float& sigR){
             osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]) * amplitude);
             osc[i].SetWaveform(paramManager.GetValue(OSC_WAVEFORM[i]));
             osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
+
+            if (paramManager.GetValue(OSC_ACTIVE[i])) {
             float sig = 0.0f;
             sig += osc[i].Process(oscPhase[i]);
 
