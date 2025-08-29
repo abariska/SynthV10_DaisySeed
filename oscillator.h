@@ -90,6 +90,7 @@ public:
     // targetValue — нове бажане значення
     float Process(float targetValue);
 
+    // currentValue — початкове значення
     void SetCurrent(float value);
 };
 #endif
