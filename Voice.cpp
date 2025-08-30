@@ -135,7 +135,7 @@ void VoiceProcess(float& sigL, float& sigR){
         
         osc[i].SetFreq(final_freq);
         osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]) * amplitude);
-        osc[i].SetWaveform(paramManager.GetValue(OSC_WAVEFORM[i]));
+        osc[i].SetWaveform(paramManager.GetInt(OSC_WAVEFORM[i]));
         osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
 
         if (paramManager.GetValue(OSC_ACTIVE[i])) {
@@ -160,6 +160,8 @@ void VoiceProcess(float& sigL, float& sigR){
     sigL /= OSC_NUM;
     sigR /= OSC_NUM;
 
+    float lfoSig = ProcessLfo();
+    paramManager.GetParam(P::FILTER_CUTOFF).ModifyNormalized(lfoSig);
 
 
     fltL.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));

@@ -100,7 +100,7 @@ enum class ParamType {
 
 enum class ParamUnit {
     HZ,
-    MS,
+    SECONDS,
     PERCENT,
     SEMITONES,
     CENTS,
@@ -155,6 +155,7 @@ public:
     float GetMax() const;
     ParamUnit GetUnit() const;
     void SetBool(bool value);
+    void ModifyNormalized(float modifier);
 };
 
 class ParameterManager {

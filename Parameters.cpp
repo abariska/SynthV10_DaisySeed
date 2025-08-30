@@ -85,6 +85,12 @@ float SynthParameter::SetPhysicalValue(float v) {
     return GetFloat();
 }
 
+void SynthParameter::ModifyNormalized(float modifier) {
+    modifier = clamp(modifier, -1.0f, 1.0f);
+    
+    SetNormalized(norm_value + modifier);
+}
+
 float SynthParameter::AdjustByIncrement(int inc) {
 
     if (type == ParamType::DISCRETE) {
@@ -160,20 +166,20 @@ void ParameterManager::Init() {
     params[static_cast<int>(P::OSC_ACTIVE_3)] = SynthParameter(0, 0, 2, "Actv", 20, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
     params[static_cast<int>(P::FILTER_CUTOFF)] = SynthParameter(10000.0f, 10.0f, 20000.0f, "Cut", 21, parameters_array, Curve::EXPONENTIAL, ParamUnit::HZ);
     params[static_cast<int>(P::FILTER_RESONANCE)] = SynthParameter(0.0f, 0.0f, 100.0f, "Res", 22, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::ADSR_ATTACK)] = SynthParameter(0.01f, 0.001f, 10.0f, "Atk", 23, parameters_array, Curve::EXPONENTIAL, ParamUnit::MS);
-    params[static_cast<int>(P::ADSR_DECAY)] = SynthParameter(0.5f, 0.001f, 10.0f, "Dcy", 24, parameters_array, Curve::EXPONENTIAL, ParamUnit::MS);
+    params[static_cast<int>(P::ADSR_ATTACK)] = SynthParameter(0.01f, 0.001f, 10.0f, "Atk", 23, parameters_array, Curve::EXPONENTIAL, ParamUnit::SECONDS);
+    params[static_cast<int>(P::ADSR_DECAY)] = SynthParameter(0.5f, 0.001f, 10.0f, "Dcy", 24, parameters_array, Curve::EXPONENTIAL, ParamUnit::SECONDS);
     params[static_cast<int>(P::ADSR_SUSTAIN)] = SynthParameter(1.0f, 0.0f, 100.0f, "Sus", 25, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::ADSR_RELEASE)] = SynthParameter(0.2f, 0.001f, 10.0f, "Rls", 26, parameters_array, Curve::EXPONENTIAL, ParamUnit::MS);
+    params[static_cast<int>(P::ADSR_RELEASE)] = SynthParameter(0.2f, 0.001f, 10.0f, "Rls", 26, parameters_array, Curve::EXPONENTIAL, ParamUnit::SECONDS);
     params[static_cast<int>(P::ADSR_RETRIGGER)] = SynthParameter(0, 0, 2, "Rtr", 27, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
     params[static_cast<int>(P::LFO_WAVEFORM)] = SynthParameter(0, 0, Osc::WAVE_COUNT, "Wav", 28, parameters_array, Curve::LINEAR, ParamUnit::PICTURE); 
-    params[static_cast<int>(P::LFO_FREQ)] = SynthParameter(1.0f, 0.0f, 100.0f, "Frq", 29, parameters_array, Curve::LINEAR, ParamUnit::HZ);
-    params[static_cast<int>(P::LFO_DEPTH)] = SynthParameter(0.0f, 0.0f, 100.0f, "Dpt", 30, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::LFO_FREQ)] = SynthParameter(0.1f, 0.01f, 100.0f, "Frq", 29, parameters_array, Curve::EXPONENTIAL, ParamUnit::HZ);
+    params[static_cast<int>(P::LFO_DEPTH)] = SynthParameter(0.1f, 0.0f, 100.0f, "Dpt", 30, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::LFO_ACTIVE)] = SynthParameter(1, 0, 2, "Actv", 31, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
     params[static_cast<int>(P::EFFECT_CHORUS_DEPTH)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dpt", 32, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_CHORUS_FBK)] = SynthParameter(0.0f, 0.0f, 1.0f, "Fbk", 33, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_CHORUS_DELAY)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dly", 34, parameters_array, Curve::LINEAR, ParamUnit::MS);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_ATTACK)] = SynthParameter(0.0f, 0.0f, 1.0f, "Atk", 35, parameters_array, Curve::LINEAR, ParamUnit::MS);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_RELEASE)] = SynthParameter(0.0f, 0.0f, 1.0f, "Rls", 36, parameters_array, Curve::LINEAR, ParamUnit::MS);
+    params[static_cast<int>(P::EFFECT_CHORUS_DELAY)] = SynthParameter(0.0f, 0.0f, 1.0f, "Dly", 34, parameters_array, Curve::LINEAR, ParamUnit::SECONDS);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_ATTACK)] = SynthParameter(0.0f, 0.0f, 1.0f, "Atk", 35, parameters_array, Curve::LINEAR, ParamUnit::SECONDS);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_RELEASE)] = SynthParameter(0.0f, 0.0f, 1.0f, "Rls", 36, parameters_array, Curve::LINEAR, ParamUnit::SECONDS);
     params[static_cast<int>(P::EFFECT_COMPRESSOR_THRESHOLD)] = SynthParameter(0.0f, 0.0f, 1.0f, "Thr", 37, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_COMPRESSOR_RATIO)] = SynthParameter(0.0f, 0.0f, 1.0f, "Rat", 38, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_COMPRESSOR_MAKEUP)] = SynthParameter(0.0f, 0.0f, 1.0f, "Mk", 39, parameters_array, Curve::LINEAR, ParamUnit::PERCENT);
@@ -182,7 +188,7 @@ void ParameterManager::Init() {
     params[static_cast<int>(P::EFFECT_REVERB_LPFREQ)] = SynthParameter(0.0f, 0.0f, 1.0f, "LpF", 42, parameters_array, Curve::LINEAR, ParamUnit::HZ);
     params[static_cast<int>(P::GLOBAL_MONO)] = SynthParameter(0, 0, 2, "Mon", 43, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
     params[static_cast<int>(P::GLOBAL_LEGATO)] = SynthParameter(0, 0, 2, "Lgt", 44, parameters_array, Curve::LINEAR, ParamUnit::UNITLESS);
-    params[static_cast<int>(P::GLOBAL_PORTAMENTO)] = SynthParameter(0.0f, 0.0f, 1.0f, "Prt", 45, parameters_array, Curve::LINEAR, ParamUnit::MS);
+    params[static_cast<int>(P::GLOBAL_PORTAMENTO)] = SynthParameter(0.0f, 0.0f, 1.0f, "Prt", 45, parameters_array, Curve::LINEAR, ParamUnit::SECONDS);
     params[static_cast<int>(P::NONE)] = SynthParameter(0, 0, 0, "", 46, parameters_array);
 }
 
@@ -191,87 +197,6 @@ void InitSynthParams() {
     paramManager.Init();
 }
 
-
-// // В main.cpp або де потрібно:
-// float osc1_pitch = paramManager.GetValue(ParamUnitName::OSC_PITCH_1);
-// paramManager.SetValue(ParamUnitName::OSC_AMP_1, 0.8f);
-
-// // Для енкодера:
-// paramManager.GetParam(ParamUnitName::OSC_PITCH_1).AdjustByEncoder(encoder_increment);
-
-// // Parameters initialization - old version replaced with new one in Parameters.h
-// void InitSynthParams() {
-//     // Voice template initialization
-//     params.osc[0].active = true;
-//     params.osc[1].active = false;
-//     params.osc[2].active = false;
-//     params.osc[0].pan = -1.0f;
-//     params.osc[1].pan = 1.0f;
-//     params.osc[2].pan = 1.0f;
-//     for (size_t o = 0; o < OSC_NUM; o++) {
-//         params.osc[o].waveform = 0.0f;
-//         params.osc[o].freq = 440.0f;
-//         params.osc[o].pw = 0.5f;
-//         params.osc[o].amp = 0.5f;
-//         params.osc[o].pitch = 0.0f;
-//         params.osc[o].detune = 0.0f;
-//         // params.osc[o].pan = 0.0f;
-//     }
-    
-//     params.filter.cutoff = 5000.0f;
-//     params.filter.resonance = 0.0f;
-    
-//     params.adsr.attack = 0.01f;
-//     params.adsr.decay = 0.1f;
-//     params.adsr.sustain = 1.0f;
-//     params.adsr.release = 0.5f;
-//     params.adsr.retrigger = false;
-    
-//     // Global LFO initialization
-//     params.lfo.freq = 0.5f;
-//     params.lfo.depth = 0.0f;
-//     params.lfo.waveform = 2.0f;
-
-//     params.global.isMono = true;
-//     params.global.isLegato = false;
-//     params.global.portamentoTime = 0.0f;
-//     params.global.analogAmount = 0.7f;  // 70% аналогового характеру за замовчуванням
-    
-//     // Effects initialization
-//     InitEffectParams();
-// }
-
-// void InitEffectParams() {
-//     // Initialize parameters for each effect block
-//     for (size_t e = 0; e < 2; e++) {
-//         // General effect block settings
-//         params.overdriveParams.isActive = false;
-
-//         // Overdrive
-//         params.overdriveParams.drive = 0.0f;
-//         params.overdriveParams.isActive = false;
-        
-//         // Chorus
-//         params.chorusParams.freq = 0.2f;
-//         params.chorusParams.depth = 0.0f;
-//         params.chorusParams.delay = 0.0f;
-//         params.chorusParams.feedback = 0.0f;
-//         params.chorusParams.isActive = false;
-        
-//         // Compressor
-//         params.compressorParams.attack = 0.01f;
-//         params.compressorParams.release = 0.01f;
-//         params.compressorParams.threshold = 0.0f;
-//         params.compressorParams.ratio = 1.0f;
-//         // params.compressorParams.makeup = 0.0f;
-//         params.compressorParams.isActive = false;
-        
-//         // Reverb
-//         params.reverbParams.feedback = 0.0f;
-//         params.reverbParams.dryWet = 0.0f;
-//         params.reverbParams.isActive = false;
-//     }
-// }
 
 // Update parameters
 // void UpdateParams(Synth& synth, Effects& effects) {

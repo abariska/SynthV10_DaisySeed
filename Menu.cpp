@@ -93,7 +93,7 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
                     sprintf(value_str, "%d", (int)value);
                 } 
                 break;
-            case ParamUnit::MS:
+            case ParamUnit::SECONDS:
                 
                 if (value >= 1) {
                     unit = "s";
