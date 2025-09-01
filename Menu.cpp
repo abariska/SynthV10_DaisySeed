@@ -19,6 +19,7 @@ const uint8_t yBlockLabel = 10;
 const uint8_t yBlockValue = 30;
 bool isBlink = false;
 bool blinkStateChanged = false;
+bool isStoreMode = false;
 
 char page_name[16] = "";
 ActiveRow currentActiveRow = ROW_1;  // Початково активний перший ряд

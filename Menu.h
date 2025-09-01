@@ -17,6 +17,7 @@ using namespace daisy;
 extern char page_name[16];
 extern bool isBlink;
 extern bool blinkStateChanged;
+extern bool isStoreMode;
 
 // Для перемикання між рядами параметрів
 enum ActiveRow {

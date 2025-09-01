@@ -15,10 +15,12 @@ DaisySeed hw;
 TimerHandle tim_display;
 CpuLoadMeter cpu_load; 
 
+extern Preset currentPreset;
 
-int encoderIncs[4];
+int encoderIncs[5];
 int test = 123;
 float samplerate = 0;
+bool update_for_preset_needed = false;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in, 
                           AudioHandle::InterleavingOutputBuffer out,
@@ -73,23 +75,23 @@ int main(void)
     InitImages();
     DrawIntroPage();
     System::Delay(1000);
+    InitQSPI();
     
     InitSynthParams();
     VoiceInit(samplerate, blocksize);
     EffectsInit(samplerate);
     InitLfo(samplerate);
     MidiInit();
-
-    hw.StartAudio(AudioCallback);
     
     InitSlots();
     InitSX1509Extenders(); 
     SetPage(MAIN_PAGE);
 
+    hw.StartAudio(AudioCallback);
+
     Timer500ms();
     System::Delay(10);
 
-    UartPrint("Initialization complete.\r\n");
     sx1509_leds.WritePin(6, 0);
 
     while (1)
@@ -99,6 +101,7 @@ int main(void)
         UpdateEncodersParams();
 
         sx1509_leds.WritePin(6, midi_note_led);
+        
     }
 }
 
@@ -199,12 +202,15 @@ void ProcessButtons() {
             if (sx1509_buttons.isFallingEdge(BUTTON_MTX)) {
                 SetPage(MenuPage::MTX_PAGE);
             }
+            if (sx1509_buttons.isFallingEdge(BUTTON_STORE)) {
+                isStoreMode = true;
+                SavePreset(currentPreset.number, currentPreset);
+            }
         }
     }
 }
 void ProcessEncoders(){
-    
-    
+
     bool any_pin_change = sx1509_encoders.ReadAllPins();
     
     if (any_pin_change) {
@@ -212,25 +218,28 @@ void ProcessEncoders(){
         encoderIncs[1] = EncoderInc(1, ENC_2_A, ENC_2_B);
         encoderIncs[2] = EncoderInc(2, ENC_3_A, ENC_3_B);
         encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);
+
+        encoderIncs[4] = EncoderInc(4, ENC_DIAL_A, ENC_DIAL_B);
+    }
+    if (encoderIncs[4] != 0) {
+        update_for_preset_needed = true;
+        uint8_t newPresetNum = currentPreset.number + encoderIncs[4];
+        if (newPresetNum < 0) newPresetNum = 0;
+        if (newPresetNum >= PRESET_NUM - 1) newPresetNum = PRESET_NUM - 1;
+        ApplyPreset(newPresetNum);
+        encoderIncs[4] = 0;
     }
 
-
-    
-    // if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0) {
-    //     test += encoderIncs[0];
-    //     UartPrint(test);
-    // }
-
     if (currentPage == MAIN_PAGE) {
-        for (size_t i = 0; i < NUM_ENCODERS; i++) {  // Тільки 4 енкодери
+        for (size_t i = 0; i < NUM_ENCODERS; i++) {  // Only 4 encoders
             if (encoderIncs[i] != 0) {
                 menu_slots[i].need_update = true;
             }
         }
     } else {
-        for (size_t i = 0; i < 4; i++) {  // Тільки 4 енкодери
+        for (size_t i = 0; i < 4; i++) {  // Only 4 encoders
             if (encoderIncs[i] != 0) {
-                uint8_t paramIndex = GetActiveParamIndex(i);  // Отримуємо індекс активного параметра
+                uint8_t paramIndex = GetActiveParamIndex(i);  // Get index of active parameter
                     slots[paramIndex].need_update = true;
             }
         }
@@ -242,7 +251,6 @@ void Callback(void* data)
     isBlink = !isBlink;
     blinkStateChanged = true; 
     CpuUsageDisplay();
-    UartPrintf("Filter: ", paramManager.GetValue(P::FILTER_CUTOFF));
 }
 
 void Timer500ms() {

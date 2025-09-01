@@ -3,7 +3,10 @@
 #include "menu.h"
 #include "OLED_1.5_Daisy_Seed/fonts.h"
 #include "effects.h"
+#include "parameters.h"
 
+extern Preset currentPreset;
+extern bool update_for_preset_needed;
 
 
 const UWORD INTRO_PAGE_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
@@ -74,11 +77,13 @@ void DrawIntroPage(){
 }   
 
 void SetPage(MenuPage newPage) {
-
-    if (currentPage == newPage) return;
+    if (currentPage == newPage && !update_for_preset_needed) {
+        return;
+    } 
+    update_for_preset_needed = false;
 
     currentPage = newPage;    
-    currentActiveRow = ROW_1;  // Скидаємо до першого ряду при зміні сторінки
+    currentActiveRow = ROW_1;  
 
     switch (newPage)
     {
@@ -106,10 +111,10 @@ void DrawMainPage()
     Paint_DrawLine(4, 36, 123, 36, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     Paint_DrawLine(0, 58, 127, 58, 0x01, DOT_PIXEL_1X1, LINE_STYLE_DOTTED);
     
-    sprintf(prog_num, "%03d", 1);
+    sprintf(prog_num, "%03d", currentPreset.number);
     Paint_TextCentered(prog_num, 0, 127, 0, Font16, WHITE, BLACK);
 
-    sprintf(prog_name, "Program");
+    sprintf(prog_name, "%s", currentPreset.name);
     Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);

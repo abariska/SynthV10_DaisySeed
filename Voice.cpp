@@ -160,8 +160,8 @@ void VoiceProcess(float& sigL, float& sigR){
     sigL /= OSC_NUM;
     sigR /= OSC_NUM;
 
-    float lfoSig = ProcessLfo();
-    paramManager.GetParam(P::FILTER_CUTOFF).ModifyNormalized(lfoSig);
+    // float lfoSig = ProcessLfo();
+    // paramManager.GetParam(P::FILTER_CUTOFF).ModifyNormalized(lfoSig);
 
 
     fltL.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));

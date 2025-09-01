@@ -3,10 +3,21 @@
 
 #include <array>
 #include <cstdint>
+#include "parameters.h"
+#include "daisy_seed.h"
+#include "daisysp.h" // Add for using constants
+#include "oscillator.h"
+#include "util/PersistentStorage.h"
+
 
 // Required for array structures
 #define OSC_NUM 3
 #define PARAM_NAME_LENGTH 8
+#define PRESET_NAME_LENGTH 12
+#define PRESET_NUM 10
+
+
+struct Preset;
 
 enum class ParamUnitName {
     NONE,
@@ -71,7 +82,7 @@ const P OSC_PWM[OSC_NUM] = {P::OSC_PWM_1, P::OSC_PWM_2, P::OSC_PWM_3};
 const P OSC_PAN[OSC_NUM] = {P::OSC_PAN_1, P::OSC_PAN_2, P::OSC_PAN_3};
 const P OSC_ACTIVE[OSC_NUM] = {P::OSC_ACTIVE_1, P::OSC_ACTIVE_2, P::OSC_ACTIVE_3};
 
-extern float parameters_array[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
+
 
 enum Waves {
     TRI,
@@ -127,12 +138,12 @@ public:
 
     SynthParameter() = default;
 
-    SynthParameter(float init_value, float min_value, float max_value,
+    SynthParameter(float min_value, float max_value,
         const char* label, uint8_t index, float* array, 
         Curve defaultCurve, 
         ParamUnit param_unit);
 
-        SynthParameter(int init_value, int min_vals, int max_vals,
+        SynthParameter(int min_vals, int max_vals,
             const char* label, uint8_t index, float* array,  
             Curve defaultCurve = Curve::LINEAR, 
             ParamUnit param_unit = ParamUnit::UNITLESS);
@@ -156,6 +167,7 @@ public:
     ParamUnit GetUnit() const;
     void SetBool(bool value);
     void ModifyNormalized(float modifier);
+    void SetFromCurrentPreset();
 };
 
 class ParameterManager {
@@ -187,9 +199,26 @@ extern ParameterManager paramManager;
 void InitSynthParams();
 void InitEffectParams();
 
-// Functions for saving/loading presets
-// void SavePreset(uint8_t presetNumber);
-// void LoadPreset(uint8_t presetNumber);
+enum class PresetType : uint8_t {
+    DEFAULT,
+    CUSTOM
+};
+
+struct Preset {
+    PresetType type; 
+    uint8_t number;
+    char    name[PRESET_NAME_LENGTH];
+    float   array[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
+};
+
+extern Preset currentPreset;
+
+
+void ApplyPreset(int presetNumber);
+void ReadPreset(uint8_t preset_num, Preset &prst);
+void SavePreset(uint8_t preset_num, const Preset &prst);
+void InitQSPI();
+
 
 
 #endif // PARAMETERS_H
