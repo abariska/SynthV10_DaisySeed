@@ -44,13 +44,12 @@ enum class ParamUnitName {
     OSC_PWM_3,
     OSC_PAN_3,
     OSC_ACTIVE_3,
+    FILTER_CUTOFF,
+    FILTER_RESONANCE,
     ADSR_ATTACK,
     ADSR_DECAY,
     ADSR_SUSTAIN,
     ADSR_RELEASE,
-    ADSR_RETRIGGER,
-    FILTER_CUTOFF,
-    FILTER_RESONANCE,
     LFO_WAVEFORM,
     LFO_FREQ,
     LFO_DEPTH,
@@ -83,8 +82,6 @@ const P OSC_AMP[OSC_NUM] = {P::OSC_AMP_1, P::OSC_AMP_2, P::OSC_AMP_3};
 const P OSC_PWM[OSC_NUM] = {P::OSC_PWM_1, P::OSC_PWM_2, P::OSC_PWM_3};
 const P OSC_PAN[OSC_NUM] = {P::OSC_PAN_1, P::OSC_PAN_2, P::OSC_PAN_3};
 const P OSC_ACTIVE[OSC_NUM] = {P::OSC_ACTIVE_1, P::OSC_ACTIVE_2, P::OSC_ACTIVE_3};
-
-
 
 enum Waves {
     TRI,
@@ -171,7 +168,6 @@ public:
     void ModifyNormalized(float modifier);
     void SetFromCurrentPreset();
     Curve GetCurve() const;
-    float GetNormalisedCurved() const;
 };
 
 class ParameterManager {

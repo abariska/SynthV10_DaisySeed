@@ -44,6 +44,14 @@ void InitSX1509Leds() {
     sx1509_leds.Check();
 }
 
+void UpdateLeds() {
+    sx1509_leds.WritePin(LED_OSC_1, paramManager.GetBool(P::OSC_ACTIVE_1));
+    sx1509_leds.WritePin(LED_OSC_2, paramManager.GetBool(P::OSC_ACTIVE_2));
+    sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(P::OSC_ACTIVE_3));
+    // sx1509_leds.WritePin(LED_LFO, params.lfo.active);
+    // sx1509_leds.WritePin(LED_MTX, params.mtx.active);
+}
+
 void InitSX1509Extenders() {
 
     InitSX1509Buttons();
@@ -66,11 +74,7 @@ void InitSX1509Extenders() {
         sx1509_leds.SetPinMode(i, SX_PIN_OUTPUT, 0);
     }
 
-    sx1509_leds.WritePin(LED_OSC_1, paramManager.GetBool(OSC_ACTIVE[0]));
-    sx1509_leds.WritePin(LED_OSC_2, paramManager.GetBool(OSC_ACTIVE[1]));
-    sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(OSC_ACTIVE[2]));
-    // sx1509_leds.WritePin(LED_LFO, params.lfo.active);
-    // sx1509_leds.WritePin(LED_MTX, params.mtx.active);
+    UpdateLeds();
 
     System::Delay(10);
 }

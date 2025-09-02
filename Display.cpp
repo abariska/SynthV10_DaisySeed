@@ -97,6 +97,7 @@ void SetPage(MenuPage newPage) {
         DrawParamPage(newPage);
         break;
     }
+    UpdateLeds();
 }
 
 void DrawMainPage()

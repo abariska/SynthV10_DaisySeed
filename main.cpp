@@ -139,16 +139,19 @@ void ProcessButtons() {
 
         if (shift_pressed) {
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
-                paramManager.SetBool(P::OSC_ACTIVE_1, !paramManager.GetBool(P::OSC_ACTIVE_1));
-                sx1509_leds.WritePin(LED_OSC_1, paramManager.GetBool(P::OSC_ACTIVE_1));
+                bool osc_active_1 = paramManager.GetBool(P::OSC_ACTIVE_1);
+                paramManager.SetBool(P::OSC_ACTIVE_1, !osc_active_1);
+                sx1509_leds.WritePin(LED_OSC_1, osc_active_1);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
-                paramManager.SetBool(P::OSC_ACTIVE_2, !paramManager.GetBool(P::OSC_ACTIVE_2));
-                sx1509_leds.WritePin(LED_OSC_2, paramManager.GetBool(P::OSC_ACTIVE_2));
+                bool osc_active_2 = paramManager.GetBool(P::OSC_ACTIVE_2);
+                paramManager.SetBool(P::OSC_ACTIVE_2, !osc_active_2);
+                sx1509_leds.WritePin(LED_OSC_2, osc_active_2);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
-                paramManager.SetBool(P::OSC_ACTIVE_3, !paramManager.GetBool(P::OSC_ACTIVE_3));
-                sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(P::OSC_ACTIVE_3));      
+                bool osc_active_3 = paramManager.GetBool(P::OSC_ACTIVE_3);
+                paramManager.SetBool(P::OSC_ACTIVE_3, !osc_active_3);
+                sx1509_leds.WritePin(LED_OSC_3, osc_active_3);      
             }
         } else {
             if (sx1509_buttons.isFallingEdge(BUTTON_BACK)) {
