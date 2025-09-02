@@ -7,8 +7,6 @@
 #include "daisy_seed.h"
 #include "daisysp.h" // Add for using constants
 #include "oscillator.h"
-#include "util/PersistentStorage.h"
-
 
 // Required for array structures
 #define OSC_NUM 3
@@ -16,6 +14,10 @@
 #define PRESET_NAME_LENGTH 12
 #define PRESET_NUM 10
 
+template<typename T>
+constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
+    return (v < lo) ? lo : (v > hi) ? hi : v;
+}
 
 struct Preset;
 
@@ -168,6 +170,8 @@ public:
     void SetBool(bool value);
     void ModifyNormalized(float modifier);
     void SetFromCurrentPreset();
+    Curve GetCurve() const;
+    float GetNormalisedCurved() const;
 };
 
 class ParameterManager {
@@ -190,6 +194,7 @@ class ParameterManager {
         void SetValue(ParamUnitName name, float value) { GetParam(name).SetNormalized(value); }
         void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
         ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).GetUnit(); }
+        Curve GetCurve(ParamUnitName name) { return GetParam(name).GetCurve(); }
     };
     
 extern ParameterManager paramManager;

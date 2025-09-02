@@ -2,7 +2,6 @@
 #include "daisy_seed.h"
 #include "daisysp.h" // Add for using constants
 #include "oscillator.h"
-#include "util/PersistentStorage.h"
 #include "display.h"
 #include "log_uart.h"
 #include "per/qspi.h"
@@ -25,11 +24,6 @@ float default_preset_array[static_cast<int>(ParamUnitName::COUNT_PARAMS)] = {
     1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 
     0.0f, 0.0f, 0.0f, 0.0f
 };
-
-template<typename T>
-constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
-    return (v < lo) ? lo : (v > hi) ? hi : v;
-}
 
 void ReadPreset(uint8_t preset_num, Preset &prst);
 void SavePreset(uint8_t preset_num, const Preset &prst);
@@ -188,6 +182,29 @@ float SynthParameter::AdjustByIncrement(int inc) {
     }
 }
 
+float SynthParameter::GetNormalisedCurved() const {
+    float value = norm_value;
+    
+    if (type == ParamType::DISCRETE) {
+        return value;
+    } else {        
+        switch(curve) {
+            case Curve::LINEAR:
+                // Нічого не змінюємо
+                break;
+            case Curve::EXPONENTIAL:
+                value = powf(value, 1.0f/3.0f);  // Обернена до x³
+                break;
+            case Curve::LOGARITHMIC:
+                value = powf(value, 2.0f);  // Обернена до x^0.5
+                break;
+            default:
+                break;
+        }
+        return value;
+    }
+}
+
 // Getters
 float SynthParameter::GetFloat() const { return static_cast<float>(physical_value); }
 int SynthParameter::GetInt() const { return static_cast<int>(physical_value); }
@@ -199,6 +216,7 @@ float SynthParameter::GetMin() const { return static_cast<float>(min); }
 float SynthParameter::GetMax() const { return static_cast<float>(max); }
 void SynthParameter::SetBool(bool value) { physical_value = value ? 1 : 0; }
 ParamUnit SynthParameter::GetUnit() const { return unit; }
+Curve SynthParameter::GetCurve() const { return curve; }
 
 ParameterManager paramManager;
 
@@ -268,16 +286,26 @@ void InitSynthParams() {
 /** --- SavePreset --- */
 void SavePreset(uint8_t preset_num, const Preset &prst)
 {
+    Preset p = prst;
+
+    for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++) {
+        float v = paramManager.GetParam(static_cast<ParamUnitName>(i)).GetNormalisedCurved();
+        p.type = PresetType::CUSTOM;
+        p.number = prst.number;
+        strcpy(p.name, prst.name);
+        p.array[i] = v;
+    } 
     uint32_t addr = FLASH_BASE_ADDR + preset_num * FLASH_BLOCK_4KB;
 
     hw.qspi.Erase(addr, addr + FLASH_BLOCK_4KB);
 
     uint8_t page[256];
     memset(page, 0, sizeof(page));
-    memcpy(&page, &prst, sizeof(page));
+    memcpy(page, &p, sizeof(p));
 
     hw.qspi.Write(addr, sizeof(page), page);
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000) + addr, sizeof(page));
+    System::Delay(10);
 }
 
 /** --- ReadPreset --- */
@@ -291,21 +319,18 @@ void ReadPreset(uint8_t preset_num, Preset &prst)
     memcpy(&prst, &page, sizeof(Preset));
 
     prst.name[11] = '\0';
+    System::Delay(10);
 }
 
 /** --- ApplyPreset --- */
 void ApplyPreset(int presetNumber){
-    if (presetNumber >= (int)NUM_PRESETS) presetNumber = 0;
-    if (presetNumber < 0) presetNumber = (int)NUM_PRESETS - 1;
     
     ReadPreset(presetNumber, currentPreset);
 
-    System::Delay(1);
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++) {
         paramManager.GetParam(static_cast<ParamUnitName>(i)).SetFromCurrentPreset();
     } 
     SetPage(currentPage);
-    
 }
 
 

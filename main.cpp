@@ -5,7 +5,7 @@
 #include "oscillator.h"
 #include "display.h"
 #include "log_uart.h"
-#include "system.h"
+#include "parameters.h"
 
 using namespace daisy;
 
@@ -214,20 +214,24 @@ void ProcessEncoders(){
     bool any_pin_change = sx1509_encoders.ReadAllPins();
     
     if (any_pin_change) {
-        encoderIncs[0] = EncoderInc(0, ENC_1_A, ENC_1_B);
-        encoderIncs[1] = EncoderInc(1, ENC_2_A, ENC_2_B);
-        encoderIncs[2] = EncoderInc(2, ENC_3_A, ENC_3_B);
-        encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);
-
-        encoderIncs[4] = EncoderInc(4, ENC_DIAL_A, ENC_DIAL_B);
+        encoderIncs[0] = EncoderInc(ENC_1_A, ENC_1_B);
+        encoderIncs[1] = EncoderInc(ENC_2_A, ENC_2_B);
+        encoderIncs[2] = EncoderInc(ENC_3_A, ENC_3_B);
+        encoderIncs[3] = EncoderInc(ENC_4_A, ENC_4_B);
+        encoderIncs[4] = EncoderInc(ENC_DIAL_A, ENC_DIAL_B);
     }
+    
     if (encoderIncs[4] != 0) {
         update_for_preset_needed = true;
         uint8_t newPresetNum = currentPreset.number + encoderIncs[4];
-        if (newPresetNum < 0) newPresetNum = 0;
-        if (newPresetNum >= PRESET_NUM - 1) newPresetNum = PRESET_NUM - 1;
-        ApplyPreset(newPresetNum);
+        if (newPresetNum < 0 || newPresetNum > PRESET_NUM - 1) {
+            return;
+        } else {    
+            ApplyPreset(newPresetNum);
+        }
         encoderIncs[4] = 0;
+        UartPrintf("Applied preset", paramManager.GetParam(P::FILTER_RESONANCE).GetFloat());
+        UartPrintf("New preset", paramManager.GetParam(P::FILTER_RESONANCE).GetNormalised());
     }
 
     if (currentPage == MAIN_PAGE) {
