@@ -219,7 +219,7 @@ void ApplyPreset(int presetNumber);
 void ReadPreset(uint8_t preset_num, Preset &prst);
 void SavePreset(uint8_t preset_num, const Preset &prst);
 void InitQSPI();
-
+void ResetPreset(int presetNumber);
 
 
 #endif // PARAMETERS_H

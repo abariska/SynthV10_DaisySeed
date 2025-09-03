@@ -10,7 +10,6 @@
 using namespace daisy;
 extern DaisySeed hw;
 
-static const int NUM_PRESETS = 10;
 static const size_t PRESET_SIZE = 256; // округлюємо до 512 байт
 static const uint32_t FLASH_BASE_ADDR = 0x1000; // Починаємо пресети з 4KB
 static const uint32_t FLASH_BLOCK_4KB = 0x1000;
@@ -25,8 +24,19 @@ float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS) - 1)] 
     0.0f, 0.0f, 0.0f, 0.0f
 };
 
+Preset GetDefaultPreset(int8_t presetNumber)
+{
+    Preset preset = {};
+            preset.number = presetNumber;
+            strcpy(preset.name, "default");
+            memcpy(preset.array, default_preset_array, sizeof(default_preset_array));
+            preset.type = PresetType::DEFAULT;
+    return preset;
+}
+
 void ReadPreset(uint8_t preset_num, Preset &prst);
 void SavePreset(uint8_t preset_num, const Preset &prst);
+void ResetPreset(int presetNumber);
 
 void InitQSPI()
 {
@@ -48,19 +58,18 @@ void InitQSPI()
         System::Delay(10);
 
         dsy_dma_invalidate_cache_for_buffer((uint8_t*)(0x90000000), 256);
-        init_flag = *((uint32_t*)(0x90000000));
-        hw.qspi.Erase(FLASH_BASE_ADDR, NUM_PRESETS * FLASH_BLOCK_4KB);
+        hw.qspi.Erase(FLASH_BASE_ADDR, PRESET_NUM * FLASH_BLOCK_4KB);
 
-        for(size_t i = 0; i < NUM_PRESETS; i++)
+        for(size_t i = 0; i <= PRESET_NUM; i++)
         {
-            Preset preset = {};
-            preset.number = i;
-            strcpy(preset.name, "default");
-            memcpy(preset.array, default_preset_array, sizeof(default_preset_array));
-            preset.type = PresetType::DEFAULT;
+            uint32_t addr = FLASH_BASE_ADDR + i * FLASH_BLOCK_4KB;
+            Preset preset = GetDefaultPreset(i);
+            uint8_t page[256];
+            memset(page, 0, sizeof(page));
+            memcpy(page, &preset, sizeof(preset));
 
-            SavePreset(i, preset);
-            System::Delay(10);
+            hw.qspi.Write(addr, sizeof(page), page);
+            dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000) + addr, sizeof(page));
         }
     }
 }
@@ -165,7 +174,7 @@ float SynthParameter::GetFloat() const { return static_cast<float>(physical_valu
 int SynthParameter::GetInt() const { 
     if (type == ParamType::DISCRETE) {
         if (norm_value < 0.001f) return 0;  // Явна обробка нуля
-        return static_cast<int>(roundf(norm_value * max));
+        return static_cast<int>(roundf(norm_value * (max - 1)));
     }
     return static_cast<int>(physical_value);
 }
@@ -176,7 +185,7 @@ ParamType SynthParameter::GetType() const { return type; }
 float SynthParameter::GetMin() const { return static_cast<float>(min); }
 float SynthParameter::GetMax() const { return static_cast<float>(max); }
 void SynthParameter::SetBool(bool value) { 
-    norm_value = value ? 1 : 0; 
+    norm_value = value > 0.5f ? 1.0f : 0.0f; 
     SetNormalized(norm_value);
 }
 ParamUnit SynthParameter::GetUnit() const { return unit; }
@@ -233,6 +242,30 @@ void ReadPreset(uint8_t preset_num, Preset &prst)
     prst.name[11] = '\0';
     System::Delay(10);
 }
+void ResetPreset(int presetNumber){
+
+    Preset preset = GetDefaultPreset(presetNumber);
+
+    uint32_t addr = FLASH_BASE_ADDR + presetNumber * FLASH_BLOCK_4KB;
+
+    hw.qspi.Erase(addr, addr + FLASH_BLOCK_4KB);
+
+    uint8_t page[256];
+    memset(page, 0, sizeof(page));
+    memcpy(page, &preset, sizeof(preset));
+
+    hw.qspi.Write(addr, sizeof(page), page);
+    dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000) + addr, sizeof(page));
+    System::Delay(10);
+
+    ReadPreset(presetNumber, currentPreset);
+
+    for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++) {
+        paramManager.GetParam(static_cast<ParamUnitName>(i)).SetNormalized(currentPreset.array[i]);
+    } 
+    SetPage(currentPage);
+    hw.DelayMs(10);
+}
 
 /** --- ApplyPreset --- */
 void ApplyPreset(int presetNumber){
@@ -273,7 +306,7 @@ void ParameterManager::Init() {
     params[static_cast<int>(P::OSC_PWM_3)] = SynthParameter(-100.0f, 100.0f, "PWM", 19, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::OSC_PAN_3)] = SynthParameter(-100.0f, 100.0f, "Pan", 20, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);    
     params[static_cast<int>(P::OSC_ACTIVE_3)] = SynthParameter(0, 2, "Actv", 21, currentPreset.array, Curve::LINEAR, ParamUnit::UNITLESS); 
-    params[static_cast<int>(P::FILTER_CUTOFF)] = SynthParameter(10.0f, 20000.0f, "Cut", 22, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::HZ);
+    params[static_cast<int>(P::FILTER_CUTOFF)] = SynthParameter(20.0f, 20000.0f, "Cut", 22, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::HZ);
     params[static_cast<int>(P::FILTER_RESONANCE)] = SynthParameter(0.0f, 100.0f, "Res", 23, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::ADSR_ATTACK)] = SynthParameter( 0.001f, 10.0f, "Atk", 24, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::SECONDS);
     params[static_cast<int>(P::ADSR_DECAY)] = SynthParameter(0.001f, 10.0f, "Dcy", 25, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::SECONDS);

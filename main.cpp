@@ -141,18 +141,24 @@ void ProcessButtons() {
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
                 bool osc_active_1 = paramManager.GetBool(P::OSC_ACTIVE_1);
                 paramManager.SetBool(P::OSC_ACTIVE_1, !osc_active_1);
-                sx1509_leds.WritePin(LED_OSC_1, osc_active_1);
+                UpdateLeds();
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
                 bool osc_active_2 = paramManager.GetBool(P::OSC_ACTIVE_2);
                 paramManager.SetBool(P::OSC_ACTIVE_2, !osc_active_2);
-                sx1509_leds.WritePin(LED_OSC_2, osc_active_2);
+                UpdateLeds();
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
                 bool osc_active_3 = paramManager.GetBool(P::OSC_ACTIVE_3);
                 paramManager.SetBool(P::OSC_ACTIVE_3, !osc_active_3);
-                sx1509_leds.WritePin(LED_OSC_3, osc_active_3);      
+                UpdateLeds();      
             }
+            if (sx1509_buttons.isFallingEdge(BUTTON_STORE)) {
+                update_for_preset_needed = true;
+                isStoreMode = true;
+                ResetPreset(currentPreset.number);
+            }
+
         } else {
             if (sx1509_buttons.isFallingEdge(BUTTON_BACK)) {
                 SetPage(MenuPage::MAIN_PAGE);
@@ -206,6 +212,7 @@ void ProcessButtons() {
                 SetPage(MenuPage::MTX_PAGE);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_STORE)) {
+                update_for_preset_needed = true;
                 isStoreMode = true;
                 SavePreset(currentPreset.number, currentPreset);
             }
@@ -233,8 +240,6 @@ void ProcessEncoders(){
             ApplyPreset(newPresetNum);
         }
         encoderIncs[4] = 0;
-        UartPrintf("Applied preset", paramManager.GetParam(P::FILTER_RESONANCE).GetFloat());
-        UartPrintf("New preset", paramManager.GetParam(P::FILTER_RESONANCE).GetNormalised());
     }
 
     if (currentPage == MAIN_PAGE) {
