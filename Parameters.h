@@ -115,6 +115,7 @@ enum class ParamUnit {
     SEMITONES,
     CENTS,
     PICTURE,
+    BOOL,
     UNITLESS
 };
 

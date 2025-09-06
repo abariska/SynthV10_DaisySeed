@@ -55,7 +55,6 @@ void SetPageName(const char* name);
 void ToggleActiveRow();
 void InitParamBlocks();
 uint8_t GetActiveParamIndex(uint8_t encoderIndex);  // Повертає індекс активного параметра для енкодера
-void UpdateBlinking(uint8_t blockIndex);
 
 
 #endif

@@ -133,6 +133,9 @@ void ProcessButtons() {
             for (size_t i = 0; i < 4; i++) {  // Тільки 4 енкодери
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW + i)) {
                     menu_slots[i].isEditMode = !menu_slots[i].isEditMode;
+                    if (!menu_slots[i].isEditMode) {
+                        InitOneParamBlock(i, menu_slots[i].target_param, WHITE, BLACK);
+                    }
                 }
             }
         }
