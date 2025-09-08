@@ -28,10 +28,6 @@ int activeNoteCount = 0;
 bool gate = false;
 bool hardRetrigger = false;
 
-void InitLfo(float samplerate) {
-    lfo.Init(samplerate);
-}
-
 float ProcessLfo() {
     // Apply parameters from template
     lfo.SetFreq(paramManager.GetValue(P::LFO_FREQ));
@@ -41,7 +37,7 @@ float ProcessLfo() {
     return lfo.Process();
 }
 
-void VoiceInit(float samplerate, int blocksize) {
+void SynthInit(float samplerate, int blocksize) {
 
     for (size_t i = 0; i < OSC_NUM; i++) {
         osc[i].Init(samplerate);
@@ -52,6 +48,7 @@ void VoiceInit(float samplerate, int blocksize) {
     for (size_t i = 0; i < OSC_NUM; i++) {
         rnd[i].Init();
     }
+    lfo.Init(samplerate);
     System::Delay(10);
 }
 

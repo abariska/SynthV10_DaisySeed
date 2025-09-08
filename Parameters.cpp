@@ -9,6 +9,7 @@
 
 using namespace daisy;
 extern DaisySeed hw;
+extern bool page_need_update;
 
 static const size_t PRESET_SIZE = 256; // округлюємо до 512 байт
 static const uint32_t FLASH_BASE_ADDR = 0x1000; // Починаємо пресети з 4KB
@@ -265,7 +266,7 @@ void ResetPreset(int presetNumber){
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++) {
         paramManager.GetParam(static_cast<ParamUnitName>(i)).SetNormalized(currentPreset.array[i]);
     } 
-    SetPage(currentPage);
+    page_need_update = true;
     hw.DelayMs(10);
 }
 
@@ -277,7 +278,7 @@ void ApplyPreset(int presetNumber){
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++) {
         paramManager.GetParam(static_cast<ParamUnitName>(i)).SetNormalized(currentPreset.array[i]);
     } 
-    SetPage(currentPage);
+    page_need_update = true;
 }
 
 ParameterManager paramManager;
@@ -323,11 +324,11 @@ void ParameterManager::Init() {
     params[static_cast<int>(P::EFFECT_CHORUS_DEPTH)] = SynthParameter(0.0f, 1.0f, "Dpt", 34, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_CHORUS_FBK)] = SynthParameter(0.0f, 1.0f, "Fbk", 35, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_CHORUS_DELAY)] = SynthParameter(0.0f, 1.0f, "Dly", 36, currentPreset.array, Curve::LINEAR, ParamUnit::SECONDS);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_ATTACK)] = SynthParameter(0.0f, 1.0f, "Atk", 37, currentPreset.array, Curve::LINEAR, ParamUnit::SECONDS);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_RELEASE)] = SynthParameter(0.0f, 1.0f, "Rls", 38, currentPreset.array, Curve::LINEAR, ParamUnit::SECONDS);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_THRESHOLD)] = SynthParameter(0.0f, 1.0f, "Thr", 39, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_RATIO)] = SynthParameter(0.0f, 1.0f, "Rat", 40, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_MAKEUP)] = SynthParameter(0.0f, 1.0f, "Mk", 41, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_ATTACK)] = SynthParameter(0.001f, 10.0f, "Atk", 37, currentPreset.array, Curve::LINEAR, ParamUnit::SECONDS);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_RELEASE)] = SynthParameter(0.001f, 10.0f, "Rls", 38, currentPreset.array, Curve::LINEAR, ParamUnit::SECONDS);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_THRESHOLD)] = SynthParameter(0.0f, -80.0f, "Thr", 39, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_RATIO)] = SynthParameter(1.0f, 40.0f, "Rat", 40, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_COMPRESSOR_MAKEUP)] = SynthParameter(0.0f, 80.0f, "Mk", 41, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_REVERB_DRYWET)] = SynthParameter(0.0f, 1.0f, "DrW", 42, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_REVERB_FEEDBACK)] = SynthParameter(0.0f, 1.0f, "Fbk", 43, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_REVERB_LPFREQ)] = SynthParameter(0.0f, 1.0f, "LpF", 44, currentPreset.array, Curve::LINEAR, ParamUnit::HZ);

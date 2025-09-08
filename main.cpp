@@ -6,6 +6,7 @@
 #include "display.h"
 #include "log_uart.h"
 #include "parameters.h"
+#include "display.h"
 
 using namespace daisy;
 
@@ -78,9 +79,8 @@ int main(void)
     InitQSPI();
     
     InitSynthParams();
-    VoiceInit(samplerate, blocksize);
+    SynthInit(samplerate, blocksize);
     EffectsInit(samplerate);
-    InitLfo(samplerate);
     MidiInit();
     
     InitSlots();
@@ -99,6 +99,7 @@ int main(void)
         ProcessButtons();
         ProcessEncoders();
         UpdateEncodersParams();
+        UpdatePage();
 
         sx1509_leds.WritePin(6, midi_note_led);
         
@@ -117,9 +118,11 @@ void ProcessButtons() {
             if (shift_pressed) {  
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW)) {
                     effectSlot[0].isActive = !effectSlot[0].isActive;
+                    page_need_update = true;
                 }
                 if (sx1509_buttons.isFallingEdge(ENC_4_SW)) {
                     effectSlot[1].isActive = !effectSlot[1].isActive;
+                    page_need_update = true;
                 }
             } else {
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW)) {
@@ -235,7 +238,6 @@ void ProcessEncoders(){
     }
     
     if (encoderIncs[4] != 0) {
-        update_for_preset_needed = true;
         uint8_t newPresetNum = currentPreset.number + encoderIncs[4];
         if (newPresetNum < 0 || newPresetNum > PRESET_NUM - 1) {
             return;
@@ -244,20 +246,30 @@ void ProcessEncoders(){
         }
         encoderIncs[4] = 0;
     }
-
-    if (currentPage == MAIN_PAGE) {
-        for (size_t i = 0; i < NUM_ENCODERS; i++) {  // Only 4 encoders
-            if (encoderIncs[i] != 0) {
-                menu_slots[i].need_update = true;
+    switch (currentPage) {
+        case MAIN_PAGE:
+            for (size_t i = 0; i < NUM_ENCODERS; i++) {  // Only 4 encoders
+                if (encoderIncs[i] != 0) {
+                    menu_slots[i].need_update = true;
             }
         }
-    } else {
-        for (size_t i = 0; i < 4; i++) {  // Only 4 encoders
-            if (encoderIncs[i] != 0) {
-                uint8_t paramIndex = GetActiveParamIndex(i);  // Get index of active parameter
+            break;
+        case FX_PAGE:
+            if (encoderIncs[0] != 0) {
+                effectSlot[0].need_update = true;
+            }
+            if (encoderIncs[3] != 0) {
+                effectSlot[1].need_update = true;
+            }
+            break;
+        default:
+            for (size_t i = 0; i < 4; i++) {  // Only 4 encoders
+                if (encoderIncs[i] != 0) {
+                    uint8_t paramIndex = GetActiveParamIndex(i);  // Get index of active parameter
                     slots[paramIndex].need_update = true;
+                }
             }
-        }
+            break;
     }
 }
 
@@ -283,26 +295,6 @@ void Timer500ms() {
     tim_display.Start();
 
     System::Delay(10);
-}
-
-void SelectEffectPage(uint8_t slot){
-        EffectName effect_to_show = effectSlot[slot].selectedEffect;
-        switch (effect_to_show) {
-            case EFFECT_OVERDRIVE:
-                currentPage = MenuPage::OVERDRIVE_PAGE;
-                break;
-            case EFFECT_CHORUS:
-                currentPage = MenuPage::CHORUS_PAGE;
-                break;
-            case EFFECT_COMPRESSOR:
-                currentPage = MenuPage::COMPRESSOR_PAGE;
-                break;
-            case EFFECT_REVERB:
-                currentPage = MenuPage::REVERB_PAGE;
-                break;
-            case EFFECT_NONE:
-                break;
-    }
 }
 
 void CpuUsageDisplay(bool on){

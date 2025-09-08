@@ -18,6 +18,7 @@ extern char page_name[16];
 extern bool isBlink;
 extern bool blinkStateChanged;
 extern bool isStoreMode;
+extern bool page_need_update;
 
 // Для перемикання між рядами параметрів
 enum ActiveRow {

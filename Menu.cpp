@@ -20,6 +20,7 @@ const uint8_t yBlockValue = 30;
 bool isBlink = false;
 bool blinkStateChanged = false;
 bool isStoreMode = false;
+bool page_need_update = false;
 
 char page_name[16] = "";
 ActiveRow currentActiveRow = ROW_1;  // Початково активний перший ряд
@@ -305,6 +306,9 @@ void UpdateParamSlots() {
 void UpdateEncodersParams() {
     if (currentPage == MAIN_PAGE) {
         UpdateMainSlots();
+    } 
+    else if (currentPage == FX_PAGE) {
+        EncoderChangeEffect();
     } else {
         UpdateParamSlots();
     }
@@ -368,7 +372,7 @@ void AssignParamsForPage(MenuPage page) {
             slots[2].target_param = P::LFO_DEPTH;
           break;
         case FX_PAGE:
-            
+            SetPageName("Effects");
             break;
         case OVERDRIVE_PAGE:
             SetPageName("Overdrive");
@@ -405,17 +409,25 @@ void AssignParamsForPage(MenuPage page) {
 }
 
 void EncoderChangeEffect() {
-    if (encoderIncs[0] != 0) {
+    if (effectSlot[0].need_update) {
+
         int newEffect = static_cast<int>(effectSlot[0].selectedEffect) + encoderIncs[0];
-        if (newEffect < 0) newEffect = 0;
-        if (newEffect >= 4) newEffect = 4;
+        if (newEffect < EFFECT_NONE) newEffect = EFFECT_NONE;
+        if (newEffect >= EFFECT_COUNT) newEffect = EFFECT_COUNT - 1;
         effectSlot[0].selectedEffect = static_cast<EffectName>(newEffect);
+        encoderIncs[0] = 0;
+        DrawEffectsPage();
+        effectSlot[0].need_update = false;
     }
-    if (encoderIncs[3] != 0) {
+    if (effectSlot[1].need_update) {
+
         int newEffect = static_cast<int>(effectSlot[1].selectedEffect) + encoderIncs[3];
-        if (newEffect < 0) newEffect = 0;
-        if (newEffect >= 4) newEffect = 4;
+        if (newEffect < EFFECT_NONE) newEffect = EFFECT_NONE;
+        if (newEffect >= EFFECT_COUNT) newEffect = EFFECT_COUNT - 1;
         effectSlot[1].selectedEffect = static_cast<EffectName>(newEffect);
+        DrawEffectsPage();
+        effectSlot[1].need_update = false;
+        encoderIncs[3] = 0;
     }
 }
     

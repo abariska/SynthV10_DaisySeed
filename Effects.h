@@ -19,19 +19,24 @@ enum EffectName {
     EFFECT_CHORUS,
     EFFECT_COMPRESSOR,
     EFFECT_REVERB,
+    EFFECT_COUNT,
 };
 
 extern const char* effectLabels[]; 
 
-struct FXSlot {
-    EffectName selectedEffect;
-    const char* label;
-    bool isActive;
-
+struct FXParam {
     Overdrive drive;
     Chorus chorus;
     SmallReverb reverb;
     Compressor compressor;
+};
+extern FXParam fx;
+
+struct FXSlot {
+    EffectName selectedEffect;
+    const char* label;
+    bool need_update;
+    bool isActive;
 };
 extern FXSlot effectSlot[2];
 

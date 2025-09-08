@@ -77,10 +77,9 @@ void DrawIntroPage(){
 }   
 
 void SetPage(MenuPage newPage) {
-    if (currentPage == newPage && !update_for_preset_needed) {
+    if (currentPage == newPage) {
         return;
-    } 
-    update_for_preset_needed = false;
+    }
 
     currentPage = newPage;    
     currentActiveRow = ROW_1;  
@@ -98,6 +97,26 @@ void SetPage(MenuPage newPage) {
         break;
     }
     UpdateLeds();
+}
+void UpdatePage() {
+    if (!page_need_update && !update_for_preset_needed) {
+        return;
+    }
+    switch (currentPage) {
+        case MAIN_PAGE:
+            DrawMainPage();
+            break;
+        break;
+        case FX_PAGE:
+            DrawEffectsPage();
+            break;
+        default:
+            DrawParamPage(currentPage);
+            break;
+    }
+    UpdateLeds();
+    page_need_update = false;
+    update_for_preset_needed = false;
 }
 
 void DrawMainPage()
@@ -152,27 +171,16 @@ void DrawParamPage(MenuPage page){
 }  
 
 void DrawEffectsPage() {
+    AssignParamsForPage(FX_PAGE); 
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_SetScale(16); 
     Paint_Clear(BLACK); 
-    Paint_TextCentered("Effects", 0, 127, 0, Font12, WHITE, BLACK);
+    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
-    for (size_t raw = 0; raw < FULL_PAGE_HEIGHT; raw++)
-    {
-        for (size_t column = 0; column < FULL_PAGE_WIDTH; column += 3)
-        {
-            if (raw == 20 || raw == 40)
-                for (size_t i = 0; i < 127; i += 3)
-                    Paint_DrawPoint(i, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT);
-            if (raw > 20 && raw % 3 == 0)
-            {
-                Paint_DrawPoint(64, raw, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT); 
-            }
-        }
-    }
+    Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
     
-    Paint_TextCentered("1", 0, 63, 20, Font12, WHITE, BLACK);
-    Paint_TextCentered("2", 64, 127, 20, Font12, WHITE, BLACK);
+    Paint_TextCentered("1", 0, 63, 40, Font12, WHITE, BLACK);
+    Paint_TextCentered("2", 64, 127, 40, Font12, WHITE, BLACK);
 
     for (size_t i = 0; i < 2; i++)
     {
@@ -194,6 +202,29 @@ void DrawEffectsPage() {
     }
 
     OLED_Transmit_DMA(&bg_black_data);
+}
+
+void SelectEffectPage(uint8_t slot){
+    EffectName effect_to_show = effectSlot[slot].selectedEffect;
+    MenuPage page = MenuPage::EMPTY;
+    switch (effect_to_show) {
+        case EFFECT_OVERDRIVE:
+            page = MenuPage::OVERDRIVE_PAGE;
+            break;
+        case EFFECT_CHORUS:
+            page = MenuPage::CHORUS_PAGE;
+            break;
+        case EFFECT_COMPRESSOR:
+            page = MenuPage::COMPRESSOR_PAGE;
+            break;
+        case EFFECT_REVERB:
+            page = MenuPage::REVERB_PAGE;
+            break;
+        case EFFECT_NONE:
+            page = MenuPage::EMPTY;
+            break;
+    }
+    SetPage(page);
 }
 
 // void DrawIntroPage2(){
