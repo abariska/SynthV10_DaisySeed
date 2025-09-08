@@ -409,25 +409,51 @@ void AssignParamsForPage(MenuPage page) {
 }
 
 void EncoderChangeEffect() {
+
     if (effectSlot[0].need_update) {
 
-        int newEffect = static_cast<int>(effectSlot[0].selectedEffect) + encoderIncs[0];
+        int dir = (encoderIncs[0] > 0) ? 1 : -1;
+        int newEffect = static_cast<int>(effectSlot[0].selectedEffect) + dir;
+        
+        if (effectSlot[1].selectedEffect == newEffect) {
+            newEffect += dir;
+            if (newEffect >= EFFECT_COUNT - 1) {
+                newEffect = EFFECT_COUNT - 1;
+                if (effectSlot[1].selectedEffect == newEffect) {
+                    newEffect -= dir;
+                }
+            }
+        }
         if (newEffect < EFFECT_NONE) newEffect = EFFECT_NONE;
-        if (newEffect >= EFFECT_COUNT) newEffect = EFFECT_COUNT - 1;
+        if (newEffect >= EFFECT_COUNT - 1) newEffect = EFFECT_COUNT - 1;
+            
         effectSlot[0].selectedEffect = static_cast<EffectName>(newEffect);
-        encoderIncs[0] = 0;
+        
         DrawEffectsPage();
+        encoderIncs[0] = 0;
         effectSlot[0].need_update = false;
     }
     if (effectSlot[1].need_update) {
 
-        int newEffect = static_cast<int>(effectSlot[1].selectedEffect) + encoderIncs[3];
+        int dir = (encoderIncs[3] > 0) ? 1 : -1;
+        int newEffect = static_cast<int>(effectSlot[1].selectedEffect) + dir;
+
+        if (effectSlot[0].selectedEffect == newEffect) {
+            newEffect += dir;
+            if (newEffect >= EFFECT_COUNT - 1) {
+                newEffect = EFFECT_COUNT - 1;
+                if (effectSlot[0].selectedEffect == newEffect) {
+                    newEffect -= dir;
+                }
+            }
+        }
         if (newEffect < EFFECT_NONE) newEffect = EFFECT_NONE;
-        if (newEffect >= EFFECT_COUNT) newEffect = EFFECT_COUNT - 1;
+        if (newEffect >= EFFECT_COUNT - 1) newEffect = EFFECT_COUNT - 1;
+        
         effectSlot[1].selectedEffect = static_cast<EffectName>(newEffect);
+        encoderIncs[3] = 0;
         DrawEffectsPage();
         effectSlot[1].need_update = false;
-        encoderIncs[3] = 0;
     }
 }
     
