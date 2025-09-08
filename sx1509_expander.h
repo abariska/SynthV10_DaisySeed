@@ -52,7 +52,7 @@ extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
 
 void InitSX1509Extenders();
-int8_t EncoderInc(uint8_t enc_index,uint8_t pin_a, uint8_t pin_b);
-
+int8_t EncoderInc(uint8_t pin_a, uint8_t pin_b);
+void UpdateLeds();
 
 #endif

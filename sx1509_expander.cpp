@@ -44,6 +44,14 @@ void InitSX1509Leds() {
     sx1509_leds.Check();
 }
 
+void UpdateLeds() {
+    sx1509_leds.WritePin(LED_OSC_1, paramManager.GetBool(P::OSC_ACTIVE_1));
+    sx1509_leds.WritePin(LED_OSC_2, paramManager.GetBool(P::OSC_ACTIVE_2));
+    sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(P::OSC_ACTIVE_3));
+    // sx1509_leds.WritePin(LED_LFO, params.lfo.active);
+    // sx1509_leds.WritePin(LED_MTX, params.mtx.active);
+}
+
 void InitSX1509Extenders() {
 
     InitSX1509Buttons();
@@ -66,39 +74,35 @@ void InitSX1509Extenders() {
         sx1509_leds.SetPinMode(i, SX_PIN_OUTPUT, 0);
     }
 
-    sx1509_leds.WritePin(LED_OSC_1, paramManager.GetBool(OSC_ACTIVE[0]));
-    sx1509_leds.WritePin(LED_OSC_2, paramManager.GetBool(OSC_ACTIVE[1]));
-    sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(OSC_ACTIVE[2]));
-    // sx1509_leds.WritePin(LED_LFO, params.lfo.active);
-    // sx1509_leds.WritePin(LED_MTX, params.mtx.active);
+    UpdateLeds();
 
     System::Delay(10);
 }
 
-int8_t EncoderInc(uint8_t enc_index,uint8_t pin_a, uint8_t pin_b) {
+int8_t EncoderInc(uint8_t pin_a, uint8_t pin_b) {
 
-    static uint8_t a_[NUM_ENCODERS] = {0};
-    static uint8_t b_[NUM_ENCODERS] = {0};
-    static uint32_t last_increment_time_[NUM_ENCODERS] = {0};
+    static uint8_t a_[16] = {0};
+    static uint8_t b_[16] = {0};
+    static uint32_t last_increment_time_[16] = {0};
     int8_t inc_ = 0;
 
     // Shift Button states to debounce
-    a_[enc_index] = (a_[enc_index] << 1) | sx1509_encoders.CurrentPinState(pin_a);
-    b_[enc_index] = (b_[enc_index] << 1) | sx1509_encoders.CurrentPinState(pin_b);
+    a_[pin_a] = (a_[pin_a] << 1) | sx1509_encoders.CurrentPinState(pin_a);
+    b_[pin_b] = (b_[pin_b] << 1) | sx1509_encoders.CurrentPinState(pin_b);
 
     // infer increment direction
-    if((a_[enc_index] & 0x03) == 0x02 && (b_[enc_index] & 0x03) == 0x00)
+    if((a_[pin_a] & 0x03) == 0x02 && (b_[pin_b] & 0x03) == 0x00)
     {
         inc_ = 1;
     }
-    else if((b_[enc_index] & 0x03) == 0x02 && (a_[enc_index] & 0x03) == 0x00)
+    else if((b_[pin_b] & 0x03) == 0x02 && (a_[pin_a] & 0x03) == 0x00)
     {
         inc_ = -1;
     }
 	if (inc_ != 0) {
 		// Determine rotation speed
         uint32_t now = System::GetNow();
-		uint32_t time_diff = now - last_increment_time_[enc_index];
+		uint32_t time_diff = now - last_increment_time_[pin_a];
 		
 		int8_t speed_factor_;  
 		// Update speed multiplier
@@ -113,7 +117,7 @@ int8_t EncoderInc(uint8_t enc_index,uint8_t pin_a, uint8_t pin_b) {
 			speed_factor_ = 1;
 		}
 		// Update last change time
-		last_increment_time_[enc_index] = now;
+		last_increment_time_[pin_a] = now;
 		
 		// Apply speed multiplier
 		inc_ *=  speed_factor_;

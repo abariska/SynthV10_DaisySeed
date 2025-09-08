@@ -79,10 +79,12 @@ extern ImageData preset_name_block_data;
 extern ImageData preset_num_block_data;
 
 void SetPage(MenuPage newPage);
+void UpdatePage();
 void DrawMainPage();
 void DrawEffectsPage();
 void DrawParamPage(MenuPage page);
 void DrawIntroPage();
+void SelectEffectPage(uint8_t slot);
 void InitImages();
 
 #endif

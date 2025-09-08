@@ -3,10 +3,23 @@
 
 #include <array>
 #include <cstdint>
+#include "parameters.h"
+#include "daisy_seed.h"
+#include "daisysp.h" // Add for using constants
+#include "oscillator.h"
 
 // Required for array structures
 #define OSC_NUM 3
 #define PARAM_NAME_LENGTH 8
+#define PRESET_NAME_LENGTH 12
+#define PRESET_NUM 10
+
+template<typename T>
+constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
+    return (v < lo) ? lo : (v > hi) ? hi : v;
+}
+
+struct Preset;
 
 enum class ParamUnitName {
     NONE,
@@ -31,13 +44,12 @@ enum class ParamUnitName {
     OSC_PWM_3,
     OSC_PAN_3,
     OSC_ACTIVE_3,
+    FILTER_CUTOFF,
+    FILTER_RESONANCE,
     ADSR_ATTACK,
     ADSR_DECAY,
     ADSR_SUSTAIN,
     ADSR_RELEASE,
-    ADSR_RETRIGGER,
-    FILTER_CUTOFF,
-    FILTER_RESONANCE,
     LFO_WAVEFORM,
     LFO_FREQ,
     LFO_DEPTH,
@@ -71,8 +83,6 @@ const P OSC_PWM[OSC_NUM] = {P::OSC_PWM_1, P::OSC_PWM_2, P::OSC_PWM_3};
 const P OSC_PAN[OSC_NUM] = {P::OSC_PAN_1, P::OSC_PAN_2, P::OSC_PAN_3};
 const P OSC_ACTIVE[OSC_NUM] = {P::OSC_ACTIVE_1, P::OSC_ACTIVE_2, P::OSC_ACTIVE_3};
 
-extern float parameters_array[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
-
 enum Waves {
     TRI,
     SAW,
@@ -100,11 +110,12 @@ enum class ParamType {
 
 enum class ParamUnit {
     HZ,
-    MS,
+    SECONDS,
     PERCENT,
     SEMITONES,
     CENTS,
     PICTURE,
+    BOOL,
     UNITLESS
 };
 
@@ -127,12 +138,12 @@ public:
 
     SynthParameter() = default;
 
-    SynthParameter(float init_value, float min_value, float max_value,
+    SynthParameter(float min_value, float max_value,
         const char* label, uint8_t index, float* array, 
         Curve defaultCurve, 
         ParamUnit param_unit);
 
-        SynthParameter(int init_value, int min_vals, int max_vals,
+        SynthParameter(int min_vals, int max_vals,
             const char* label, uint8_t index, float* array,  
             Curve defaultCurve = Curve::LINEAR, 
             ParamUnit param_unit = ParamUnit::UNITLESS);
@@ -155,6 +166,9 @@ public:
     float GetMax() const;
     ParamUnit GetUnit() const;
     void SetBool(bool value);
+    void ModifyNormalized(float modifier);
+    void SetFromCurrentPreset();
+    Curve GetCurve() const;
 };
 
 class ParameterManager {
@@ -177,6 +191,7 @@ class ParameterManager {
         void SetValue(ParamUnitName name, float value) { GetParam(name).SetNormalized(value); }
         void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
         ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).GetUnit(); }
+        Curve GetCurve(ParamUnitName name) { return GetParam(name).GetCurve(); }
     };
     
 extern ParameterManager paramManager;
@@ -186,9 +201,26 @@ extern ParameterManager paramManager;
 void InitSynthParams();
 void InitEffectParams();
 
-// Functions for saving/loading presets
-// void SavePreset(uint8_t presetNumber);
-// void LoadPreset(uint8_t presetNumber);
+enum class PresetType : uint8_t {
+    DEFAULT,
+    CUSTOM
+};
+
+struct Preset {
+    PresetType type; 
+    uint8_t number;
+    char    name[PRESET_NAME_LENGTH];
+    float   array[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
+};
+
+extern Preset currentPreset;
+
+
+void ApplyPreset(int presetNumber);
+void ReadPreset(uint8_t preset_num, Preset &prst);
+void SavePreset(uint8_t preset_num, const Preset &prst);
+void InitQSPI();
+void ResetPreset(int presetNumber);
 
 
 #endif // PARAMETERS_H

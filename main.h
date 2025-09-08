@@ -21,10 +21,11 @@ using namespace daisysp;
 extern MenuPage currentPage;
 
 extern CpuLoadMeter cpu_load;
-extern int encoderIncs[4];
+extern int encoderIncs[5];
 extern SX1509 sx1509_buttons;
 extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
+extern Preset currentPreset;
 
 extern UartHandler uart_serial;
 extern ParameterManager paramManager;
@@ -32,10 +33,8 @@ extern ParameterManager paramManager;
 void Timer500ms();
 void ProcessButtons();
 void ProcessEncoders();
-void SelectEffectPage(uint8_t slot);
 void InitImages();
 void DrawIntroPage();
-void SetPage(MenuPage newPage);
 void UpdateEncoderSwitches();
 void UpdateEncodersParams();
 void InitParamBlocks();

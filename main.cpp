@@ -5,7 +5,8 @@
 #include "oscillator.h"
 #include "display.h"
 #include "log_uart.h"
-#include "system.h"
+#include "parameters.h"
+#include "display.h"
 
 using namespace daisy;
 
@@ -15,10 +16,12 @@ DaisySeed hw;
 TimerHandle tim_display;
 CpuLoadMeter cpu_load; 
 
+extern Preset currentPreset;
 
-int encoderIncs[4];
+int encoderIncs[5];
 int test = 123;
 float samplerate = 0;
+bool update_for_preset_needed = false;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer  in, 
                           AudioHandle::InterleavingOutputBuffer out,
@@ -73,23 +76,22 @@ int main(void)
     InitImages();
     DrawIntroPage();
     System::Delay(1000);
+    InitQSPI();
     
     InitSynthParams();
-    VoiceInit(samplerate, blocksize);
+    SynthInit(samplerate, blocksize);
     EffectsInit(samplerate);
-    InitLfo(samplerate);
     MidiInit();
-
-    hw.StartAudio(AudioCallback);
     
     InitSlots();
     InitSX1509Extenders(); 
     SetPage(MAIN_PAGE);
 
+    hw.StartAudio(AudioCallback);
+
     Timer500ms();
     System::Delay(10);
 
-    UartPrint("Initialization complete.\r\n");
     sx1509_leds.WritePin(6, 0);
 
     while (1)
@@ -97,8 +99,10 @@ int main(void)
         ProcessButtons();
         ProcessEncoders();
         UpdateEncodersParams();
+        UpdatePage();
 
         sx1509_leds.WritePin(6, midi_note_led);
+        
     }
 }
 
@@ -114,9 +118,11 @@ void ProcessButtons() {
             if (shift_pressed) {  
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW)) {
                     effectSlot[0].isActive = !effectSlot[0].isActive;
+                    page_need_update = true;
                 }
                 if (sx1509_buttons.isFallingEdge(ENC_4_SW)) {
                     effectSlot[1].isActive = !effectSlot[1].isActive;
+                    page_need_update = true;
                 }
             } else {
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW)) {
@@ -130,23 +136,35 @@ void ProcessButtons() {
             for (size_t i = 0; i < 4; i++) {  // Тільки 4 енкодери
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW + i)) {
                     menu_slots[i].isEditMode = !menu_slots[i].isEditMode;
+                    if (!menu_slots[i].isEditMode) {
+                        InitOneParamBlock(i, menu_slots[i].target_param, WHITE, BLACK);
+                    }
                 }
             }
         }
 
         if (shift_pressed) {
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1)) {
-                paramManager.SetBool(P::OSC_ACTIVE_1, !paramManager.GetBool(P::OSC_ACTIVE_1));
-                sx1509_leds.WritePin(LED_OSC_1, paramManager.GetBool(P::OSC_ACTIVE_1));
+                bool osc_active_1 = paramManager.GetBool(P::OSC_ACTIVE_1);
+                paramManager.SetBool(P::OSC_ACTIVE_1, !osc_active_1);
+                UpdateLeds();
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2)) {
-                paramManager.SetBool(P::OSC_ACTIVE_2, !paramManager.GetBool(P::OSC_ACTIVE_2));
-                sx1509_leds.WritePin(LED_OSC_2, paramManager.GetBool(P::OSC_ACTIVE_2));
+                bool osc_active_2 = paramManager.GetBool(P::OSC_ACTIVE_2);
+                paramManager.SetBool(P::OSC_ACTIVE_2, !osc_active_2);
+                UpdateLeds();
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3)) {
-                paramManager.SetBool(P::OSC_ACTIVE_3, !paramManager.GetBool(P::OSC_ACTIVE_3));
-                sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(P::OSC_ACTIVE_3));      
+                bool osc_active_3 = paramManager.GetBool(P::OSC_ACTIVE_3);
+                paramManager.SetBool(P::OSC_ACTIVE_3, !osc_active_3);
+                UpdateLeds();      
             }
+            if (sx1509_buttons.isFallingEdge(BUTTON_STORE)) {
+                update_for_preset_needed = true;
+                isStoreMode = true;
+                ResetPreset(currentPreset.number);
+            }
+
         } else {
             if (sx1509_buttons.isFallingEdge(BUTTON_BACK)) {
                 SetPage(MenuPage::MAIN_PAGE);
@@ -199,41 +217,59 @@ void ProcessButtons() {
             if (sx1509_buttons.isFallingEdge(BUTTON_MTX)) {
                 SetPage(MenuPage::MTX_PAGE);
             }
+            if (sx1509_buttons.isFallingEdge(BUTTON_STORE)) {
+                update_for_preset_needed = true;
+                isStoreMode = true;
+                SavePreset(currentPreset.number, currentPreset);
+            }
         }
     }
 }
 void ProcessEncoders(){
-    
-    
+
     bool any_pin_change = sx1509_encoders.ReadAllPins();
     
     if (any_pin_change) {
-        encoderIncs[0] = EncoderInc(0, ENC_1_A, ENC_1_B);
-        encoderIncs[1] = EncoderInc(1, ENC_2_A, ENC_2_B);
-        encoderIncs[2] = EncoderInc(2, ENC_3_A, ENC_3_B);
-        encoderIncs[3] = EncoderInc(3, ENC_4_A, ENC_4_B);
+        encoderIncs[0] = EncoderInc(ENC_1_A, ENC_1_B);
+        encoderIncs[1] = EncoderInc(ENC_2_A, ENC_2_B);
+        encoderIncs[2] = EncoderInc(ENC_3_A, ENC_3_B);
+        encoderIncs[3] = EncoderInc(ENC_4_A, ENC_4_B);
+        encoderIncs[4] = EncoderInc(ENC_DIAL_A, ENC_DIAL_B);
     }
-
-
     
-    // if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0) {
-    //     test += encoderIncs[0];
-    //     UartPrint(test);
-    // }
-
-    if (currentPage == MAIN_PAGE) {
-        for (size_t i = 0; i < NUM_ENCODERS; i++) {  // Тільки 4 енкодери
-            if (encoderIncs[i] != 0) {
-                menu_slots[i].need_update = true;
+    if (encoderIncs[4] != 0) {
+        uint8_t newPresetNum = currentPreset.number + encoderIncs[4];
+        if (newPresetNum < 0 || newPresetNum > PRESET_NUM - 1) {
+            return;
+        } else {    
+            ApplyPreset(newPresetNum);
+        }
+        encoderIncs[4] = 0;
+    }
+    switch (currentPage) {
+        case MAIN_PAGE:
+            for (size_t i = 0; i < NUM_ENCODERS; i++) {  // Only 4 encoders
+                if (encoderIncs[i] != 0) {
+                    menu_slots[i].need_update = true;
             }
         }
-    } else {
-        for (size_t i = 0; i < 4; i++) {  // Тільки 4 енкодери
-            if (encoderIncs[i] != 0) {
-                uint8_t paramIndex = GetActiveParamIndex(i);  // Отримуємо індекс активного параметра
+            break;
+        case FX_PAGE:
+            if (encoderIncs[0] != 0) {
+                effectSlot[0].need_update = true;
+            }
+            if (encoderIncs[3] != 0) {
+                effectSlot[1].need_update = true;
+            }
+            break;
+        default:
+            for (size_t i = 0; i < 4; i++) {  // Only 4 encoders
+                if (encoderIncs[i] != 0) {
+                    uint8_t paramIndex = GetActiveParamIndex(i);  // Get index of active parameter
                     slots[paramIndex].need_update = true;
+                }
             }
-        }
+            break;
     }
 }
 
@@ -261,43 +297,23 @@ void Timer500ms() {
     System::Delay(10);
 }
 
-void SelectEffectPage(uint8_t slot){
-        EffectName effect_to_show = effectSlot[slot].selectedEffect;
-        switch (effect_to_show) {
-            case EFFECT_OVERDRIVE:
-                currentPage = MenuPage::OVERDRIVE_PAGE;
-                break;
-            case EFFECT_CHORUS:
-                currentPage = MenuPage::CHORUS_PAGE;
-                break;
-            case EFFECT_COMPRESSOR:
-                currentPage = MenuPage::COMPRESSOR_PAGE;
-                break;
-            case EFFECT_REVERB:
-                currentPage = MenuPage::REVERB_PAGE;
-                break;
-            case EFFECT_NONE:
-                break;
-    }
-}
-
 void CpuUsageDisplay(bool on){
 
     // float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
     // UartPrintf("CPU load: ", cpu_avg_load);
     
-    // if (on) {
-    //     if (currentPage == MAIN_PAGE) {
-    //         Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
-    //         Paint_Clear(BLACK);
-    //         float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-    //         Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
-    //         OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
-    //         UartPrint("CPU load: ", cpu_avg_load);
-    //     }
-    // } else {
-    //     Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
-    //     Paint_Clear(BLACK);
-    //     OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
-    // }
+    if (on) {
+        if (currentPage == MAIN_PAGE) {
+            Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+            Paint_Clear(BLACK);
+            float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+            Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
+            OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+            // UartPrint("CPU load: ", cpu_avg_load);
+        }
+    } else {
+        Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+        Paint_Clear(BLACK);
+        OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+    }
 }

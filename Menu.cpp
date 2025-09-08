@@ -19,6 +19,8 @@ const uint8_t yBlockLabel = 10;
 const uint8_t yBlockValue = 30;
 bool isBlink = false;
 bool blinkStateChanged = false;
+bool isStoreMode = false;
+bool page_need_update = false;
 
 char page_name[16] = "";
 ActiveRow currentActiveRow = ROW_1;  // Початково активний перший ряд
@@ -49,9 +51,7 @@ void DrawWaveformImage(int waveform){
 
 void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t textColor, uint16_t bgColor){
 
-    if (target_param == ParamUnitName::NONE) {
-        return;
-    }
+    if (target_param == ParamUnitName::NONE) { return; }
 
     Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor); 
     Paint_Clear(bgColor);
@@ -83,22 +83,28 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
                 if (value >= 1000) {
                     value = value / 1000;
                     unit = "kHz";
-                    if (value >= 10.0) {
-                        sprintf(value_str, "%.1f", value);
-                    } else {
-                        sprintf(value_str, "%.2f", value);
+                    if (value >= 10.0) { 
+                        sprintf(value_str, "%.1f", value); 
+                    } else { 
+                        sprintf(value_str, "%.2f", value); 
                     }
                 } else {
                     unit = "Hz";
-                    sprintf(value_str, "%d", (int)value);
+                    if (value < 100.0) {
+                        if (value < 10.0) {
+                            sprintf(value_str, "%.2f", value);
+                        } else {
+                            sprintf(value_str, "%.1f", value);
+                        }
+                    } else {
+                        sprintf(value_str, "%d", (int)value);
+                    } 
                 } 
                 break;
-            case ParamUnit::MS:
-                
+            case ParamUnit::SECONDS:
                 if (value >= 1) {
                     unit = "s";
                     sprintf(value_str, "%.2f", value);
-
                 } else {
                     value = value * 1000;
                     unit = "ms";
@@ -123,12 +129,7 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             default:
                 unit = "";
                 break;
-        }
-
-        UartPrintf("Pitch: ", paramManager.GetInt(P::OSC_PITCH_1));
-        UartPrintf("Detune: ", paramManager.GetInt(P::OSC_DETUNE_1));
-
-        
+        }        
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
         Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue - 4, Font12, textColor, bgColor);
         Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, yBlockValue + 10, Font8, textColor, bgColor);
@@ -136,7 +137,7 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 
     if (currentPage == MAIN_PAGE) {
         if (menu_slots[blockIndex].isEditMode && isBlink) {
-        Paint_DrawRectangle(1, 2, 32, 50, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+            Paint_DrawRectangle(1, 2, 32, 50, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
         } 
         OLED_Part_Transmit_DMA(&param_block_data[blockIndex], 
             BLOCK_MAIN_X_START[blockIndex], 
@@ -155,9 +156,7 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 void InitMainBlocks(){
 
     for (size_t i = 0; i < NUM_MAIN_SLOTS; i++) {
-        if (menu_slots[i].target_param == ParamUnitName::NONE) {
-            continue;
-        }
+        if (menu_slots[i].target_param == ParamUnitName::NONE) { continue; }
         InitOneParamBlock(i, menu_slots[i].target_param);   
     }
 }
@@ -165,9 +164,7 @@ void InitMainBlocks(){
 void InitParamBlocks(){
 
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++) {
-        if (slots[i].target_param == ParamUnitName::NONE) {
-            continue;
-        }
+        if (slots[i].target_param == ParamUnitName::NONE) { continue; }
         
         bool isActiveRow = (i < 4 && currentActiveRow == ROW_1) || (i >= 4 && currentActiveRow == ROW_2);
         uint16_t textColor = isActiveRow ? WHITE : 0x02; // Активні - білі, неактивні - темні
@@ -178,11 +175,8 @@ void InitParamBlocks(){
 }
 
 uint8_t GetActiveParamIndex(uint8_t encoderIndex) {
-    if (currentActiveRow == ROW_1) {
-        return encoderIndex;        
-    } else {
-        return encoderIndex + 4;    
-    }
+    if (currentActiveRow == ROW_1) { return encoderIndex; } 
+    else { return encoderIndex + 4; }
 }
 
 void ToggleActiveRow() {
@@ -194,66 +188,83 @@ void ToggleActiveRow() {
 void UpdateEncoderSwitches() {
 
     switch (currentPage) {
-        case MAIN_PAGE:
+        case MAIN_PAGE:{
+            static uint8_t currentEditSlot = 0; 
+            bool init_block[NUM_MAIN_SLOTS] = {false, false, false, false};
             for (size_t i = 0; i < NUM_MAIN_SLOTS; i++) {
-
+                
                 if (menu_slots[i].isEditMode) {
-                    static uint8_t isCurrentEditSlot = 0;
-                    if (isCurrentEditSlot != i) {
-                        isCurrentEditSlot = i;
-
-                        for (size_t j = 0; j < NUM_MAIN_SLOTS; j++) {
-                            if (j != i) {
-                                menu_slots[j].isEditMode = false;
-                                InitOneParamBlock(j, menu_slots[j].target_param);
-                        }
+                    if (currentEditSlot == i) { EditBlockParam(currentEditSlot); continue; }
+                    else {
+                        
+                        menu_slots[currentEditSlot].isEditMode = false;
+                        InitOneParamBlock(currentEditSlot, menu_slots[currentEditSlot].target_param);
+                        init_block[currentEditSlot] = true;
+                        currentEditSlot = i;
+                        menu_slots[currentEditSlot].isEditMode = true;
+                        EditBlockParam(currentEditSlot);
                     }
                 }
-                EditBlockParam(i);
+                if (init_block[i]) {
+                    InitOneParamBlock(i, menu_slots[i].target_param);
+                    init_block[i] = false;
+                }
             }
-        }
-        break;
-        case FX_PAGE:
+        break;}
+        case FX_PAGE:{
             if (encoderIncs[0] != 0 || encoderIncs[3] != 0) {
             EncoderChangeEffect();
             return;
         }
-        break;
-        default:
+        break;}
+        default:{
             break;  
+        }
     }
 }
 
 void EditBlockParam(uint8_t blockIndex) {
+
+    auto isDuplicate = [&](int val) {
+        for (size_t i = 0; i < NUM_ENCODERS; i++) {
+            if (i != blockIndex && (int)menu_slots[i].target_param == val) 
+                return true;
+        }
+        return false;
+    };
     
     if (menu_slots[blockIndex].need_update) { // if encoder is turned
-        int value = (int)menu_slots[blockIndex].target_param;
-            
-        value += encoderIncs[blockIndex];
-            
-        if (value > 32) {
-            value = 32;
-        } else if (value < 0) {
-            value = 0;
-        }
-        for (size_t i = 0; i < NUM_ENCODERS; i++) {
-            if (i == blockIndex) continue;
-            if (encoderIncs[blockIndex] == 1 && (ParamUnitName)value == menu_slots[i].target_param) {
-                value++;
-            }
-            else if (encoderIncs[blockIndex] == -1 && (ParamUnitName)value == menu_slots[i].target_param) {
-                value--;
-            }
-        }
-        encoderIncs[blockIndex] = 0;
-        
-        menu_slots[blockIndex].target_param = (ParamUnitName)value;
 
+        int inc = encoderIncs[blockIndex];
+        if (inc == 0) {
+            menu_slots[blockIndex].need_update = false;
+            return;
+        }
+        int dir = (inc > 0) ? 1 : -1;
+
+        int value = (int)menu_slots[blockIndex].target_param;
+        value += dir;
+
+    while (paramManager.GetUnit(static_cast<P>(value)) == ParamUnit::BOOL || isDuplicate(value)) {
+        value += dir;
+    }
+        if (value > (int)P::COUNT_PARAMS - 1) {
+            value = (int)P::COUNT_PARAMS - 1;
+        } else if (value <= (int)P::NONE + 1) {
+            value = (int)P::NONE + 1;
+        }
+
+        encoderIncs[blockIndex] = 0;
+        menu_slots[blockIndex].target_param = (ParamUnitName)value;
         InitOneParamBlock(blockIndex, menu_slots[blockIndex].target_param);
-        // reset need_update flag
         menu_slots[blockIndex].need_update = false;
     }
-    UpdateBlinking(blockIndex);
+
+    if (blinkStateChanged) {
+
+        blinkStateChanged = false; 
+        InitOneParamBlock(blockIndex, menu_slots[blockIndex].target_param);
+    }
 }
 
 void UpdateMainSlots() {
@@ -295,6 +306,9 @@ void UpdateParamSlots() {
 void UpdateEncodersParams() {
     if (currentPage == MAIN_PAGE) {
         UpdateMainSlots();
+    } 
+    else if (currentPage == FX_PAGE) {
+        EncoderChangeEffect();
     } else {
         UpdateParamSlots();
     }
@@ -358,7 +372,7 @@ void AssignParamsForPage(MenuPage page) {
             slots[2].target_param = P::LFO_DEPTH;
           break;
         case FX_PAGE:
-            
+            SetPageName("Effects");
             break;
         case OVERDRIVE_PAGE:
             SetPageName("Overdrive");
@@ -395,23 +409,32 @@ void AssignParamsForPage(MenuPage page) {
 }
 
 void EncoderChangeEffect() {
-    if (encoderIncs[0] != 0) {
+    if (effectSlot[0].need_update) {
+
         int newEffect = static_cast<int>(effectSlot[0].selectedEffect) + encoderIncs[0];
-        if (newEffect < 0) newEffect = 0;
-        if (newEffect >= 4) newEffect = 4;
+        if (newEffect < EFFECT_NONE) newEffect = EFFECT_NONE;
+        if (newEffect >= EFFECT_COUNT) newEffect = EFFECT_COUNT - 1;
         effectSlot[0].selectedEffect = static_cast<EffectName>(newEffect);
+        encoderIncs[0] = 0;
+        DrawEffectsPage();
+        effectSlot[0].need_update = false;
     }
-    if (encoderIncs[3] != 0) {
+    if (effectSlot[1].need_update) {
+
         int newEffect = static_cast<int>(effectSlot[1].selectedEffect) + encoderIncs[3];
-        if (newEffect < 0) newEffect = 0;
-        if (newEffect >= 4) newEffect = 4;
+        if (newEffect < EFFECT_NONE) newEffect = EFFECT_NONE;
+        if (newEffect >= EFFECT_COUNT) newEffect = EFFECT_COUNT - 1;
         effectSlot[1].selectedEffect = static_cast<EffectName>(newEffect);
+        DrawEffectsPage();
+        effectSlot[1].need_update = false;
+        encoderIncs[3] = 0;
     }
 }
     
 void InitSlots() {
     currentPage = EMPTY;
-    currentActiveRow = ROW_1;  // Скидаємо до першого ряду при ініціалізації
+    currentActiveRow = ROW_1; 
+
     for (int i = 0; i < NUM_PARAM_BLOCKS; i++) {
         slots[i].target_param = P::NONE;
         slots[i].need_update = false;
@@ -428,10 +451,4 @@ void InitSlots() {
     System::Delay(10);
 }
 
-void UpdateBlinking(uint8_t blockIndex) {
-    if (!blinkStateChanged) return;  // Нічого не змінилось - виходимо
-    
-    blinkStateChanged = false;  // Скидаємо прапор
-    InitOneParamBlock(blockIndex, menu_slots[blockIndex].target_param);
-}
 
