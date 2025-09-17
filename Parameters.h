@@ -154,6 +154,7 @@ public:
     float SetPhysicalValue(float v);    
 
     float AdjustByIncrement(int inc);
+    void SetNormValue(float value) { norm_value = value; }
 
     // Геттери
     float GetFloat() const;
@@ -166,33 +167,40 @@ public:
     float GetMax() const;
     ParamUnit GetUnit() const;
     void SetBool(bool value);
-    void ModifyNormalized(float modifier);
     void SetFromCurrentPreset();
     Curve GetCurve() const;
 };
 
 class ParameterManager {
-    private:
-        SynthParameter params[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
+private:
+    SynthParameter params[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
         
-    public:
-        void Init();
-        SynthParameter& GetParam(ParamUnitName name) { return params[static_cast<int>(name)]; }
-        float GetFloat(ParamUnitName name) { return GetParam(name).GetFloat(); }
-        int GetInt(ParamUnitName name) { return GetParam(name).GetInt(); }
-        float GetNormalised(ParamUnitName name) { return GetParam(name).GetNormalised(); }
-        bool GetBool(ParamUnitName name) { return GetParam(name).GetBool(); }
-        const char* GetLabel(ParamUnitName name) { return GetParam(name).GetLabel(); }
-        ParamType GetType(ParamUnitName name) { return GetParam(name).GetType(); }
-        float GetMin(ParamUnitName name) { return GetParam(name).GetMin(); }
-        float GetMax(ParamUnitName name) { return GetParam(name).GetMax(); }
-        void AdjustByIncrement(ParamUnitName name, int inc) { GetParam(name).AdjustByIncrement(inc); }
-        float GetValue(ParamUnitName name) { return GetParam(name).GetFloat(); }
-        void SetValue(ParamUnitName name, float value) { GetParam(name).SetNormalized(value); }
-        void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
-        ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).GetUnit(); }
-        Curve GetCurve(ParamUnitName name) { return GetParam(name).GetCurve(); }
-    };
+public:
+    void Init();
+    SynthParameter& GetParam(ParamUnitName name) { return params[static_cast<int>(name)]; }
+    float GetFloat(ParamUnitName name) { return GetParam(name).GetFloat(); }
+    int GetInt(ParamUnitName name) { return GetParam(name).GetInt(); }
+    float GetNormalised(ParamUnitName name) { return GetParam(name).GetNormalised(); }
+    bool GetBool(ParamUnitName name) { return GetParam(name).GetBool(); }
+    const char* GetLabel(ParamUnitName name) { return GetParam(name).GetLabel(); }
+    ParamType GetType(ParamUnitName name) { return GetParam(name).GetType(); }
+    float GetMin(ParamUnitName name) { return GetParam(name).GetMin(); }
+    float GetMax(ParamUnitName name) { return GetParam(name).GetMax(); }
+    void AdjustByIncrement(ParamUnitName name, int inc) { GetParam(name).AdjustByIncrement(inc); }
+    float GetValue(ParamUnitName name) { return GetParam(name).GetFloat(); }
+    void SetValue(ParamUnitName name, float value) { GetParam(name).SetNormalized(value); }
+    void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
+    ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).GetUnit(); }
+    Curve GetCurve(ParamUnitName name) { return GetParam(name).GetCurve(); }
+    float ValueModifier(ParamUnitName name, float modifier) { 
+
+        float value = GetParam(name).GetFloat();
+        float max = GetParam(name).GetMax();
+        modifier = (modifier < 0.0f) ? 0.0f : 
+        (modifier > 1.0f) ? 1.0f : modifier; 
+        return value + (max - value) * (modifier);
+    }
+};
     
 extern ParameterManager paramManager;
 

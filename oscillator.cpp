@@ -20,68 +20,60 @@ static inline float poly_blep(float t, float dt)
     return 0.0f;
 }
 
-void Osc::Init(float sample_rate)
+void Osc::Init(float sample_rate) 
 {
-    sampling_freq_ = sample_rate;
-    freq_ = 440.0f;
-    amp_  = 0.5f;
-    pw_   = 0.5f;
-    mode_ = WAVE_SIN;
-    phase_ = 0.0f;
-    phase_inc_ = 0.0f;
-    pan_ = 0.5f;
+    sampleRate = sample_rate;
+    targetFreq = 440.0f;
+    currentFreq = 440.0f;
+    slewRate = 0.1f;
+    mode = WAVE_SIN;
+    amp = 1.0f;
+    pw = 0.5f;
+
+    phaseOsc = 0.0f;
+    phaseOffset = 0.0f;
+    blepGain = 1.0f;
+
+    UpdateIncrement();
 }
 
-void Osc::Reset()
-{
-    phase_ = 0.0f;
-}
+float Osc::Process() {
 
-void Osc::SetFreq(float freq)
-{
-    freq_ = freq;
-    phase_inc_ = freq_ / sampling_freq_;
-}
+    if (fabs(targetFreq - currentFreq) > 0.1f) {
+        currentFreq += (targetFreq - currentFreq) * slewRate;
+    }
+    UpdateIncrement();
 
-// Sync, GetPhase, GetIota are not part of this simplified version,
-// but their definitions can be added if needed for sync logic.
-// For now, they are omitted to match the "simple + standalone" state.
+    phaseOsc += phaseInc;
+    phaseOsc -= (phaseOsc >= 1.0f) ? 1.0f : 0.0f; 
 
-float Osc::Process(float phase) 
-{
-    float out = 0.0f;   
+    float out = 0.0f;
 
-    switch(mode_)
+    switch(mode)
     {
         case WAVE_SIN:
-            out = sinf((phase + 0.25f) * 2.0f * M_PI); // +0.25f - offset to avoid DC offset
+            out = sinf((phaseOsc + 0.25f) * 2.0f * M_PI); // +0.25f - offset to avoid DC offset
             break;
-
         case WAVE_TRIANGLE:
-            out = 4.0f * (fabsf(phase - 0.5f) - 0.25f);
+            out = 4.0f * (fabsf(phaseOsc - 0.5f) - 0.25f);
             break;
-
         case WAVE_SAW:
-            out = 1.0f - 2.0f * phase;
-            out += poly_blep(phase, phase_inc_);
+            out = 1.0f - 2.0f * phaseOsc;
+            out += poly_blep(phaseOsc, phaseInc) * blepGain;
             break;
         case WAVE_SQUARE:
-            out = phase < pw_ ? 1.0f : -1.0f;
-            out += poly_blep(phase, phase_inc_);
-            out -= poly_blep(fmodf(phase + (1.0f - pw_), 1.0f), phase_inc_);
+            out = phaseOsc < pw ? 1.0f : -1.0f;
+            out += poly_blep(phaseOsc, phaseInc) * blepGain;
+            out -= poly_blep(fmodf(phaseOsc + (1.0f - pw), 1.0f), phaseInc) * blepGain;
             break;
-
-        case WAVE_COUNT:
         default:
             out = 0.0f;
             break;
     }
 
-    // // Increment internal phase
-    // phase += phase_inc_;
-    // if (phase >= 1.0f) {
-    //     phase -= 1.0f;
-    // }
-    
-    return out * amp_;
+    return out * amp;
+}
+
+void Osc::UpdateIncrement() {
+    phaseInc = currentFreq / sampleRate;
 }

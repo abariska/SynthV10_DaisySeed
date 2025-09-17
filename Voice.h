@@ -23,6 +23,7 @@ float ProcessLfo();
 void HandleNoteOn(uint8_t note_in, uint8_t velocity);
 void HandleNoteOff(uint8_t note_in);
 void SynthInit(float samplerate, int blocksize);
-void VoiceProcess(float& sigL, float& sigR);
+void VoiceProcess(float& sig);
+
     
 #endif
