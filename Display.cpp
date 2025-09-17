@@ -223,6 +223,8 @@ void SelectEffectPage(uint8_t slot){
         case EFFECT_NONE:
             page = MenuPage::EMPTY;
             break;
+        default:
+            break;
     }
     SetPage(page);
 }

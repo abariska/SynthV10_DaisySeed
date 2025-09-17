@@ -66,7 +66,7 @@ void ProcessEffects(FXSlot& slot, float in, float& outL, float& outR) {
                 outR = outL;
                 break;
             case EFFECT_REVERB:
-                fx.reverb.SetDryWet(paramManager.GetNormalised(P::EFFECT_REVERB_DRYWET));
+                // fx.reverb.SetDryWet(paramManager.GetNormalised(P::EFFECT_REVERB_DRYWET));
                 fx.reverb.SetFeedback(paramManager.GetNormalised(P::EFFECT_REVERB_FEEDBACK));
                 fx.reverb.SetLpFreq(paramManager.GetValue(P::EFFECT_REVERB_LPFREQ));
                 fx.reverb.Process(in, in, &outL, &outR);

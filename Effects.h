@@ -27,7 +27,7 @@ extern const char* effectLabels[];
 struct FXParam {
     Overdrive drive;
     Chorus chorus;
-    SmallReverb reverb;
+    ReverbSc reverb;
     Compressor compressor;
 };
 extern FXParam fx;
