@@ -16,7 +16,7 @@ CPP_SOURCES = main.cpp \
 	$(OLED_DIR)/font12.cpp $(OLED_DIR)/font16.cpp $(OLED_DIR)/font20.cpp $(OLED_DIR)/font24.cpp $(SX1509_DIR)/SX1509.cpp
 
 
-C_SOURCES = $(OLED_DIR)/ImageData.c
+C_SOURCES = imageData.c
 
 USE_DAISYSP_LGPL=1
 LDFLAGS += -u _printf_float

@@ -18,4 +18,4 @@ void HandleMidiMessage(MidiEvent m);
 // void MidiProgramChange(uint8_t program);
 void MidiInit();
 
-#endif 
+#endif

@@ -40,7 +40,4 @@ void UpdateEncodersParams();
 void InitParamBlocks();
 void CpuUsageDisplay(bool on = true);
 
-
-
-
 #endif

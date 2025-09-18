@@ -9,7 +9,7 @@
 */
 class Osc
 {
-  public:
+public:
     Osc() {}
     ~Osc() {}
 
@@ -23,7 +23,6 @@ class Osc
     };
 
     void Init(float sample_rate);
-
 
     void SetPhaseOffset(float offset) { phaseOffset = offset; }
     void SetFreq(float freq) { targetFreq = freq; }
@@ -42,7 +41,7 @@ private:
     float sampleRate;
 
     float currentFreq;
-    float targetFreq; 
+    float targetFreq;
     float slewRate;
 
     float phaseOffset;
@@ -52,7 +51,7 @@ private:
     float amp;
     float pw;
     float phaseOsc;
-    float blepGain; 
+    float blepGain;
 };
 
 #endif

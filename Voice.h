@@ -6,7 +6,7 @@
 #include <cmath>
 #include "daisy.h"
 #include "daisysp.h"
-#include "daisysp-lgpl.h"  
+#include "daisysp-lgpl.h"
 #include "parameters.h"
 #include "oscillator.h"
 
@@ -23,7 +23,6 @@ float ProcessLfo();
 void HandleNoteOn(uint8_t note_in, uint8_t velocity);
 void HandleNoteOff(uint8_t note_in);
 void SynthInit(float samplerate, int blocksize);
-void VoiceProcess(float& sig);
+void VoiceProcess(float &sig);
 
-    
 #endif

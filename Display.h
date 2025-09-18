@@ -19,20 +19,21 @@
 #define SCOPE_BLOCK_HEIGHT 32
 #define NUM_PARAM_BLOCKS 8
 #define NUM_MAIN_SLOTS 4
-#define NUM_ACTIVE_PARAMS 4  // Скільки параметрів активні одночасно
+#define NUM_ACTIVE_PARAMS 4 // Скільки параметрів активні одночасно
 #define WAVE_BUFFER_WIDTH 32
 #define WAVE_BUFFER_HEIGHT 16
-#define CPU_LOAD_BLOCK_WIDTH 16 
+#define CPU_LOAD_BLOCK_WIDTH 16
 #define CPU_LOAD_BLOCK_HEIGHT 16
 
 #include "OLED_1.5_Daisy_Seed/DEV_Config.h"
 #include "OLED_1.5_Daisy_Seed/OLED_Driver.h"
 #include "OLED_1.5_Daisy_Seed/fonts.h"
-#include "OLED_1.5_Daisy_Seed/ImageData.h"
+#include "imageData.h"
 #include "OLED_1.5_Daisy_Seed/GUI_Paint.h"
 #include <cstdint>
 
-enum MenuPage {
+enum MenuPage
+{
     MAIN_PAGE,
     OSCILLATOR_1_PAGE,
     OSCILLATOR_2_PAGE,

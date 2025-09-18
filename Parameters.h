@@ -14,14 +14,17 @@
 #define PRESET_NAME_LENGTH 12
 #define PRESET_NUM 10
 
-template<typename T>
-constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
-    return (v < lo) ? lo : (v > hi) ? hi : v;
+template <typename T>
+constexpr const T &clamp(const T &v, const T &lo, const T &hi)
+{
+    return (v < lo) ? lo : (v > hi) ? hi
+                                    : v;
 }
 
 struct Preset;
 
-enum class ParamUnitName {
+enum class ParamUnitName
+{
     NONE,
     OSC_WAVEFORM_1,
     OSC_PITCH_1,
@@ -83,7 +86,8 @@ const P OSC_PWM[OSC_NUM] = {P::OSC_PWM_1, P::OSC_PWM_2, P::OSC_PWM_3};
 const P OSC_PAN[OSC_NUM] = {P::OSC_PAN_1, P::OSC_PAN_2, P::OSC_PAN_3};
 const P OSC_ACTIVE[OSC_NUM] = {P::OSC_ACTIVE_1, P::OSC_ACTIVE_2, P::OSC_ACTIVE_3};
 
-enum Waves {
+enum Waves
+{
     TRI,
     SAW,
     SQR,
@@ -96,19 +100,21 @@ enum Waves {
 //     WAVEFORM
 // };
 
-enum class Curve {
+enum class Curve
+{
     LINEAR,
     LOGARITHMIC,
     EXPONENTIAL
 };
 
-enum class ParamType {
+enum class ParamType
+{
     CONTINUOUS,
     DISCRETE
 };
 
-
-enum class ParamUnit {
+enum class ParamUnit
+{
     HZ,
     SECONDS,
     PERCENT,
@@ -119,12 +125,13 @@ enum class ParamUnit {
     UNITLESS
 };
 
-class SynthParameter {
+class SynthParameter
+{
 private:
     // Загальні поля
-    const char* name_label;
+    const char *name_label;
     int param_index;
-    float* param_array;
+    float *param_array;
     float norm_value;
     float min;
     float max;
@@ -135,23 +142,22 @@ private:
     ParamType type;
 
 public:
-
     SynthParameter() = default;
 
     SynthParameter(float min_value, float max_value,
-        const char* label, uint8_t index, float* array, 
-        Curve defaultCurve, 
-        ParamUnit param_unit);
+                   const char *label, uint8_t index, float *array,
+                   Curve defaultCurve,
+                   ParamUnit param_unit);
 
-        SynthParameter(int min_vals, int max_vals,
-            const char* label, uint8_t index, float* array,  
-            Curve defaultCurve = Curve::LINEAR, 
-            ParamUnit param_unit = ParamUnit::UNITLESS);
+    SynthParameter(int min_vals, int max_vals,
+                   const char *label, uint8_t index, float *array,
+                   Curve defaultCurve = Curve::LINEAR,
+                   ParamUnit param_unit = ParamUnit::UNITLESS);
 
     // Універсальні методи
-    float SetNormalized(float n) ;
+    float SetNormalized(float n);
 
-    float SetPhysicalValue(float v);    
+    float SetPhysicalValue(float v);
 
     float AdjustByIncrement(int inc);
     void SetNormValue(float value) { norm_value = value; }
@@ -161,7 +167,7 @@ public:
     int GetInt() const;
     float GetNormalised() const;
     bool GetBool() const;
-    const char* GetLabel() const;
+    const char *GetLabel() const;
     ParamType GetType() const;
     float GetMin() const;
     float GetMax() const;
@@ -171,18 +177,19 @@ public:
     Curve GetCurve() const;
 };
 
-class ParameterManager {
+class ParameterManager
+{
 private:
     SynthParameter params[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
-        
+
 public:
     void Init();
-    SynthParameter& GetParam(ParamUnitName name) { return params[static_cast<int>(name)]; }
+    SynthParameter &GetParam(ParamUnitName name) { return params[static_cast<int>(name)]; }
     float GetFloat(ParamUnitName name) { return GetParam(name).GetFloat(); }
     int GetInt(ParamUnitName name) { return GetParam(name).GetInt(); }
     float GetNormalised(ParamUnitName name) { return GetParam(name).GetNormalised(); }
     bool GetBool(ParamUnitName name) { return GetParam(name).GetBool(); }
-    const char* GetLabel(ParamUnitName name) { return GetParam(name).GetLabel(); }
+    const char *GetLabel(ParamUnitName name) { return GetParam(name).GetLabel(); }
     ParamType GetType(ParamUnitName name) { return GetParam(name).GetType(); }
     float GetMin(ParamUnitName name) { return GetParam(name).GetMin(); }
     float GetMax(ParamUnitName name) { return GetParam(name).GetMax(); }
@@ -192,43 +199,43 @@ public:
     void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
     ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).GetUnit(); }
     Curve GetCurve(ParamUnitName name) { return GetParam(name).GetCurve(); }
-    float ValueModifier(ParamUnitName name, float modifier) { 
+    float ValueModifier(ParamUnitName name, float modifier)
+    {
 
         float value = GetParam(name).GetFloat();
         float max = GetParam(name).GetMax();
-        modifier = (modifier < 0.0f) ? 0.0f : 
-        (modifier > 1.0f) ? 1.0f : modifier; 
+        modifier = (modifier < 0.0f) ? 0.0f : (modifier > 1.0f) ? 1.0f
+                                                                : modifier;
         return value + (max - value) * (modifier);
     }
 };
-    
-extern ParameterManager paramManager;
 
+extern ParameterManager paramManager;
 
 // Functions for initializing parameters
 void InitSynthParams();
 void InitEffectParams();
 
-enum class PresetType : uint8_t {
+enum class PresetType : uint8_t
+{
     DEFAULT,
     CUSTOM
 };
 
-struct Preset {
-    PresetType type; 
+struct Preset
+{
+    PresetType type;
     uint8_t number;
-    char    name[PRESET_NAME_LENGTH];
-    float   array[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
+    char name[PRESET_NAME_LENGTH];
+    float array[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
 };
 
 extern Preset currentPreset;
-
 
 void ApplyPreset(int presetNumber);
 void ReadPreset(uint8_t preset_num, Preset &prst);
 void SavePreset(uint8_t preset_num, const Preset &prst);
 void InitQSPI();
 void ResetPreset(int presetNumber);
-
 
 #endif // PARAMETERS_H
