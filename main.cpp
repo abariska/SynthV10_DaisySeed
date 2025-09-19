@@ -54,11 +54,11 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 
         VoiceProcess(mix);
 
-        // ProcessEffects(effectSlot[0], mix, outL, outR);
-        // ProcessEffects(effectSlot[1], outL, outL, outR);
+        ProcessEffects(effectSlot[0], mix, outL, outR);
+        ProcessEffects(effectSlot[1], outL, outL, outR);
 
-        out[i] = mix;
-        out[i + 1] = mix;
+        out[i] = outL;
+        out[i + 1] = outR;
     }
     cpu_load.OnBlockEnd();
 }

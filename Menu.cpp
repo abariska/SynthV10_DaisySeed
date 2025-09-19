@@ -484,9 +484,8 @@ void AssignParamsForPage(MenuPage page)
         break;
     case REVERB_PAGE:
         SetPageName("Reverb");
-        slots[0].target_param = P::EFFECT_REVERB_DRYWET;
-        slots[1].target_param = P::EFFECT_REVERB_FEEDBACK;
-        slots[2].target_param = P::EFFECT_REVERB_LPFREQ;
+        slots[0].target_param = P::EFFECT_REVERB_FEEDBACK;
+        slots[1].target_param = P::EFFECT_REVERB_LPFREQ;
         break;
     default:
         SetPageName(" - ");
@@ -500,8 +499,8 @@ void AssignParamsForPage(MenuPage page)
 
 void EncoderChangeEffect()
 {
-
-    if (effectSlot[0].need_update)
+        
+        if (effectSlot[0].need_update)
     {
 
         int dir = (encoderIncs[0] > 0) ? 1 : -1;
@@ -557,7 +556,7 @@ void EncoderChangeEffect()
         encoderIncs[3] = 0;
         DrawEffectsPage();
         effectSlot[1].need_update = false;
-    }
+        }
 }
 
 void InitSlots()
@@ -579,6 +578,10 @@ void InitSlots()
     menu_slots[1].target_param = P::FILTER_RESONANCE;
     menu_slots[2].target_param = P::ADSR_ATTACK;
     menu_slots[3].target_param = P::ADSR_DECAY;
+
+    effectSlot[0].selectedEffect = EFFECT_NONE;
+    effectSlot[1].selectedEffect = EFFECT_REVERB;
+
 
     System::Delay(10);
 }

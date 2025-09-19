@@ -198,10 +198,12 @@ void DrawEffectsPage()
         const int x2 = (i == 0) ? 64 : 127;
         const int y1 = 64;
         const int y2 = 80;
+        const int y3 = 96;
         if (selected != EFFECT_NONE)
         {
             Paint_TextCentered(effectLabels[selected], x1, x2, y1, Font12, WHITE, BLACK);
             Paint_TextCentered(effectSlot[i].isActive ? "On" : "Off", x1, x2, y2, Font12, WHITE, BLACK);
+            Paint_NumCentered(effectSlot[i].dryWet, x1, x2, y3, 0,Font12, WHITE, BLACK);
         }
         else
         {

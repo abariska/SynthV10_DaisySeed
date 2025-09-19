@@ -1,10 +1,9 @@
 #include "effects.h"
 #include "parameters.h"
+#include "reverb.h"
 
 using P = ParamUnitName;
 
-// Define the reverb buffer here, once, to be used by the SmallReverb class.
-float DSY_SDRAM_BSS delay_buffer_[DSY_SMALLREVERB_MAX_SIZE];
 
 const char *effectLabels[] = {
     " - ",
@@ -33,6 +32,15 @@ void EffectsInit(float samplerate)
     effectSlot[1].isActive = false;
     effectSlot[0].label = "";
     effectSlot[1].label = "";
+    effectSlot[0].dryWet = 0.5f;
+    effectSlot[1].dryWet = 0.5f;
+}
+
+void ProcessEffectsReverb(float inL, float inR, float &outL, float &outR)
+{
+    fx.reverb.SetFeedback(paramManager.GetNormalised(P::EFFECT_REVERB_FEEDBACK));
+    fx.reverb.SetLpFreq(paramManager.GetValue(P::EFFECT_REVERB_LPFREQ));
+    fx.reverb.Process(inL, inR, &outL, &outR);
 }
 
 void ProcessEffects(FXSlot &slot, float in, float &outL, float &outR)
@@ -43,7 +51,15 @@ void ProcessEffects(FXSlot &slot, float in, float &outL, float &outR)
         outR = in;
         return;
     }
-    else
+
+    if (&slot == &effectSlot[1])
+    {
+        ProcessEffectsReverb(in, in, outL, outR);
+        outR = outR  + (in * effectSlot[1].dryWet); 
+        outL = outL + (in * effectSlot[1].dryWet);
+        return;
+    }
+    if (&slot == &effectSlot[0])
     {
         switch (slot.selectedEffect)
         {
@@ -57,8 +73,9 @@ void ProcessEffects(FXSlot &slot, float in, float &outL, float &outR)
             fx.chorus.SetLfoDepth(paramManager.GetNormalised(P::EFFECT_CHORUS_DEPTH));
             fx.chorus.SetFeedback(paramManager.GetNormalised(P::EFFECT_CHORUS_FBK));
             fx.chorus.SetDelay(paramManager.GetNormalised(P::EFFECT_CHORUS_DELAY));
-            outL = fx.chorus.Process(in);
-            outR = outL;
+            fx.chorus.Process(in);
+            outL = fx.chorus.GetLeft();
+            outR = fx.chorus.GetRight();
             break;
         case EFFECT_COMPRESSOR:
             fx.compressor.SetAttack(paramManager.GetValue(P::EFFECT_COMPRESSOR_ATTACK));
@@ -69,12 +86,6 @@ void ProcessEffects(FXSlot &slot, float in, float &outL, float &outR)
             outL = fx.compressor.Process(in);
             outR = outL;
             break;
-        case EFFECT_REVERB:
-            // fx.reverb.SetDryWet(paramManager.GetNormalised(P::EFFECT_REVERB_DRYWET));
-            fx.reverb.SetFeedback(paramManager.GetNormalised(P::EFFECT_REVERB_FEEDBACK));
-            fx.reverb.SetLpFreq(paramManager.GetValue(P::EFFECT_REVERB_LPFREQ));
-            fx.reverb.Process(in, in, &outL, &outR);
-            break;
         case EFFECT_NONE:
             outL = in;
             outR = in;
@@ -82,5 +93,7 @@ void ProcessEffects(FXSlot &slot, float in, float &outL, float &outR)
         default:
             break;
         }
+        outR = outR  * (1 - effectSlot[0].dryWet) + (in * effectSlot[0].dryWet); 
+        outL = outL * (1 - effectSlot[0].dryWet) + (in * effectSlot[0].dryWet);
     }
 }

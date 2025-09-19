@@ -22,7 +22,7 @@ float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS) - 1)] 
                                                                                    0.0f, 0.5f, 0.5f, 0.0f, 0.5f, 0.5f, 0.0f,
                                                                                    0.5f, 0.0f, 0.1f, 0.1f, 1.0f, 0.1f, 1.0f, 0.0f, 1.0f, 0.0f,
                                                                                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                                                                                   0.0f, 0.0f, 0.0f, 0.0f};
+                                                                                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 
 Preset GetDefaultPreset(int8_t presetNumber)
 {
@@ -358,12 +358,13 @@ void ParameterManager::Init()
     params[static_cast<int>(P::EFFECT_COMPRESSOR_THRESHOLD)] = SynthParameter(0.0f, -80.0f, "Thr", 39, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_COMPRESSOR_RATIO)] = SynthParameter(1.0f, 40.0f, "Rat", 40, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
     params[static_cast<int>(P::EFFECT_COMPRESSOR_MAKEUP)] = SynthParameter(0.0f, 80.0f, "Mk", 41, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_REVERB_DRYWET)] = SynthParameter(0.0f, 1.0f, "DrW", 42, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_REVERB_FEEDBACK)] = SynthParameter(0.0f, 1.0f, "Fbk", 43, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_REVERB_LPFREQ)] = SynthParameter(0.0f, 1.0f, "LpF", 44, currentPreset.array, Curve::LINEAR, ParamUnit::HZ);
-    params[static_cast<int>(P::GLOBAL_MONO)] = SynthParameter(0, 2, "Mon", 45, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
-    params[static_cast<int>(P::GLOBAL_LEGATO)] = SynthParameter(0, 2, "Lgt", 46, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
-    params[static_cast<int>(P::GLOBAL_PORTAMENTO)] = SynthParameter(0.0f, 1.0f, "Prt", 47, currentPreset.array, Curve::LINEAR, ParamUnit::SECONDS);
+    params[static_cast<int>(P::EFFECT_REVERB_FEEDBACK)] = SynthParameter(0.0f, 100.0f, "Fbk", 42, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_REVERB_LPFREQ)] = SynthParameter(10.0f, 20000.0f, "LpF", 43, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::HZ);
+    params[static_cast<int>(P::EFFECT_SLOT_1_DRYWET)] = SynthParameter(0.0f, 100.0f, "DrW", 44, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::EFFECT_SLOT_2_DRYWET)] = SynthParameter(0.0f, 100.0f, "DrW", 45, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
+    params[static_cast<int>(P::GLOBAL_MONO)] = SynthParameter(0, 2, "Mon", 46, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
+    params[static_cast<int>(P::GLOBAL_LEGATO)] = SynthParameter(0, 2, "Lgt", 47, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
+    params[static_cast<int>(P::GLOBAL_PORTAMENTO)] = SynthParameter(0.0f, 1.0f, "Prt", 48, currentPreset.array, Curve::LINEAR, ParamUnit::SECONDS);
 }
 
 // Update parameters

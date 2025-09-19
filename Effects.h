@@ -7,9 +7,9 @@
 #include "daisy_seed.h"
 #include "daisysp.h"      // Для Overdrive, Chorus, Compressor
 #include "daisysp-lgpl.h" // Для Overdrive, Chorus, Compressor
-#include "smallreverb.h"  // Для SmallReverb
+#include "reverb.h"
+    
 
-using namespace daisy;
 using namespace daisysp;
 
 // Enumeration of effect types
@@ -29,7 +29,7 @@ struct FXParam
 {
     Overdrive drive;
     Chorus chorus;
-    ReverbSc reverb;
+    Rev reverb;
     Compressor compressor;
 };
 extern FXParam fx;
@@ -38,6 +38,7 @@ struct FXSlot
 {
     EffectName selectedEffect;
     const char *label;
+    float dryWet;
     bool need_update;
     bool isActive;
 };
