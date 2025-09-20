@@ -9,7 +9,6 @@
 #include "daisysp-lgpl.h" // Для Overdrive, Chorus, Compressor
 #include "reverb.h"
     
-
 using namespace daisysp;
 
 // Enumeration of effect types
@@ -38,13 +37,12 @@ struct FXSlot
 {
     EffectName selectedEffect;
     const char *label;
-    float dryWet;
     bool need_update;
     bool isActive;
 };
 extern FXSlot effectSlot[2];
 
 void EffectsInit(float samplerate);
-void ProcessEffects(FXSlot &slot, float inL, float inR, float &outL, float &outR);
+void ProcessEffects(uint8_t slot, float inL, float inR, float &outL, float &outR);
 
 #endif // EFFECTS_H

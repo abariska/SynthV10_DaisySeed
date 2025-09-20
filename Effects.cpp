@@ -31,8 +31,6 @@ void EffectsInit(float samplerate)
     effectSlot[1].isActive = false;
     effectSlot[0].label = "";
     effectSlot[1].label = "";
-    effectSlot[0].dryWet = 0.5f;
-    effectSlot[1].dryWet = 0.5f;
 }
 
 void ProcessEffectsReverb(float inL, float inR, float &outL, float &outR)
@@ -42,9 +40,9 @@ void ProcessEffectsReverb(float inL, float inR, float &outL, float &outR)
     fx.reverb.Process(inL, inR, &outL, &outR);
 }
 
-void ProcessEffects(FXSlot &slot, float inL, float inR, float &outL, float &outR)
+void ProcessEffects(uint8_t slot, float inL, float inR, float &outL, float &outR)
 {
-    if (!slot.isActive)
+    if (!effectSlot[slot].isActive)
     {
         outL = inL;
         outR = inR;
@@ -52,11 +50,12 @@ void ProcessEffects(FXSlot &slot, float inL, float inR, float &outL, float &outR
     }
     else
     {
-        switch (slot.selectedEffect)
+        float dryWet = paramManager.GetNormalised(EFFECT_SLOT_DRYWET[slot]);
+        switch (effectSlot[slot].selectedEffect)
         {
         case EFFECT_OVERDRIVE:
             fx.drive.SetDrive(paramManager.GetNormalised(P::EFFECT_OVERDRIVE_DRIVE));
-            outL = fx.drive.Process(inL) * (1 - slot.dryWet) + (inL * slot.dryWet);
+            outL = fx.drive.Process(inL) * dryWet + (inL * (1 - dryWet));
             outR = outL;
             break;
         case EFFECT_CHORUS:
@@ -67,8 +66,8 @@ void ProcessEffects(FXSlot &slot, float inL, float inR, float &outL, float &outR
             fx.chorus.Process(inL);
             outL = fx.chorus.GetLeft();
             outR = fx.chorus.GetRight();
-            outL = inL + (outL * slot.dryWet);
-            outR = inR + (outR * slot.dryWet);
+            outL = inL + (outL * dryWet);
+            outR = inR + (outR * dryWet);
             break;
         case EFFECT_COMPRESSOR:
             fx.compressor.SetAttack(paramManager.GetValue(P::EFFECT_COMPRESSOR_ATTACK));
@@ -76,13 +75,13 @@ void ProcessEffects(FXSlot &slot, float inL, float inR, float &outL, float &outR
             fx.compressor.SetThreshold(paramManager.GetValue(P::EFFECT_COMPRESSOR_THRESHOLD));
             fx.compressor.SetRatio(paramManager.GetValue(P::EFFECT_COMPRESSOR_RATIO));
             fx.compressor.SetMakeup(paramManager.GetNormalised(P::EFFECT_COMPRESSOR_MAKEUP));
-            outL = fx.compressor.Process(inL) * (1 - slot.dryWet) + (inL * slot.dryWet);
+            outL = fx.compressor.Process(inL) * dryWet + (inL * (1 - dryWet));
             outR = outL;
             break;
         case EFFECT_REVERB:
             ProcessEffectsReverb(inL, inR, outL, outR);
-            outL = inL + (outL * slot.dryWet);
-            outR = inR + (outR * slot.dryWet);
+            outL = inL + (outL * dryWet);
+            outR = inR + (outR * dryWet);
             break;
         case EFFECT_NONE:
             outL = inL;

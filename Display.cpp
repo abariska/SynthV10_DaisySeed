@@ -13,6 +13,7 @@ const UWORD BG_BLACK_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2)
 const UWORD PARAM_BLOCK_SIZE = (((PARAM_BLOCK_WIDTH % 2 == 0) ? (PARAM_BLOCK_WIDTH / 2) : (PARAM_BLOCK_WIDTH / 2 + 1)) * PARAM_BLOCK_HEIGHT);
 const UWORD WAVE_BUFFER_SIZE = (((WAVE_BUFFER_WIDTH % 2 == 0) ? (WAVE_BUFFER_WIDTH / 2) : (WAVE_BUFFER_WIDTH / 2 + 1)) * WAVE_BUFFER_HEIGHT);
 const UWORD OSC_ON_BLOCK_SIZE = (((OSC_ON_BLOCK_WIDTH % 2 == 0) ? (OSC_ON_BLOCK_WIDTH / 2) : (OSC_ON_BLOCK_WIDTH / 2 + 1)) * OSC_ON_BLOCK_HEIGHT);
+const UWORD EFFECT_BLOCK_SIZE = (((EFFECT_BLOCK_WIDTH % 2 == 0) ? (EFFECT_BLOCK_WIDTH / 2) : (EFFECT_BLOCK_WIDTH / 2 + 1)) * EFFECT_BLOCK_HEIGHT);
 const UWORD CPU_LOAD_BLOCK_SIZE = (((CPU_LOAD_BLOCK_WIDTH % 2 == 0) ? (CPU_LOAD_BLOCK_WIDTH / 2) : (CPU_LOAD_BLOCK_WIDTH / 2 + 1)) * CPU_LOAD_BLOCK_HEIGHT);
 const UWORD PRESET_NAME_BLOCK_SIZE = (((PRESET_NAME_BLOCK_WIDTH % 2 == 0) ? (PRESET_NAME_BLOCK_WIDTH / 2) : (PRESET_NAME_BLOCK_WIDTH / 2 + 1)) * PRESET_NAME_BLOCK_HEIGHT);
 const UWORD PRESET_NUM_BLOCK_SIZE = (((PRESET_NUM_BLOCK_WIDTH % 2 == 0) ? (PRESET_NUM_BLOCK_WIDTH / 2) : (PRESET_NUM_BLOCK_WIDTH / 2 + 1)) * PRESET_NUM_BLOCK_HEIGHT);
@@ -22,6 +23,7 @@ UBYTE DSY_SDRAM_BSS bg_black[BG_BLACK_SIZE];
 UBYTE DSY_SDRAM_BSS param_block[NUM_PARAM_BLOCKS][PARAM_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS wave_buffer[WAVE_BUFFER_SIZE];
 UBYTE DSY_SDRAM_BSS osc_on_block[OSC_ON_BLOCK_SIZE];
+UBYTE DSY_SDRAM_BSS effect_block[NUM_FX_SLOTS][EFFECT_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS cpu_load_block[CPU_LOAD_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS preset_name_block[PRESET_NAME_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS preset_num_block[PRESET_NUM_BLOCK_SIZE];
@@ -31,6 +33,7 @@ ImageData bg_black_data;
 ImageData param_block_data[NUM_PARAM_BLOCKS];
 ImageData wave_buffer_data;
 ImageData osc_on_block_data;
+ImageData effect_block_data[NUM_FX_SLOTS];
 ImageData cpu_load_block_data;
 ImageData preset_name_block_data;
 ImageData preset_num_block_data;
@@ -48,6 +51,7 @@ void InitImages()
     }
     memset(wave_buffer, 0, WAVE_BUFFER_SIZE);
     memset(osc_on_block, 0, OSC_ON_BLOCK_SIZE);
+    memset(effect_block, 0, EFFECT_BLOCK_SIZE);
     memset(cpu_load_block, 0, CPU_LOAD_BLOCK_SIZE);
     memset(preset_name_block, 0, PRESET_NAME_BLOCK_SIZE);
     memset(preset_num_block, 0, PRESET_NUM_BLOCK_SIZE);
@@ -60,6 +64,10 @@ void InitImages()
     }
     wave_buffer_data = {wave_buffer, WAVE_BUFFER_SIZE};
     osc_on_block_data = {osc_on_block, OSC_ON_BLOCK_SIZE};
+    for (size_t i = 0; i < NUM_FX_SLOTS; i++)
+    {
+        effect_block_data[i] = {effect_block[i], EFFECT_BLOCK_SIZE};
+    }
     cpu_load_block_data = {cpu_load_block, CPU_LOAD_BLOCK_SIZE};
     preset_name_block_data = {preset_name_block, PRESET_NAME_BLOCK_SIZE};
     preset_num_block_data = {preset_num_block, PRESET_NUM_BLOCK_SIZE};
@@ -178,6 +186,31 @@ void DrawParamPage(MenuPage page)
     InitParamBlocks();
 }
 
+void DrawEffectBlock(uint8_t slot)
+{
+    Paint_NewImage(effect_block_data[slot].data, EFFECT_BLOCK_WIDTH, EFFECT_BLOCK_HEIGHT, 0, BLACK);
+    Paint_Clear(BLACK);
+
+    EffectName selected = effectSlot[slot].selectedEffect;
+    if (selected != EFFECT_NONE)
+    {
+        Paint_TextCentered(effectLabels[selected], 0, EFFECT_BLOCK_WIDTH, 0, Font12, WHITE, BLACK);
+        Paint_TextCentered(effectSlot[slot].isActive ? "On" : "Off", 0, EFFECT_BLOCK_WIDTH, 16, Font12, WHITE, BLACK);
+    }
+    else
+    {
+        Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 0, Font12, WHITE, BLACK);
+        Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 16, Font12, WHITE, BLACK);
+    }
+    Paint_NumCentered(paramManager.GetNormalised(EFFECT_SLOT_DRYWET[slot]) * 100, 0, EFFECT_BLOCK_WIDTH, 32, 0, Font12, WHITE, BLACK);
+
+    OLED_Part_Transmit_DMA(&effect_block_data[slot],
+                           BLOCK_FX_X_START[slot],
+                           BLOCK_FX_Y_START[slot],
+                           BLOCK_FX_X_END[slot],
+                           BLOCK_FX_Y_END[slot]);
+}
+
 void DrawEffectsPage()
 {
     AssignParamsForPage(FX_PAGE);
@@ -191,28 +224,12 @@ void DrawEffectsPage()
     Paint_TextCentered("1", 0, 63, 40, Font12, WHITE, BLACK);
     Paint_TextCentered("2", 64, 127, 40, Font12, WHITE, BLACK);
 
+    OLED_Transmit_DMA(&bg_black_data);
+
     for (size_t i = 0; i < 2; i++)
     {
-        EffectName selected = effectSlot[i].selectedEffect;
-        const int x1 = (i == 0) ? 0 : 64;
-        const int x2 = (i == 0) ? 64 : 127;
-        const int y1 = 64;
-        const int y2 = 80;
-        const int y3 = 96;
-        if (selected != EFFECT_NONE)
-        {
-            Paint_TextCentered(effectLabels[selected], x1, x2, y1, Font12, WHITE, BLACK);
-            Paint_TextCentered(effectSlot[i].isActive ? "On" : "Off", x1, x2, y2, Font12, WHITE, BLACK);
-            Paint_NumCentered(effectSlot[i].dryWet, x1, x2, y3, 0,Font12, WHITE, BLACK);
-        }
-        else
-        {
-            Paint_TextCentered(" - ", x1, x2, y1, Font12, WHITE, BLACK);
-            Paint_TextCentered(" - ", x1, x2, y2, Font12, WHITE, BLACK);
-        }
+        DrawEffectBlock(i);
     }
-
-    OLED_Transmit_DMA(&bg_black_data);
 }
 
 void SelectEffectPage(uint8_t slot)

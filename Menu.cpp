@@ -497,64 +497,44 @@ void AssignParamsForPage(MenuPage page)
 
 void EncoderChangeEffect()
 {
-        
-        if (effectSlot[0].need_update)
+    int dir_enc_value[2] = {encoderIncs[0], encoderIncs[3]};
+
+    for (size_t i = 0; i < 2; i++)
     {
-
-        int dir = (encoderIncs[0] > 0) ? 1 : -1;
-        int newEffect = static_cast<int>(effectSlot[0].selectedEffect) + dir;
-
-        if (effectSlot[1].selectedEffect == newEffect)
+        if (effectSlot[i].need_update)
         {
-            newEffect += dir;
-            if (newEffect >= EFFECT_COUNT - 1)
+            if (shift_pressed)
             {
-                newEffect = EFFECT_COUNT - 1;
-                if (effectSlot[1].selectedEffect == newEffect)
+                int newEffect = static_cast<int>(effectSlot[i].selectedEffect) + dir_enc_value[i];
+
+                if ((i == 0 && effectSlot[1].selectedEffect == newEffect) || (i == 1 && effectSlot[0].selectedEffect == newEffect))
                 {
-                    newEffect -= dir;
+                    newEffect += dir_enc_value[i];
+                    if (newEffect >= EFFECT_COUNT - 1)
+                    {
+                        newEffect = EFFECT_COUNT - 1;
+                    }
+                    if ((i == 0 && effectSlot[1].selectedEffect == newEffect) || (i == 1 && effectSlot[0].selectedEffect == newEffect))
+                    {
+                        newEffect -= dir_enc_value[i];
+                    }
                 }
+                if (newEffect < EFFECT_NONE)
+                    newEffect = EFFECT_NONE;
+                if (newEffect >= EFFECT_COUNT - 1)
+                    newEffect = EFFECT_COUNT - 1;
+
+                effectSlot[i].selectedEffect = static_cast<EffectName>(newEffect);
             }
+            else
+            {
+                paramManager.GetParam(EFFECT_SLOT_DRYWET[i]).AdjustByIncrement(dir_enc_value[i]);
+            }
+            DrawEffectBlock(i);
+            effectSlot[i].need_update = false;
         }
-        if (newEffect < EFFECT_NONE)
-            newEffect = EFFECT_NONE;
-        if (newEffect >= EFFECT_COUNT - 1)
-            newEffect = EFFECT_COUNT - 1;
-
-        effectSlot[0].selectedEffect = static_cast<EffectName>(newEffect);
-
-        DrawEffectsPage();
-        encoderIncs[0] = 0;
-        effectSlot[0].need_update = false;
     }
-    if (effectSlot[1].need_update)
-    {
-
-        int dir = (encoderIncs[3] > 0) ? 1 : -1;
-        int newEffect = static_cast<int>(effectSlot[1].selectedEffect) + dir;
-
-        if (effectSlot[0].selectedEffect == newEffect)
-        {
-            newEffect += dir;
-            if (newEffect >= EFFECT_COUNT - 1)
-            {
-                newEffect = EFFECT_COUNT - 1;
-                if (effectSlot[0].selectedEffect == newEffect)
-                {
-                    newEffect -= dir;
-                }
-            }
-        }
-        if (newEffect < EFFECT_NONE)
-            newEffect = EFFECT_NONE;
-        if (newEffect >= EFFECT_COUNT - 1)
-            newEffect = EFFECT_COUNT - 1;
-
-        effectSlot[1].selectedEffect = static_cast<EffectName>(newEffect);
-        encoderIncs[3] = 0;
-        DrawEffectsPage();
-        effectSlot[1].need_update = false;
-        }
+    encoderIncs[0] = encoderIncs[3] = 0;
 }
 
 void InitSlots()
@@ -579,7 +559,6 @@ void InitSlots()
 
     effectSlot[0].selectedEffect = EFFECT_NONE;
     effectSlot[1].selectedEffect = EFFECT_REVERB;
-
 
     System::Delay(10);
 }
