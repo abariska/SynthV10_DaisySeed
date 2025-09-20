@@ -46,19 +46,19 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 
     for (size_t i = 0; i < size; i += 2)
     {
-        // float sig_after_fxL = 0.0f;
-        // float sig_after_fxR = 0.0f;
+        float sig_after_fxL = 0.0f;
+        float sig_after_fxR = 0.0f;
         float mix = 0.0f;
         float outL = 0.0f;
         float outR = 0.0f;
 
         VoiceProcess(mix);
 
-        ProcessEffects(effectSlot[0], mix, outL, outR);
-        ProcessEffects(effectSlot[1], outL, outL, outR);
+        ProcessEffects(effectSlot[0], mix, mix, outL, outR);
+        ProcessEffects(effectSlot[1], outL, outR, sig_after_fxL, sig_after_fxR);
 
-        out[i] = outL;
-        out[i + 1] = outR;
+        out[i] = sig_after_fxL * 0.5f;
+        out[i + 1] = sig_after_fxR * 0.5f;
     }
     cpu_load.OnBlockEnd();
 }
@@ -94,8 +94,6 @@ int main(void)
 
     Timer500ms();
     System::Delay(10);
-
-    sx1509_leds.WritePin(6, 0);
 
     while (1)
     {

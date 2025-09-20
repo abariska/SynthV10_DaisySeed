@@ -81,7 +81,7 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 
     if (param_unit == ParamUnit::PICTURE)
     {
-
+        value = paramManager.GetInt(slots[blockIndex].target_param);
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
         DrawWaveformImage(value);
     }
@@ -420,8 +420,7 @@ void AssignParamsForPage(MenuPage page)
         slots[1].target_param = P::OSC_PITCH_1;
         slots[2].target_param = P::OSC_DETUNE_1;
         slots[3].target_param = P::OSC_AMP_1;
-        slots[4].target_param = P::OSC_PAN_1;
-        slots[5].target_param = P::OSC_PWM_1;
+        slots[4].target_param = P::OSC_PWM_1;
         break;
     case OSCILLATOR_2_PAGE:
         SetPageName("Oscillator 2");
@@ -429,8 +428,7 @@ void AssignParamsForPage(MenuPage page)
         slots[1].target_param = P::OSC_PITCH_2;
         slots[2].target_param = P::OSC_DETUNE_2;
         slots[3].target_param = P::OSC_AMP_2;
-        slots[4].target_param = P::OSC_PAN_2;
-        slots[5].target_param = P::OSC_PWM_2;
+        slots[4].target_param = P::OSC_PWM_2;
         break;
     case OSCILLATOR_3_PAGE:
         SetPageName("Oscillator 3");
@@ -438,8 +436,7 @@ void AssignParamsForPage(MenuPage page)
         slots[1].target_param = P::OSC_PITCH_3;
         slots[2].target_param = P::OSC_DETUNE_3;
         slots[3].target_param = P::OSC_AMP_3;
-        slots[4].target_param = P::OSC_PAN_3;
-        slots[5].target_param = P::OSC_PWM_3;
+        slots[4].target_param = P::OSC_PWM_3;
         break;
     case AMPLIFIER_PAGE:
         SetPageName("Amplifier");
@@ -481,6 +478,7 @@ void AssignParamsForPage(MenuPage page)
         slots[1].target_param = P::EFFECT_COMPRESSOR_RELEASE;
         slots[2].target_param = P::EFFECT_COMPRESSOR_THRESHOLD;
         slots[3].target_param = P::EFFECT_COMPRESSOR_RATIO;
+        slots[4].target_param = P::EFFECT_COMPRESSOR_MAKEUP;
         break;
     case REVERB_PAGE:
         SetPageName("Reverb");

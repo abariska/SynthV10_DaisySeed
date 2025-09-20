@@ -45,6 +45,6 @@ struct FXSlot
 extern FXSlot effectSlot[2];
 
 void EffectsInit(float samplerate);
-void ProcessEffects(FXSlot &slot, float in, float &outL, float &outR);
+void ProcessEffects(FXSlot &slot, float inL, float inR, float &outL, float &outR);
 
 #endif // EFFECTS_H
