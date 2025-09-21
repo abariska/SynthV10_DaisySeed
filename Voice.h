@@ -22,6 +22,7 @@ extern float samplerate;
 float ProcessLfo();
 void HandleNoteOn(uint8_t note_in, uint8_t velocity);
 void HandleNoteOff(uint8_t note_in);
+void HandlePitchBend(int16_t pitch_bend); 
 void SynthInit(float samplerate, int blocksize);
 void VoiceProcess(float &sig);
 

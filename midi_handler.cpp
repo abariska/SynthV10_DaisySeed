@@ -27,14 +27,22 @@ void HandleMidiMessage(MidiEvent m)
     {
     case NoteOn:
     {
-        HandleNoteOn(m.data[0], m.data[1]);
+        auto note = m.AsNoteOn();
+        HandleNoteOn(note.note, note.velocity);
         midi_note_led = true;
     }
     break;
     case NoteOff:
     {
-        HandleNoteOff(m.data[0]);
+        auto note = m.AsNoteOff();
+        HandleNoteOff(note.note);
         midi_note_led = false;
+    }
+    break;
+    case PitchBend:
+    {
+        auto pitch_bend = m.AsPitchBend();
+        HandlePitchBend(pitch_bend.value);
     }
     break;
     default:

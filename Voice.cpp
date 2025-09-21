@@ -23,6 +23,7 @@ float pitch_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float detune_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float final_freq[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float amplitude[OSC_NUM] = {0.0f, 0.0f, 0.0f};
+float pitch_bend_multiplier = 1.0f;
 
 const int maxNotes = 16;
 int activeNotes[maxNotes];
@@ -57,6 +58,8 @@ void SynthInit(float samplerate, int blocksize)
     lfo.Init(samplerate);
 }
 
+// TODO: implement tables for frequency calculation
+
 void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 {
     bool isNotesPlaying = (activeNoteCount > 0);
@@ -72,7 +75,7 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 
         for (size_t i = 0; i < OSC_NUM; i++)
         {
-            phaseOffsets[i] = rnd[i].GetFloat(0.0f, 0.00000001f);
+            phaseOffsets[i] = rnd[i].GetFloat(0.0f, 0.000000001f);
             pitch_correction[i] = powf(2.0f, paramManager.GetInt(OSC_PITCH[i]) / 12.0f);
             detune_correction[i] = powf(2.0f, paramManager.GetInt(OSC_DETUNE[i]) / 1200.0f);
             final_freq[i] = frequency * pitch_correction[i] * detune_correction[i];
@@ -143,7 +146,7 @@ void VoiceProcess(float &voice_sig)
 
     for (size_t i = 0; i < OSC_NUM; i++)
     {
-        osc[i].SetFreq(final_freq[i]);
+        osc[i].SetFreq(final_freq[i] * pitch_bend_multiplier);
         osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]) * amplitude[i]);
         osc[i].SetWaveform(paramManager.GetInt(OSC_WAVEFORM[i]));
         osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
@@ -179,4 +182,10 @@ void VoiceProcess(float &voice_sig)
 
     float env = adsrMain.Process(gate);
     voice_sig *= env;
+}
+
+void HandlePitchBend(int16_t pb)
+{
+    float bend_cents = ((float)(pb - 8192) / 8192.0f) * 200.0f;
+    pitch_bend_multiplier = powf(2.0f, bend_cents / 1200.0f);
 }
