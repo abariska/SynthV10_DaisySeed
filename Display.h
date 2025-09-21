@@ -13,12 +13,15 @@
 #define PRESET_NUM_BLOCK_HEIGHT 16
 #define PARAM_BLOCK_WIDTH 32
 #define PARAM_BLOCK_HEIGHT 50
+#define EFFECT_BLOCK_WIDTH 64
+#define EFFECT_BLOCK_HEIGHT 64
 #define OSC_ON_BLOCK_WIDTH 16
 #define OSC_ON_BLOCK_HEIGHT 16
 #define SCOPE_BLOCK_WIDTH 128
 #define SCOPE_BLOCK_HEIGHT 32
 #define NUM_PARAM_BLOCKS 8
 #define NUM_MAIN_SLOTS 4
+#define NUM_FX_SLOTS 2
 #define NUM_ACTIVE_PARAMS 4 // Скільки параметрів активні одночасно
 #define WAVE_BUFFER_WIDTH 32
 #define WAVE_BUFFER_HEIGHT 16
@@ -70,10 +73,16 @@ const uint8_t BLOCK_MAIN_X_END[] = {32, 64, 96, 128};
 const uint8_t BLOCK_MAIN_Y_START[] = {74, 74, 74, 74};
 const uint8_t BLOCK_MAIN_Y_END[] = {124, 124, 124, 124};
 
+const uint8_t BLOCK_FX_X_START[] = {0, 64};
+const uint8_t BLOCK_FX_X_END[] = {64, 128};
+const uint8_t BLOCK_FX_Y_START[] = {64, 64};
+const uint8_t BLOCK_FX_Y_END[] = {124, 124};
+
 extern ImageData intro_page_data;
 extern ImageData bg_black_data;
 extern ImageData param_block_data[NUM_PARAM_BLOCKS];
 extern ImageData wave_buffer_data;
+extern ImageData effect_block_data[NUM_FX_SLOTS];
 extern ImageData osc_on_block_data;
 extern ImageData cpu_load_block_data;
 extern ImageData preset_name_block_data;
@@ -87,5 +96,6 @@ void DrawParamPage(MenuPage page);
 void DrawIntroPage();
 void SelectEffectPage(uint8_t slot);
 void InitImages();
+void DrawEffectBlock(uint8_t slot);
 
 #endif

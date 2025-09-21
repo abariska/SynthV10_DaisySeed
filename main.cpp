@@ -22,6 +22,7 @@ int encoderIncs[5];
 int test = 123;
 float samplerate = 0;
 bool update_for_preset_needed = false;
+bool shift_pressed = false;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
                           AudioHandle::InterleavingOutputBuffer out,
@@ -46,19 +47,19 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 
     for (size_t i = 0; i < size; i += 2)
     {
-        // float sig_after_fxL = 0.0f;
-        // float sig_after_fxR = 0.0f;
+        float sig_after_fxL = 0.0f;
+        float sig_after_fxR = 0.0f;
         float mix = 0.0f;
         float outL = 0.0f;
         float outR = 0.0f;
 
         VoiceProcess(mix);
 
-        // ProcessEffects(effectSlot[0], mix, outL, outR);
-        // ProcessEffects(effectSlot[1], outL, outL, outR);
+        ProcessEffects(0, mix, mix, outL, outR);
+        ProcessEffects(1, outL, outR, sig_after_fxL, sig_after_fxR);
 
-        out[i] = mix;
-        out[i + 1] = mix;
+        out[i] = sig_after_fxL * 0.5f;
+        out[i + 1] = sig_after_fxR * 0.5f;
     }
     cpu_load.OnBlockEnd();
 }
@@ -95,8 +96,6 @@ int main(void)
     Timer500ms();
     System::Delay(10);
 
-    sx1509_leds.WritePin(6, 0);
-
     while (1)
     {
         ProcessButtons();
@@ -111,7 +110,7 @@ int main(void)
 void ProcessButtons()
 {
     bool any_button_change = sx1509_buttons.ReadAllPins();
-    bool shift_pressed = sx1509_buttons.IsPressed(BUTTON_SHIFT);
+    shift_pressed = sx1509_buttons.IsPressed(BUTTON_SHIFT);
 
     UpdateEncoderSwitches();
 
@@ -125,12 +124,12 @@ void ProcessButtons()
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW))
                 {
                     effectSlot[0].isActive = !effectSlot[0].isActive;
-                    page_need_update = true;
+                    DrawEffectBlock(0);
                 }
                 if (sx1509_buttons.isFallingEdge(ENC_4_SW))
                 {
                     effectSlot[1].isActive = !effectSlot[1].isActive;
-                    page_need_update = true;
+                    DrawEffectBlock(1);
                 }
             }
             else

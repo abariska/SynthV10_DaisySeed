@@ -72,7 +72,7 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 
         for (size_t i = 0; i < OSC_NUM; i++)
         {
-            phaseOffsets[i] = rnd[i].GetFloat(0.0f, 0.0000001f);
+            phaseOffsets[i] = rnd[i].GetFloat(0.0f, 0.00000001f);
             pitch_correction[i] = powf(2.0f, paramManager.GetInt(OSC_PITCH[i]) / 12.0f);
             detune_correction[i] = powf(2.0f, paramManager.GetInt(OSC_DETUNE[i]) / 1200.0f);
             final_freq[i] = frequency * pitch_correction[i] * detune_correction[i];
@@ -155,13 +155,9 @@ void VoiceProcess(float &voice_sig)
         }
     }
 
-    if (active_osc_count > 0)
+    if (active_osc_count <= 0)
     {
-        voice_sig /= active_osc_count;
-    }
-    else
-    {
-        voice_sig = 0.0f; // Явне вимкнення
+        voice_sig = 0.0f;
     }
 
     if (fabs(voice_sig) > 1.0f)

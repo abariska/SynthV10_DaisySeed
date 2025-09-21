@@ -81,7 +81,7 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 
     if (param_unit == ParamUnit::PICTURE)
     {
-
+        value = paramManager.GetInt(slots[blockIndex].target_param);
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
         DrawWaveformImage(value);
     }
@@ -420,8 +420,7 @@ void AssignParamsForPage(MenuPage page)
         slots[1].target_param = P::OSC_PITCH_1;
         slots[2].target_param = P::OSC_DETUNE_1;
         slots[3].target_param = P::OSC_AMP_1;
-        slots[4].target_param = P::OSC_PAN_1;
-        slots[5].target_param = P::OSC_PWM_1;
+        slots[4].target_param = P::OSC_PWM_1;
         break;
     case OSCILLATOR_2_PAGE:
         SetPageName("Oscillator 2");
@@ -429,8 +428,7 @@ void AssignParamsForPage(MenuPage page)
         slots[1].target_param = P::OSC_PITCH_2;
         slots[2].target_param = P::OSC_DETUNE_2;
         slots[3].target_param = P::OSC_AMP_2;
-        slots[4].target_param = P::OSC_PAN_2;
-        slots[5].target_param = P::OSC_PWM_2;
+        slots[4].target_param = P::OSC_PWM_2;
         break;
     case OSCILLATOR_3_PAGE:
         SetPageName("Oscillator 3");
@@ -438,8 +436,7 @@ void AssignParamsForPage(MenuPage page)
         slots[1].target_param = P::OSC_PITCH_3;
         slots[2].target_param = P::OSC_DETUNE_3;
         slots[3].target_param = P::OSC_AMP_3;
-        slots[4].target_param = P::OSC_PAN_3;
-        slots[5].target_param = P::OSC_PWM_3;
+        slots[4].target_param = P::OSC_PWM_3;
         break;
     case AMPLIFIER_PAGE:
         SetPageName("Amplifier");
@@ -481,12 +478,12 @@ void AssignParamsForPage(MenuPage page)
         slots[1].target_param = P::EFFECT_COMPRESSOR_RELEASE;
         slots[2].target_param = P::EFFECT_COMPRESSOR_THRESHOLD;
         slots[3].target_param = P::EFFECT_COMPRESSOR_RATIO;
+        slots[4].target_param = P::EFFECT_COMPRESSOR_MAKEUP;
         break;
     case REVERB_PAGE:
         SetPageName("Reverb");
-        slots[0].target_param = P::EFFECT_REVERB_DRYWET;
-        slots[1].target_param = P::EFFECT_REVERB_FEEDBACK;
-        slots[2].target_param = P::EFFECT_REVERB_LPFREQ;
+        slots[0].target_param = P::EFFECT_REVERB_FEEDBACK;
+        slots[1].target_param = P::EFFECT_REVERB_LPFREQ;
         break;
     default:
         SetPageName(" - ");
@@ -500,64 +497,44 @@ void AssignParamsForPage(MenuPage page)
 
 void EncoderChangeEffect()
 {
+    int dir_enc_value[2] = {encoderIncs[0], encoderIncs[3]};
 
-    if (effectSlot[0].need_update)
+    for (size_t i = 0; i < 2; i++)
     {
-
-        int dir = (encoderIncs[0] > 0) ? 1 : -1;
-        int newEffect = static_cast<int>(effectSlot[0].selectedEffect) + dir;
-
-        if (effectSlot[1].selectedEffect == newEffect)
+        if (effectSlot[i].need_update)
         {
-            newEffect += dir;
-            if (newEffect >= EFFECT_COUNT - 1)
+            if (shift_pressed)
             {
-                newEffect = EFFECT_COUNT - 1;
-                if (effectSlot[1].selectedEffect == newEffect)
+                int newEffect = static_cast<int>(effectSlot[i].selectedEffect) + dir_enc_value[i];
+
+                if ((i == 0 && effectSlot[1].selectedEffect == newEffect) || (i == 1 && effectSlot[0].selectedEffect == newEffect))
                 {
-                    newEffect -= dir;
+                    newEffect += dir_enc_value[i];
+                    if (newEffect >= EFFECT_COUNT - 1)
+                    {
+                        newEffect = EFFECT_COUNT - 1;
+                    }
+                    if ((i == 0 && effectSlot[1].selectedEffect == newEffect) || (i == 1 && effectSlot[0].selectedEffect == newEffect))
+                    {
+                        newEffect -= dir_enc_value[i];
+                    }
                 }
+                if (newEffect < EFFECT_NONE)
+                    newEffect = EFFECT_NONE;
+                if (newEffect >= EFFECT_COUNT - 1)
+                    newEffect = EFFECT_COUNT - 1;
+
+                effectSlot[i].selectedEffect = static_cast<EffectName>(newEffect);
             }
-        }
-        if (newEffect < EFFECT_NONE)
-            newEffect = EFFECT_NONE;
-        if (newEffect >= EFFECT_COUNT - 1)
-            newEffect = EFFECT_COUNT - 1;
-
-        effectSlot[0].selectedEffect = static_cast<EffectName>(newEffect);
-
-        DrawEffectsPage();
-        encoderIncs[0] = 0;
-        effectSlot[0].need_update = false;
-    }
-    if (effectSlot[1].need_update)
-    {
-
-        int dir = (encoderIncs[3] > 0) ? 1 : -1;
-        int newEffect = static_cast<int>(effectSlot[1].selectedEffect) + dir;
-
-        if (effectSlot[0].selectedEffect == newEffect)
-        {
-            newEffect += dir;
-            if (newEffect >= EFFECT_COUNT - 1)
+            else
             {
-                newEffect = EFFECT_COUNT - 1;
-                if (effectSlot[0].selectedEffect == newEffect)
-                {
-                    newEffect -= dir;
-                }
+                paramManager.GetParam(EFFECT_SLOT_DRYWET[i]).AdjustByIncrement(dir_enc_value[i]);
             }
+            DrawEffectBlock(i);
+            effectSlot[i].need_update = false;
         }
-        if (newEffect < EFFECT_NONE)
-            newEffect = EFFECT_NONE;
-        if (newEffect >= EFFECT_COUNT - 1)
-            newEffect = EFFECT_COUNT - 1;
-
-        effectSlot[1].selectedEffect = static_cast<EffectName>(newEffect);
-        encoderIncs[3] = 0;
-        DrawEffectsPage();
-        effectSlot[1].need_update = false;
     }
+    encoderIncs[0] = encoderIncs[3] = 0;
 }
 
 void InitSlots()
@@ -579,6 +556,9 @@ void InitSlots()
     menu_slots[1].target_param = P::FILTER_RESONANCE;
     menu_slots[2].target_param = P::ADSR_ATTACK;
     menu_slots[3].target_param = P::ADSR_DECAY;
+
+    effectSlot[0].selectedEffect = EFFECT_NONE;
+    effectSlot[1].selectedEffect = EFFECT_REVERB;
 
     System::Delay(10);
 }

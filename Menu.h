@@ -19,6 +19,7 @@ extern bool isBlink;
 extern bool blinkStateChanged;
 extern bool isStoreMode;
 extern bool page_need_update;
+extern bool shift_pressed;
 
 // Для перемикання між рядами параметрів
 enum ActiveRow
