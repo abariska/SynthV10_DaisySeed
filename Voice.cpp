@@ -137,7 +137,7 @@ void VoiceProcess(float &voice_sig)
         final_freq[i] = frequency * pitch_correction[i] * detune_correction[i] * pitch_bend_multiplier;
 
         osc[i].SetFreq(final_freq[i]);
-        osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]) * velocity_factor);
+        osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]));
         osc[i].SetWaveform(paramManager.GetInt(OSC_WAVEFORM[i]));
         osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
         osc[i].PhaseProcess();
@@ -165,5 +165,5 @@ void VoiceProcess(float &voice_sig)
     adsrMain.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
 
     float env = adsrMain.Process(gate);
-    voice_sig *= env;
+    voice_sig *= env * velocity_factor;
 }
