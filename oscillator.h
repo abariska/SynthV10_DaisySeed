@@ -27,6 +27,7 @@ public:
     void SetPhaseOffset(float offset) { phaseOffset = offset; }
     void SetFreq(float freq) { targetFreq = freq; }
 
+    void PhaseProcess();
     float Process();
     float GetCurrentFreq() const { return currentFreq; }
 
@@ -52,6 +53,8 @@ private:
     float pw;
     float phaseOsc;
     float blepGain;
+    float prev_phase;
+    float current_phase;
 };
 
 #endif
