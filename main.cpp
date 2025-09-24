@@ -103,7 +103,7 @@ int main(void)
         UpdateEncodersParams();
         UpdatePage();
 
-        sx1509_leds.WritePin(5, midi_note_led);
+        sx1509_leds.WritePin(6, midi_note_led);
     }
 }
 

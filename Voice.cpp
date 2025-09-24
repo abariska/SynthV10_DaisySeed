@@ -2,6 +2,9 @@
 #include "main.h"
 #include "daisy_seed.h"
 #include "oscillator.h"
+#include "pitchTables.h"
+
+using P = ParamUnitName;
 
 std::array<Osc, OSC_NUM> osc;
 Adsr adsrMain;
@@ -10,26 +13,19 @@ MoogLadder fltR;
 Oscillator lfo;
 Random rnd[OSC_NUM];
 
-using P = ParamUnitName;
-
 uint8_t noteNum = 60;
-float phase = 0;
 float frequency = 0;
-float masterPhase = 0.0f;
-float oscPhase[OSC_NUM] = {0.0f, 0.0f, 0.0f};
-float oscPhaseInc[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float phaseOffsets[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float pitch_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float detune_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float final_freq[OSC_NUM] = {0.0f, 0.0f, 0.0f};
-float amplitude[OSC_NUM] = {0.0f, 0.0f, 0.0f};
+float velocity_factor = 1.0f;
 float pitch_bend_multiplier = 1.0f;
 
 const int maxNotes = 16;
 int activeNotes[maxNotes];
 int activeNoteCount = 0;
 bool gate = false;
-bool hardRetrigger = false;
 
 float ProcessLfo()
 {
@@ -56,6 +52,7 @@ void SynthInit(float samplerate, int blocksize)
         rnd[i].Init();
     }
     lfo.Init(samplerate);
+    InitPitchTables();
 }
 
 // TODO: implement tables for frequency calculation
@@ -68,23 +65,14 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
     {
         activeNotes[activeNoteCount] = note_in;
         activeNoteCount++;
-
+        velocity_factor = velocity / 127.0f * 0.8f;
         noteNum = note_in;
-        frequency = 440.0f * powf(2.0f, (note_in - 69) / 12.0f);
-        float velocity_factor = velocity / 127.0f;
+        frequency = midiNoteToFreqTable[note_in];
 
         for (size_t i = 0; i < OSC_NUM; i++)
         {
             phaseOffsets[i] = rnd[i].GetFloat(0.0f, 0.000000001f);
-            pitch_correction[i] = powf(2.0f, paramManager.GetInt(OSC_PITCH[i]) / 12.0f);
-            detune_correction[i] = powf(2.0f, paramManager.GetInt(OSC_DETUNE[i]) / 1200.0f);
-            final_freq[i] = frequency * pitch_correction[i] * detune_correction[i];
-
             osc[i].SetPhaseOffset(phaseOffsets[i]);
-            osc[i].SyncToMaster(masterPhase);
-
-            float freq_compensation = 1.0f;
-            amplitude[i] = velocity_factor * freq_compensation;
         }
 
         if (!(isNotesPlaying && paramManager.GetBool(P::GLOBAL_LEGATO)))
@@ -104,7 +92,6 @@ void HandleNoteOff(uint8_t note_in)
     {
         if (activeNotes[i] == note_in)
         {
-
             // Found a match: is it the most recent note?
             if (i == activeNoteCount - 1)
             {
@@ -133,34 +120,32 @@ void HandleNoteOff(uint8_t note_in)
     }
 }
 
+void HandlePitchBend(int16_t pb)
+{
+    float bend_cents = ((float)(pb - 8192) / 8192.0f) * 200.0f;
+    pitch_bend_multiplier = GetPitchBendTableValue(bend_cents);
+}
+
 void VoiceProcess(float &voice_sig)
 {
     voice_sig = 0.0f;
-    int active_osc_count = 0;
-    float masterInc = frequency / samplerate; // тут frequency = основна нота
-    masterPhase += masterInc;
-    if (masterPhase >= 1.0f)
-    {
-        masterPhase -= 1.0f;
-    }
 
     for (size_t i = 0; i < OSC_NUM; i++)
     {
-        osc[i].SetFreq(final_freq[i] * pitch_bend_multiplier);
-        osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]) * amplitude[i]);
+        pitch_correction[i] = GetPitchTableValue(paramManager.GetInt(OSC_PITCH[i]));
+        detune_correction[i] = GetDetuneTableValue(paramManager.GetInt(OSC_DETUNE[i]));
+        final_freq[i] = frequency * pitch_correction[i] * detune_correction[i] * pitch_bend_multiplier;
+
+        osc[i].SetFreq(final_freq[i]);
+        osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]));
         osc[i].SetWaveform(paramManager.GetInt(OSC_WAVEFORM[i]));
         osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
+        osc[i].PhaseProcess();
 
         if (paramManager.GetValue(OSC_ACTIVE[i]))
         {
             voice_sig += osc[i].Process();
-            active_osc_count++;
         }
-    }
-
-    if (active_osc_count <= 0)
-    {
-        voice_sig = 0.0f;
     }
 
     if (fabs(voice_sig) > 1.0f)
@@ -174,18 +159,11 @@ void VoiceProcess(float &voice_sig)
     fltR.SetRes(paramManager.GetNormalised(P::FILTER_RESONANCE));
     voice_sig = fltR.Process(voice_sig);
 
-    // TODO: fix the real curve. it sounds shorter than it should be.
     adsrMain.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
     adsrMain.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
     adsrMain.SetSustainLevel(paramManager.GetNormalised(P::ADSR_SUSTAIN));
     adsrMain.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
 
     float env = adsrMain.Process(gate);
-    voice_sig *= env;
-}
-
-void HandlePitchBend(int16_t pb)
-{
-    float bend_cents = ((float)(pb - 8192) / 8192.0f) * 200.0f;
-    pitch_bend_multiplier = powf(2.0f, bend_cents / 1200.0f);
+    voice_sig *= env * velocity_factor;
 }
