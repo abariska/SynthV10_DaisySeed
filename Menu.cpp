@@ -75,18 +75,18 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 
     if (currentPage == MAIN_PAGE)
     {
-        value = paramManager.GetValue(menu_slots[blockIndex].target_param);
+        value = paramManager.GetPhysical(menu_slots[blockIndex].target_param);
         label = paramManager.GetLabel(menu_slots[blockIndex].target_param);
     }
     else
     {
-        value = paramManager.GetValue(slots[blockIndex].target_param);
+        value = paramManager.GetPhysical(slots[blockIndex].target_param);
         label = paramManager.GetLabel(slots[blockIndex].target_param);
     }
 
     if (param_unit == ParamUnit::PICTURE)
     {
-        value = paramManager.GetValue(slots[blockIndex].target_param);
+        value = paramManager.GetPhysical(slots[blockIndex].target_param);
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
         DrawWaveformImage(value);
     }
@@ -554,12 +554,16 @@ void InitModMatrixBlock(uint8_t blockIndex)
     Paint_NewImage(mod_matrix_block_data[blockIndex].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_TextCentered(modMatrix[blockIndex].modSource.label, 32, 64, 0, Font12, WHITE, BLACK);
-    Paint_NumCentered(modMatrix[blockIndex].modAmount * 100, 64, 96, 0, 0, Font12, WHITE, BLACK);
-    Paint_TextCentered(modMatrix[blockIndex].modTargetLabel, 96, 128, 0, Font12, WHITE, BLACK);
+    Paint_TextCentered(modMatrix[blockIndex].modSource.label, 32, 64, 1, Font12, WHITE, BLACK);
+    Paint_NumCentered(modMatrix[blockIndex].modAmount * 100, 64, 96, 1, 0, Font12, WHITE, BLACK);
+    Paint_TextCentered(modMatrix[blockIndex].modTargetLabel, 96, 128, 1, Font12, WHITE, BLACK);
     if (blockIndex == selModBlockIndex)
     {
-        Paint_DrawRectangle(0, 0, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+        uint8_t arrow_y = 7;
+        Paint_DrawLine(4, arrow_y, 20, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(16, arrow_y - 3, 20, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(16, arrow_y + 3, 20, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        // Paint_DrawRectangle(0, 0, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
     }
 
     OLED_Part_Transmit_DMA(&mod_matrix_block_data[blockIndex],

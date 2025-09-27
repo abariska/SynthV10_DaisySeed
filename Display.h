@@ -83,8 +83,8 @@ const uint8_t BLOCK_FX_Y_END[] = {124, 124};
 
 const uint8_t BLOCK_MOD_MATRIX_X_START = 0;
 const uint8_t BLOCK_MOD_MATRIX_X_END = 128;
-const uint8_t BLOCK_MOD_MATRIX_Y_START[] = {24, 38, 52, 66, 80, 94, 108};
-const uint8_t BLOCK_MOD_MATRIX_Y_END[] = {38, 52, 66, 80, 94, 108, 122};
+const uint8_t BLOCK_MOD_MATRIX_Y_START[] = {28, 42, 56, 70, 84, 98, 112};
+const uint8_t BLOCK_MOD_MATRIX_Y_END[] = {42, 56, 70, 84, 98, 112, 126};
 
 extern ImageData intro_page_data;
 extern ImageData bg_black_data;

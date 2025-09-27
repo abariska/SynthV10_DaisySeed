@@ -284,7 +284,6 @@ void DrawModMatrixPage()
     Paint_Clear(BLACK);
     
     Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-
     Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);

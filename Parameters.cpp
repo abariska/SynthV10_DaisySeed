@@ -247,6 +247,7 @@ const char *SynthParameter::GetLabel() const { return name_label; }
 ParamType SynthParameter::GetType() const { return type; }
 ParamUnit SynthParameter::GetUnit() const { return unit; }
 Curve SynthParameter::GetCurve() const { return curve; }
+float SynthParameter::GetPhysical() const { return physical_value; }
 
 //--------------------------------
 //--------------------------------
@@ -404,8 +405,8 @@ void ParameterManager::Init()
 }
 
 Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
-    {ModSource::LFO, 0.0f, "LFO"},
-    {ModSource::ADSR, 0.0f, "ADSR"},
-    {ModSource::MOD_WHEEL, 0.0f, "WHEEL"},
-    {ModSource::NONE, 0.0f, "-"}
+    {ModSource::NONE, 0.0f, "-"},
+    {ModSource::LFO, 0.0f, "Lfo"},
+    {ModSource::ADSR, 0.0f, "Adsr"},
+    {ModSource::MOD_WHEEL, 0.0f, "Wheel"},
 };

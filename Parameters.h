@@ -163,6 +163,7 @@ public:
     float GetValue();
     int GetInt() const;
     float GetNormalised() const;
+    float GetPhysical() const;
     bool GetBool() const;
     const char *GetLabel() const;
     ParamType GetType() const;
@@ -185,6 +186,7 @@ public:
     void Init();
     SynthParameter &GetParam(ParamUnitName name) { return params[static_cast<int>(name)]; }
     float GetNormalised(ParamUnitName name) { return GetParam(name).GetNormalised(); }
+    float GetPhysical(ParamUnitName name) { return GetParam(name).GetPhysical(); }
     bool GetBool(ParamUnitName name) { return GetParam(name).GetBool(); }
     const char *GetLabel(ParamUnitName name) { return GetParam(name).GetLabel(); }
     ParamType GetType(ParamUnitName name) { return GetParam(name).GetType(); }
@@ -227,10 +229,10 @@ void ResetPreset(int presetNumber);
 
 enum class ModSource
 {
+    NONE,
     LFO,
     ADSR,
     MOD_WHEEL,
-    NONE,
     COUNT_MOD_SOURCES
 };
 
