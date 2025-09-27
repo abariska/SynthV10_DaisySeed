@@ -4,6 +4,8 @@
 
 using P = ParamUnitName;
 
+float driveGainCompensation = 0.0f;
+
 const char *effectLabels[] = {
     " - ",
     "Drive",
@@ -55,7 +57,7 @@ void ProcessEffects(uint8_t slot, float inL, float inR, float &outL, float &outR
         {
         case EFFECT_OVERDRIVE:
             fx.drive.SetDrive(paramManager.GetNormalised(P::EFFECT_OVERDRIVE_DRIVE));
-            outL = fx.drive.Process(inL) * dryWet + (inL * (1 - dryWet));
+            outL = (fx.drive.Process(inL) + driveGainCompensation) * dryWet + (inL * (1 - dryWet));
             outR = outL;
             break;
         case EFFECT_CHORUS:

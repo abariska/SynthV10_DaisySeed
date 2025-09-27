@@ -453,6 +453,10 @@ void AssignParamsForPage(MenuPage page)
         slots[1].target_param = P::ADSR_DECAY;
         slots[2].target_param = P::ADSR_SUSTAIN;
         slots[3].target_param = P::ADSR_RELEASE;
+        slots[4].target_param = P::MOD_ADSR_ATTACK;
+        slots[5].target_param = P::MOD_ADSR_DECAY;
+        slots[6].target_param = P::MOD_ADSR_SUSTAIN;
+        slots[7].target_param = P::MOD_ADSR_RELEASE;
         break;
     case FILTER_PAGE:
         SetPageName("Filter");
@@ -463,9 +467,9 @@ void AssignParamsForPage(MenuPage page)
         break;
     case LFO_PAGE:
         SetPageName("LFO");
-        slots[0].target_param = P::LFO_WAVEFORM;
-        slots[1].target_param = P::LFO_FREQ;
-        slots[2].target_param = P::LFO_DEPTH;
+        slots[0].target_param = P::MOD_LFO_WAVEFORM;
+        slots[1].target_param = P::MOD_LFO_FREQ;
+        slots[2].target_param = P::MOD_LFO_DEPTH;
         break;
     case FX_PAGE:
         SetPageName("Effects");
@@ -554,7 +558,7 @@ void InitModMatrixBlock(uint8_t blockIndex)
     Paint_NewImage(mod_matrix_block_data[blockIndex].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_TextCentered(modMatrix[blockIndex].modSource.label, 32, 64, 1, Font12, WHITE, BLACK);
+    Paint_TextCentered(modMatrix[blockIndex].GetModLabel(), 32, 64, 1, Font12, WHITE, BLACK);
     Paint_NumCentered(modMatrix[blockIndex].modAmount * 100, 64, 96, 1, 0, Font12, WHITE, BLACK);
     Paint_TextCentered(modMatrix[blockIndex].modTargetLabel, 96, 128, 1, Font12, WHITE, BLACK);
     if (blockIndex == selModBlockIndex)
@@ -605,7 +609,7 @@ void EditModBlock()
     if (encoderIncs[1] != 0)
     {
         int dir = (encoderIncs[1] > 0) ? 1 : -1;
-        int mod = (int)modMatrix[selModBlockIndex].modSource.source;
+        int mod = (int)modMatrix[selModBlockIndex].modSourceType;
         mod += dir;
         if (mod >= static_cast<int>(M::COUNT_MOD_SOURCES) - 1)
         {
@@ -615,8 +619,7 @@ void EditModBlock()
         {
             mod = 0;
         }
-        modMatrix[selModBlockIndex].modSource.source = static_cast<M>(mod);
-        modMatrix[selModBlockIndex].modSource.label = modulators[mod].label;
+        modMatrix[selModBlockIndex].modSourceType = static_cast<M>(mod);
         encoderIncs[1] = 0;
     }
     if (encoderIncs[2] != 0)
@@ -638,21 +641,34 @@ void EditModBlock()
     if (encoderIncs[3] != 0)
     {
         int dir = (encoderIncs[3] > 0) ? 1 : -1;
-        int value = (int)modMatrix[selModBlockIndex].modTarget;
-        value += dir;
-        while (paramManager.GetUnit(static_cast<P>(value)) == ParamUnit::BOOL)
+        int oldTarget = (int)modMatrix[selModBlockIndex].modTarget;
+        int target = oldTarget;
+        target += dir;
+        while (paramManager.GetModulateableParam(static_cast<P>(target)) == ModulateableParam::NOT_MODULATABLE)
         {
-            value += dir;
+            target += dir;
         }
-        if (value > (int)P::COUNT_PARAMS - 1)
+        // ToDo: Переробити
+        if (target >= (int)P::COUNT_PARAMS - 1)
         {
-            value = (int)P::COUNT_PARAMS - 1;
+            if (paramManager.GetModulateableParam(static_cast<P>(target)) == ModulateableParam::NOT_MODULATABLE)
+            {
+                target -= 1;
+            } else {
+                target = (int)P::COUNT_PARAMS - 1;
+            }
         }
-        else if (value <= (int)P::NONE + 1)
+        else if (target <= (int)P::NONE)
         {
-            value = (int)P::NONE + 1;
+            if (paramManager.GetModulateableParam(static_cast<P>(target)) == ModulateableParam::NOT_MODULATABLE)
+            {
+                target += 1;
+            } else {
+                target = (int)P::NONE;
+            }
         }
-        modMatrix[selModBlockIndex].modTarget = (ParamUnitName)value;
+        paramManager.GetParam(static_cast<P>(oldTarget)).SetModifier(0.0f);
+        modMatrix[selModBlockIndex].modTarget = (ParamUnitName)target;
         modMatrix[selModBlockIndex].modTargetLabel = paramManager.GetLabel(modMatrix[selModBlockIndex].modTarget);
         encoderIncs[3] = 0;
     }
@@ -695,8 +711,9 @@ void InitSlots()
     {
         modMatrix[i].modTarget = P::NONE;
         modMatrix[i].modSource.value = 0.0f;
+        modMatrix[i].modSource.label = "-";
         modMatrix[i].modAmount = 0.0f;
-        modMatrix[i].modSource.source = M::NONE;
+        modMatrix[i].modSourceType = M::NONE;
         modMatrix[i].modSource.label = "-";
         modMatrix[i].modTargetLabel = "-";
     }

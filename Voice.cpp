@@ -51,16 +51,16 @@ void SynthInit(float samplerate, int blocksize)
 
 void ModSourcesProcess()
 {
-    lfo.SetFreq(paramManager.GetValue(P::LFO_FREQ));
-    lfo.SetWaveform(paramManager.GetValue(P::LFO_WAVEFORM));
-    lfo.SetAmp(paramManager.GetValue(P::LFO_DEPTH));
+    lfo.SetFreq(paramManager.GetValue(P::MOD_LFO_FREQ));
+    lfo.SetWaveform(paramManager.GetValue(P::MOD_LFO_WAVEFORM));
+    lfo.SetAmp(paramManager.GetValue(P::MOD_LFO_DEPTH));
     modulators[static_cast<int>(M::LFO)].value = lfo.Process();
 
-    adsrMod.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
-    adsrMod.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
-    adsrMod.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
-    adsrMod.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
-    modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(false);
+    adsrMod.SetAttackTime(paramManager.GetValue(P::MOD_ADSR_ATTACK), 1.0f);
+    adsrMod.SetDecayTime(paramManager.GetValue(P::MOD_ADSR_DECAY));
+    adsrMod.SetSustainLevel(paramManager.GetValue(P::MOD_ADSR_SUSTAIN));
+    adsrMod.SetReleaseTime(paramManager.GetValue(P::MOD_ADSR_RELEASE));
+    modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(gate);
 
     modulators[static_cast<int>(M::MOD_WHEEL)].value = 0.0f;
 }
@@ -171,5 +171,5 @@ void VoiceProcess(float &voice_sig)
     adsrMain.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
 
     float env = adsrMain.Process(gate);
-    voice_sig *= env * velocity_factor;
+    voice_sig *= env;
 }

@@ -27,18 +27,21 @@ enum class ParamUnitName
 {
     NONE,
     OSC_WAVEFORM_1,
+    OSC_FREQ_1,
     OSC_PITCH_1,
     OSC_DETUNE_1,
     OSC_AMP_1,
     OSC_PWM_1,
     OSC_ACTIVE_1,
     OSC_WAVEFORM_2,
+    OSC_FREQ_2,
     OSC_PITCH_2,
     OSC_DETUNE_2,
     OSC_AMP_2,
     OSC_PWM_2,
     OSC_ACTIVE_2,
     OSC_WAVEFORM_3,
+    OSC_FREQ_3,
     OSC_PITCH_3,
     OSC_DETUNE_3,
     OSC_AMP_3,
@@ -50,10 +53,14 @@ enum class ParamUnitName
     ADSR_DECAY,
     ADSR_SUSTAIN,
     ADSR_RELEASE,
-    LFO_WAVEFORM,
-    LFO_FREQ,
-    LFO_DEPTH,
-    LFO_ACTIVE,
+    MOD_LFO_WAVEFORM,
+    MOD_LFO_FREQ,
+    MOD_LFO_DEPTH,
+    MOD_LFO_ACTIVE,
+    MOD_ADSR_ATTACK,
+    MOD_ADSR_DECAY,
+    MOD_ADSR_SUSTAIN,
+    MOD_ADSR_RELEASE,
     EFFECT_OVERDRIVE_DRIVE,
     EFFECT_CHORUS_FREQ,
     EFFECT_CHORUS_DEPTH,
@@ -79,6 +86,7 @@ enum class ParamUnitName
 using P = ParamUnitName;
 
 const P OSC_WAVEFORM[OSC_NUM] = {P::OSC_WAVEFORM_1, P::OSC_WAVEFORM_2, P::OSC_WAVEFORM_3};
+const P OSC_FREQ[OSC_NUM] = {P::OSC_FREQ_1, P::OSC_FREQ_2, P::OSC_FREQ_3};
 const P OSC_PITCH[OSC_NUM] = {P::OSC_PITCH_1, P::OSC_PITCH_2, P::OSC_PITCH_3};
 const P OSC_DETUNE[OSC_NUM] = {P::OSC_DETUNE_1, P::OSC_DETUNE_2, P::OSC_DETUNE_3};
 const P OSC_AMP[OSC_NUM] = {P::OSC_AMP_1, P::OSC_AMP_2, P::OSC_AMP_3};
@@ -121,6 +129,12 @@ enum class ParamUnit
     UNITLESS
 };
 
+enum class ModulateableParam
+{
+    MODULATABLE,
+    NOT_MODULATABLE
+};
+
 class SynthParameter
 {
 private:
@@ -135,7 +149,7 @@ private:
     ParamUnit unit;
     float physical_value;
     float modifier_value;
-
+    ModulateableParam modulateableParam;
     ParamType type;
 
 public:
@@ -144,12 +158,16 @@ public:
     SynthParameter(float min_value, float max_value,
                    const char *label, uint8_t index, float *array,
                    Curve defaultCurve,
-                   ParamUnit param_unit);
+                   ParamUnit param_unit,
+                   ParamType type = ParamType::CONTINUOUS,
+                   ModulateableParam modulateableParam = ModulateableParam::NOT_MODULATABLE);
 
     SynthParameter(int min_vals, int max_vals,
                    const char *label, uint8_t index, float *array,
                    Curve defaultCurve = Curve::LINEAR,
-                   ParamUnit param_unit = ParamUnit::UNITLESS);
+                   ParamUnit param_unit = ParamUnit::UNITLESS,
+                   ParamType type = ParamType::DISCRETE,
+                   ModulateableParam modulateableParam = ModulateableParam::NOT_MODULATABLE);
 
     // Універсальні методи
     float SetNormalized(float n);
@@ -167,14 +185,13 @@ public:
     bool GetBool() const;
     const char *GetLabel() const;
     ParamType GetType() const;
-    float GetMin() const;
-    float GetMax() const;
     ParamUnit GetUnit() const;
     void SetBool(bool value);
     void SetFromCurrentPreset();
     void SetFloat(float value) { physical_value = value; }
     Curve GetCurve() const;
     void SetModifier(float value);
+    ModulateableParam GetModulateableParam() const { return modulateableParam; }
 };
 
 class ParameterManager
@@ -198,6 +215,7 @@ public:
     Curve GetCurve(ParamUnitName name) { return GetParam(name).GetCurve(); }
     void SetFloat(ParamUnitName name, float value) { GetParam(name).SetFloat(value); }
     float GetValue(ParamUnitName name) { return GetParam(name).GetValue(); }
+    ModulateableParam GetModulateableParam(ParamUnitName name) { return GetParam(name).GetModulateableParam(); }
 };
 
 extern ParameterManager paramManager;
@@ -251,31 +269,40 @@ class ModMatrix
 public:
     ModMatrix()
     {
-        modSource.source = ModSource::NONE;
-        modSource.value = 0.0f;
+        modSourceType = ModSource::NONE;
         modTarget = ParamUnitName::NONE;
         modTargetLabel = "-";
-        modSource.label = "-";
         modAmount = 0.0f;
     }
 
+    ModSource modSourceType;
     Modulator modSource;
     ParamUnitName modTarget;
     const char *modTargetLabel;
     float modAmount;
 
-    void SetModSource(ModSource source) { modSource.source = source; }
+    void SetModSource(ModSource source) { modSourceType = source; }
     void SetModTarget(ParamUnitName target) { modTarget = target; }
     void SetModTargetLabel(const char *label) { modTargetLabel = label; }
     void SetModAmount(float amount) { modAmount = amount; }
-    void SetModulatorLabel(const char *label) { modSource.label = label; }
+    
+    // Зчитування значення з глобального масиву modulators
+    float GetModValue() const 
+    { 
+        return modulators[static_cast<int>(modSourceType)].value; 
+    }
+    
+    const char* GetModLabel() const 
+    { 
+        return modulators[static_cast<int>(modSourceType)].label; 
+    }
 
     void RunMod()
     {
-        modSource.value = (modSource.value < 0.0f) ? 0.0f : (modSource.value > 1.0f) ? 1.0f
-                                                                   : modSource.value;
-        modSource.value = modSource.value * modAmount;
-        paramManager.SetModifier(modTarget, modSource.value);
+        float modValue = GetModValue();
+        modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f : modValue;
+        modValue = modValue * modAmount;
+        paramManager.SetModifier(modTarget, modValue);
     }
 };
 
