@@ -3,15 +3,19 @@
 #include "daisy_seed.h"
 #include "oscillator.h"
 #include "pitchTables.h"
+#include "parameters.h"
 
 using P = ParamUnitName;
 
+using M = ModSource;
+
 std::array<Osc, OSC_NUM> osc;
 Adsr adsrMain;
-MoogLadder fltL;
-MoogLadder fltR;
+Adsr adsrMod;
+MoogLadder flt;
 Oscillator lfo;
 Random rnd[OSC_NUM];
+ModMatrix modMatrix[MOD_MATRIX_NUM];
 
 uint8_t noteNum = 60;
 float frequency = 0;
@@ -27,16 +31,6 @@ int activeNotes[maxNotes];
 int activeNoteCount = 0;
 bool gate = false;
 
-float ProcessLfo()
-{
-    // Apply parameters from template
-    lfo.SetFreq(paramManager.GetValue(P::LFO_FREQ));
-    lfo.SetWaveform(paramManager.GetInt(P::LFO_WAVEFORM));
-    lfo.SetAmp(paramManager.GetNormalised(P::LFO_DEPTH));
-    // if (paramManager.GetInt(P::LFO_ACTIVE) == 0) return 0.0f;
-    return lfo.Process();
-}
-
 void SynthInit(float samplerate, int blocksize)
 {
 
@@ -44,9 +38,9 @@ void SynthInit(float samplerate, int blocksize)
     {
         osc[i].Init(samplerate);
     }
-    fltL.Init(samplerate);
-    fltR.Init(samplerate);
+    flt.Init(samplerate);
     adsrMain.Init(samplerate, blocksize);
+    adsrMod.Init(samplerate, blocksize);
     for (size_t i = 0; i < OSC_NUM; i++)
     {
         rnd[i].Init();
@@ -55,7 +49,21 @@ void SynthInit(float samplerate, int blocksize)
     InitPitchTables();
 }
 
-// TODO: implement tables for frequency calculation
+void ModSourcesProcess()
+{
+    lfo.SetFreq(paramManager.GetValue(P::LFO_FREQ));
+    lfo.SetWaveform(paramManager.GetValue(P::LFO_WAVEFORM));
+    lfo.SetAmp(paramManager.GetValue(P::LFO_DEPTH));
+    modulators[static_cast<int>(M::LFO)].value = lfo.Process();
+
+    adsrMod.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
+    adsrMod.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
+    adsrMod.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
+    adsrMod.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
+    modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(false);
+
+    modulators[static_cast<int>(M::MOD_WHEEL)].value = 0.0f;
+}
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 {
@@ -132,14 +140,14 @@ void VoiceProcess(float &voice_sig)
 
     for (size_t i = 0; i < OSC_NUM; i++)
     {
-        pitch_correction[i] = GetPitchTableValue(paramManager.GetInt(OSC_PITCH[i]));
-        detune_correction[i] = GetDetuneTableValue(paramManager.GetInt(OSC_DETUNE[i]));
+        pitch_correction[i] = GetPitchTableValue(paramManager.GetValue(OSC_PITCH[i]));
+        detune_correction[i] = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[i]));
         final_freq[i] = frequency * pitch_correction[i] * detune_correction[i] * pitch_bend_multiplier;
 
         osc[i].SetFreq(final_freq[i]);
-        osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]));
-        osc[i].SetWaveform(paramManager.GetInt(OSC_WAVEFORM[i]));
-        osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
+        osc[i].SetAmp(paramManager.GetValue(OSC_AMP[i]));
+        osc[i].SetWaveform(paramManager.GetValue(OSC_WAVEFORM[i]));
+        osc[i].SetPw(paramManager.GetValue(OSC_PWM[i]));
         osc[i].PhaseProcess();
 
         if (paramManager.GetValue(OSC_ACTIVE[i]))
@@ -153,15 +161,13 @@ void VoiceProcess(float &voice_sig)
         voice_sig = daisysp::fclamp(voice_sig, -1.0f, 1.0f);
     }
 
-    // float lfoSig = ProcessLfo();
-
-    fltR.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
-    fltR.SetRes(paramManager.GetNormalised(P::FILTER_RESONANCE));
-    voice_sig = fltR.Process(voice_sig);
+    flt.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
+    flt.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
+    voice_sig = flt.Process(voice_sig);
 
     adsrMain.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
     adsrMain.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
-    adsrMain.SetSustainLevel(paramManager.GetNormalised(P::ADSR_SUSTAIN));
+    adsrMain.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
     adsrMain.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
 
     float env = adsrMain.Process(gate);

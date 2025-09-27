@@ -10,10 +10,13 @@
 #include "log_uart.h"
 
 using P = ParamUnitName;
+using M = ModSource;
 
 ParamSlot slots[NUM_PARAM_BLOCKS];
 MenuSlot menu_slots[NUM_MAIN_SLOTS];
+// ModMatrixSlot mod_matrix_slots[MOD_MATRIX_BLOCKS_NUM];
 extern ParameterManager paramManager;
+extern ModMatrix modMatrix[MOD_MATRIX_NUM];
 
 const uint8_t yBlockLabel = 10;
 const uint8_t yBlockValue = 30;
@@ -21,6 +24,8 @@ bool isBlink = false;
 bool blinkStateChanged = false;
 bool isStoreMode = false;
 bool page_need_update = false;
+uint8_t selModBlockIndex = 0;
+bool isModMatrixNeedUpdate = false;
 
 char page_name[16] = "";
 ActiveRow currentActiveRow = ROW_1; // Початково активний перший ряд
@@ -70,18 +75,18 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 
     if (currentPage == MAIN_PAGE)
     {
-        value = paramManager.GetFloat(menu_slots[blockIndex].target_param);
+        value = paramManager.GetValue(menu_slots[blockIndex].target_param);
         label = paramManager.GetLabel(menu_slots[blockIndex].target_param);
     }
     else
     {
-        value = paramManager.GetFloat(slots[blockIndex].target_param);
+        value = paramManager.GetValue(slots[blockIndex].target_param);
         label = paramManager.GetLabel(slots[blockIndex].target_param);
     }
 
     if (param_unit == ParamUnit::PICTURE)
     {
-        value = paramManager.GetInt(slots[blockIndex].target_param);
+        value = paramManager.GetValue(slots[blockIndex].target_param);
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
         DrawWaveformImage(value);
     }
@@ -394,6 +399,10 @@ void UpdateEncodersParams()
     {
         EncoderChangeEffect();
     }
+    else if (currentPage == MOD_MATRIX_PAGE)
+    {
+        EncoderChangeModMatrix();
+    }
     else
     {
         UpdateParamSlots();
@@ -485,6 +494,9 @@ void AssignParamsForPage(MenuPage page)
         slots[0].target_param = P::EFFECT_REVERB_FEEDBACK;
         slots[1].target_param = P::EFFECT_REVERB_LPFREQ;
         break;
+    case MOD_MATRIX_PAGE:
+        SetPageName("Mod Matrix");
+        break;
     default:
         SetPageName(" - ");
         slots[0].target_param = P::NONE;
@@ -537,6 +549,121 @@ void EncoderChangeEffect()
     encoderIncs[0] = encoderIncs[3] = 0;
 }
 
+void InitModMatrixBlock(uint8_t blockIndex)
+{
+    Paint_NewImage(mod_matrix_block_data[blockIndex].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
+    Paint_Clear(BLACK);
+
+    Paint_TextCentered(modMatrix[blockIndex].modSource.label, 32, 64, 0, Font12, WHITE, BLACK);
+    Paint_NumCentered(modMatrix[blockIndex].modAmount * 100, 64, 96, 0, 0, Font12, WHITE, BLACK);
+    Paint_TextCentered(modMatrix[blockIndex].modTargetLabel, 96, 128, 0, Font12, WHITE, BLACK);
+    if (blockIndex == selModBlockIndex)
+    {
+        Paint_DrawRectangle(0, 0, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+    }
+
+    OLED_Part_Transmit_DMA(&mod_matrix_block_data[blockIndex],
+                           BLOCK_MOD_MATRIX_X_START,
+                           BLOCK_MOD_MATRIX_Y_START[blockIndex],
+                           BLOCK_MOD_MATRIX_X_END,
+                           BLOCK_MOD_MATRIX_Y_END[blockIndex]);
+}
+
+void InitModMatrixBlocks()
+{
+    for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
+    {
+        InitModMatrixBlock(i);
+    }
+}
+
+void EditModBlock()
+{
+    if (encoderIncs[0] != 0)
+    {
+        int dir = (encoderIncs[0] > 0) ? 1 : -1;
+        int prevModBlockIndex = selModBlockIndex;
+        int value = prevModBlockIndex;
+        value += dir;
+        if (value >= MOD_MATRIX_BLOCKS_NUM)
+        {
+            value = MOD_MATRIX_BLOCKS_NUM - 1;
+        }
+        if (value < 0)
+        {
+            value = 0;
+        }
+        selModBlockIndex = value;
+        InitModMatrixBlock(prevModBlockIndex);
+        encoderIncs[0] = 0;
+    }
+
+    if (encoderIncs[1] != 0)
+    {
+        int dir = (encoderIncs[1] > 0) ? 1 : -1;
+        int mod = (int)modMatrix[selModBlockIndex].modSource.source;
+        mod += dir;
+        if (mod >= static_cast<int>(M::COUNT_MOD_SOURCES) - 1)
+        {
+            mod = static_cast<int>(M::COUNT_MOD_SOURCES) - 1;
+        }
+        if (mod < 0)
+        {
+            mod = 0;
+        }
+        modMatrix[selModBlockIndex].modSource.source = static_cast<M>(mod);
+        modMatrix[selModBlockIndex].modSource.label = modulators[mod].label;
+        encoderIncs[1] = 0;
+    }
+    if (encoderIncs[2] != 0)
+    {
+        int dir = (encoderIncs[2] > 0) ? 1 : -1;
+        float amount = modMatrix[selModBlockIndex].modAmount;
+        amount += dir * 0.01f;
+        if (amount > 1.0f)
+        {
+            amount = 1.0f;
+        }
+        if (amount < 0.0f)
+        {
+            amount = 0.0f;
+        }
+        modMatrix[selModBlockIndex].modAmount = amount;
+        encoderIncs[2] = 0;
+    }
+    if (encoderIncs[3] != 0)
+    {
+        int dir = (encoderIncs[3] > 0) ? 1 : -1;
+        int value = (int)modMatrix[selModBlockIndex].modTarget;
+        value += dir;
+        while (paramManager.GetUnit(static_cast<P>(value)) == ParamUnit::BOOL)
+        {
+            value += dir;
+        }
+        if (value > (int)P::COUNT_PARAMS - 1)
+        {
+            value = (int)P::COUNT_PARAMS - 1;
+        }
+        else if (value <= (int)P::NONE + 1)
+        {
+            value = (int)P::NONE + 1;
+        }
+        modMatrix[selModBlockIndex].modTarget = (ParamUnitName)value;
+        modMatrix[selModBlockIndex].modTargetLabel = paramManager.GetLabel(modMatrix[selModBlockIndex].modTarget);
+        encoderIncs[3] = 0;
+    }
+    InitModMatrixBlock(selModBlockIndex);
+    isModMatrixNeedUpdate = false;
+}
+
+void EncoderChangeModMatrix()
+{
+    if (isModMatrixNeedUpdate)
+    {
+        EditModBlock();
+    }
+}
+
 void InitSlots()
 {
     currentPage = EMPTY;
@@ -559,6 +686,16 @@ void InitSlots()
 
     effectSlot[0].selectedEffect = EFFECT_NONE;
     effectSlot[1].selectedEffect = EFFECT_REVERB;
+
+    for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
+    {
+        modMatrix[i].modTarget = P::NONE;
+        modMatrix[i].modSource.value = 0.0f;
+        modMatrix[i].modAmount = 0.0f;
+        modMatrix[i].modSource.source = M::NONE;
+        modMatrix[i].modSource.label = "-";
+        modMatrix[i].modTargetLabel = "-";
+    }
 
     System::Delay(10);
 }

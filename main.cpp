@@ -45,6 +45,13 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         HandleMidiMessage(msg);
     }
 
+    ModSourcesProcess();
+
+    for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
+    {
+        modMatrix[i].RunMod();
+    }
+
     for (size_t i = 0; i < size; i += 2)
     {
         float sig_after_fxL = 0.0f;
@@ -163,19 +170,19 @@ void ProcessButtons()
         {
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1))
             {
-                bool osc_active_1 = paramManager.GetBool(P::OSC_ACTIVE_1);
+                bool osc_active_1 = paramManager.GetValue(P::OSC_ACTIVE_1);
                 paramManager.SetBool(P::OSC_ACTIVE_1, !osc_active_1);
                 UpdateLeds();
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2))
             {
-                bool osc_active_2 = paramManager.GetBool(P::OSC_ACTIVE_2);
+                bool osc_active_2 = paramManager.GetValue(P::OSC_ACTIVE_2);
                 paramManager.SetBool(P::OSC_ACTIVE_2, !osc_active_2);
                 UpdateLeds();
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3))
             {
-                bool osc_active_3 = paramManager.GetBool(P::OSC_ACTIVE_3);
+                bool osc_active_3 = paramManager.GetValue(P::OSC_ACTIVE_3);
                 paramManager.SetBool(P::OSC_ACTIVE_3, !osc_active_3);
                 UpdateLeds();
             }
@@ -264,7 +271,7 @@ void ProcessButtons()
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_MTX))
             {
-                SetPage(MenuPage::MTX_PAGE);
+                SetPage(MenuPage::MOD_MATRIX_PAGE);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_STORE))
             {
@@ -321,6 +328,12 @@ void ProcessEncoders()
         if (encoderIncs[3] != 0)
         {
             effectSlot[1].need_update = true;
+        }
+        break;
+    case MOD_MATRIX_PAGE:
+        if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
+        {
+            isModMatrixNeedUpdate = true;
         }
         break;
     default:

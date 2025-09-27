@@ -13,12 +13,12 @@
 #define PARAM_NAME_LENGTH 8
 #define PRESET_NAME_LENGTH 12
 #define PRESET_NUM 10
+#define MOD_MATRIX_NUM 8
 
 template <typename T>
 constexpr const T &clamp(const T &v, const T &lo, const T &hi)
 {
-    return (v < lo) ? lo : (v > hi) ? hi
-                                    : v;
+    return (v < lo) ? lo : (v > hi) ? hi : v;
 }
 
 struct Preset;
@@ -86,7 +86,7 @@ const P OSC_PWM[OSC_NUM] = {P::OSC_PWM_1, P::OSC_PWM_2, P::OSC_PWM_3};
 const P OSC_ACTIVE[OSC_NUM] = {P::OSC_ACTIVE_1, P::OSC_ACTIVE_2, P::OSC_ACTIVE_3};
 
 const P EFFECT_SLOT_ACTIVE[2] = {P::EFFECT_SLOT_1_ACTIVE, P::EFFECT_SLOT_2_ACTIVE};
-const P EFFECT_SLOT_DRYWET[2] = {P::EFFECT_SLOT_1_DRYWET, P::EFFECT_SLOT_2_DRYWET}; 
+const P EFFECT_SLOT_DRYWET[2] = {P::EFFECT_SLOT_1_DRYWET, P::EFFECT_SLOT_2_DRYWET};
 
 enum Waves
 {
@@ -95,12 +95,6 @@ enum Waves
     SQR,
     OFF
 };
-
-// enum ValueType {
-//     REGULAR,
-//     X100,
-//     WAVEFORM
-// };
 
 enum class Curve
 {
@@ -140,6 +134,7 @@ private:
     Curve curve;
     ParamUnit unit;
     float physical_value;
+    float modifier_value;
 
     ParamType type;
 
@@ -165,7 +160,7 @@ public:
     void SetNormValue(float value) { norm_value = value; }
 
     // Геттери
-    float GetFloat() const;
+    float GetValue();
     int GetInt() const;
     float GetNormalised() const;
     bool GetBool() const;
@@ -176,7 +171,9 @@ public:
     ParamUnit GetUnit() const;
     void SetBool(bool value);
     void SetFromCurrentPreset();
+    void SetFloat(float value) { physical_value = value; }
     Curve GetCurve() const;
+    void SetModifier(float value);
 };
 
 class ParameterManager
@@ -187,36 +184,24 @@ private:
 public:
     void Init();
     SynthParameter &GetParam(ParamUnitName name) { return params[static_cast<int>(name)]; }
-    float GetFloat(ParamUnitName name) { return GetParam(name).GetFloat(); }
-    int GetInt(ParamUnitName name) { return GetParam(name).GetInt(); }
     float GetNormalised(ParamUnitName name) { return GetParam(name).GetNormalised(); }
     bool GetBool(ParamUnitName name) { return GetParam(name).GetBool(); }
     const char *GetLabel(ParamUnitName name) { return GetParam(name).GetLabel(); }
     ParamType GetType(ParamUnitName name) { return GetParam(name).GetType(); }
-    float GetMin(ParamUnitName name) { return GetParam(name).GetMin(); }
-    float GetMax(ParamUnitName name) { return GetParam(name).GetMax(); }
     void AdjustByIncrement(ParamUnitName name, int inc) { GetParam(name).AdjustByIncrement(inc); }
-    float GetValue(ParamUnitName name) { return GetParam(name).GetFloat(); }
+    void SetModifier(ParamUnitName name, float mod_value) { GetParam(name).SetModifier(mod_value); }
     void SetValue(ParamUnitName name, float value) { GetParam(name).SetNormalized(value); }
     void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
     ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).GetUnit(); }
     Curve GetCurve(ParamUnitName name) { return GetParam(name).GetCurve(); }
-    float ValueModifier(ParamUnitName name, float modifier)
-    {
-
-        float value = GetParam(name).GetFloat();
-        float max = GetParam(name).GetMax();
-        modifier = (modifier < 0.0f) ? 0.0f : (modifier > 1.0f) ? 1.0f
-                                                                : modifier;
-        return value + (max - value) * (modifier);
-    }
+    void SetFloat(ParamUnitName name, float value) { GetParam(name).SetFloat(value); }
+    float GetValue(ParamUnitName name) { return GetParam(name).GetValue(); }
 };
 
 extern ParameterManager paramManager;
 
 // Functions for initializing parameters
 void InitSynthParams();
-void InitEffectParams();
 
 enum class PresetType : uint8_t
 {
@@ -239,5 +224,59 @@ void ReadPreset(uint8_t preset_num, Preset &prst);
 void SavePreset(uint8_t preset_num, const Preset &prst);
 void InitQSPI();
 void ResetPreset(int presetNumber);
+
+enum class ModSource
+{
+    LFO,
+    ADSR,
+    MOD_WHEEL,
+    NONE,
+    COUNT_MOD_SOURCES
+};
+
+struct Modulator
+{
+    ModSource source;
+    float value;
+    const char *label;
+};
+
+extern Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)];
+
+// Mod Matrix
+class ModMatrix
+{
+public:
+    ModMatrix()
+    {
+        modSource.source = ModSource::NONE;
+        modSource.value = 0.0f;
+        modTarget = ParamUnitName::NONE;
+        modTargetLabel = "-";
+        modSource.label = "-";
+        modAmount = 0.0f;
+    }
+
+    Modulator modSource;
+    ParamUnitName modTarget;
+    const char *modTargetLabel;
+    float modAmount;
+
+    void SetModSource(ModSource source) { modSource.source = source; }
+    void SetModTarget(ParamUnitName target) { modTarget = target; }
+    void SetModTargetLabel(const char *label) { modTargetLabel = label; }
+    void SetModAmount(float amount) { modAmount = amount; }
+    void SetModulatorLabel(const char *label) { modSource.label = label; }
+
+    void RunMod()
+    {
+        modSource.value = (modSource.value < 0.0f) ? 0.0f : (modSource.value > 1.0f) ? 1.0f
+                                                                   : modSource.value;
+        modSource.value = modSource.value * modAmount;
+        paramManager.SetModifier(modTarget, modSource.value);
+    }
+};
+
+extern ModMatrix modMatrix[MOD_MATRIX_NUM];
 
 #endif // PARAMETERS_H

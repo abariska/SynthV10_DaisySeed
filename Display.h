@@ -19,6 +19,9 @@
 #define OSC_ON_BLOCK_HEIGHT 16
 #define SCOPE_BLOCK_WIDTH 128
 #define SCOPE_BLOCK_HEIGHT 32
+#define MOD_MATRIX_BLOCK_WIDTH 128
+#define MOD_MATRIX_BLOCK_HEIGHT 14
+#define MOD_MATRIX_BLOCKS_NUM 7
 #define NUM_PARAM_BLOCKS 8
 #define NUM_MAIN_SLOTS 4
 #define NUM_FX_SLOTS 2
@@ -49,7 +52,7 @@ enum MenuPage
     CHORUS_PAGE,
     COMPRESSOR_PAGE,
     REVERB_PAGE,
-    MTX_PAGE,
+    MOD_MATRIX_PAGE,
     SETTINGS_PAGE,
     STORE_PAGE,
     LOAD_PAGE,
@@ -78,6 +81,11 @@ const uint8_t BLOCK_FX_X_END[] = {64, 128};
 const uint8_t BLOCK_FX_Y_START[] = {64, 64};
 const uint8_t BLOCK_FX_Y_END[] = {124, 124};
 
+const uint8_t BLOCK_MOD_MATRIX_X_START = 0;
+const uint8_t BLOCK_MOD_MATRIX_X_END = 128;
+const uint8_t BLOCK_MOD_MATRIX_Y_START[] = {24, 38, 52, 66, 80, 94, 108};
+const uint8_t BLOCK_MOD_MATRIX_Y_END[] = {38, 52, 66, 80, 94, 108, 122};
+
 extern ImageData intro_page_data;
 extern ImageData bg_black_data;
 extern ImageData param_block_data[NUM_PARAM_BLOCKS];
@@ -87,6 +95,7 @@ extern ImageData osc_on_block_data;
 extern ImageData cpu_load_block_data;
 extern ImageData preset_name_block_data;
 extern ImageData preset_num_block_data;
+extern ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
 
 void SetPage(MenuPage newPage);
 void UpdatePage();
@@ -97,5 +106,6 @@ void DrawIntroPage();
 void SelectEffectPage(uint8_t slot);
 void InitImages();
 void DrawEffectBlock(uint8_t slot);
+void DrawModMatrixPage();
 
 #endif

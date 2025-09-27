@@ -17,7 +17,7 @@ const UWORD EFFECT_BLOCK_SIZE = (((EFFECT_BLOCK_WIDTH % 2 == 0) ? (EFFECT_BLOCK_
 const UWORD CPU_LOAD_BLOCK_SIZE = (((CPU_LOAD_BLOCK_WIDTH % 2 == 0) ? (CPU_LOAD_BLOCK_WIDTH / 2) : (CPU_LOAD_BLOCK_WIDTH / 2 + 1)) * CPU_LOAD_BLOCK_HEIGHT);
 const UWORD PRESET_NAME_BLOCK_SIZE = (((PRESET_NAME_BLOCK_WIDTH % 2 == 0) ? (PRESET_NAME_BLOCK_WIDTH / 2) : (PRESET_NAME_BLOCK_WIDTH / 2 + 1)) * PRESET_NAME_BLOCK_HEIGHT);
 const UWORD PRESET_NUM_BLOCK_SIZE = (((PRESET_NUM_BLOCK_WIDTH % 2 == 0) ? (PRESET_NUM_BLOCK_WIDTH / 2) : (PRESET_NUM_BLOCK_WIDTH / 2 + 1)) * PRESET_NUM_BLOCK_HEIGHT);
-
+const UWORD MOD_MATRIX_BLOCK_SIZE = (((MOD_MATRIX_BLOCK_WIDTH % 2 == 0) ? (MOD_MATRIX_BLOCK_WIDTH / 2) : (MOD_MATRIX_BLOCK_WIDTH / 2 + 1)) * MOD_MATRIX_BLOCK_HEIGHT);
 UBYTE DSY_SDRAM_BSS intro_page[INTRO_PAGE_SIZE];
 UBYTE DSY_SDRAM_BSS bg_black[BG_BLACK_SIZE];
 UBYTE DSY_SDRAM_BSS param_block[NUM_PARAM_BLOCKS][PARAM_BLOCK_SIZE];
@@ -27,7 +27,7 @@ UBYTE DSY_SDRAM_BSS effect_block[NUM_FX_SLOTS][EFFECT_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS cpu_load_block[CPU_LOAD_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS preset_name_block[PRESET_NAME_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS preset_num_block[PRESET_NUM_BLOCK_SIZE];
-
+UBYTE DSY_SDRAM_BSS mod_matrix_block[MOD_MATRIX_BLOCKS_NUM][MOD_MATRIX_BLOCK_SIZE];
 ImageData intro_page_data;
 ImageData bg_black_data;
 ImageData param_block_data[NUM_PARAM_BLOCKS];
@@ -37,7 +37,7 @@ ImageData effect_block_data[NUM_FX_SLOTS];
 ImageData cpu_load_block_data;
 ImageData preset_name_block_data;
 ImageData preset_num_block_data;
-
+ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
 MenuPage currentPage = MAIN_PAGE;
 
 void InitImages()
@@ -51,10 +51,19 @@ void InitImages()
     }
     memset(wave_buffer, 0, WAVE_BUFFER_SIZE);
     memset(osc_on_block, 0, OSC_ON_BLOCK_SIZE);
+    for (size_t i = 0; i < NUM_FX_SLOTS; i++)
+    {
+        memset(effect_block[i], 0, EFFECT_BLOCK_SIZE);
+    }
     memset(effect_block, 0, EFFECT_BLOCK_SIZE);
     memset(cpu_load_block, 0, CPU_LOAD_BLOCK_SIZE);
     memset(preset_name_block, 0, PRESET_NAME_BLOCK_SIZE);
     memset(preset_num_block, 0, PRESET_NUM_BLOCK_SIZE);
+    for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
+    {
+        memset(mod_matrix_block[i], 0, MOD_MATRIX_BLOCK_SIZE);
+    }
+    memset(mod_matrix_block, 0, MOD_MATRIX_BLOCK_SIZE);
 
     intro_page_data = {intro_page, INTRO_PAGE_SIZE};
     bg_black_data = {bg_black, BG_BLACK_SIZE};
@@ -71,6 +80,10 @@ void InitImages()
     cpu_load_block_data = {cpu_load_block, CPU_LOAD_BLOCK_SIZE};
     preset_name_block_data = {preset_name_block, PRESET_NAME_BLOCK_SIZE};
     preset_num_block_data = {preset_num_block, PRESET_NUM_BLOCK_SIZE};
+    for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
+    {
+        mod_matrix_block_data[i] = {mod_matrix_block[i], MOD_MATRIX_BLOCK_SIZE};
+    }
 
     System::Delay(10);
 }
@@ -105,6 +118,9 @@ void SetPage(MenuPage newPage)
     case FX_PAGE:
         DrawEffectsPage();
         break;
+    case MOD_MATRIX_PAGE:
+        DrawModMatrixPage();
+        break;
     default:
         DrawParamPage(newPage);
         break;
@@ -122,9 +138,11 @@ void UpdatePage()
     case MAIN_PAGE:
         DrawMainPage();
         break;
-        break;
     case FX_PAGE:
         DrawEffectsPage();
+        break;
+    case MOD_MATRIX_PAGE:
+        DrawModMatrixPage();
         break;
     default:
         DrawParamPage(currentPage);
@@ -257,6 +275,21 @@ void SelectEffectPage(uint8_t slot)
         break;
     }
     SetPage(page);
+}
+
+void DrawModMatrixPage()
+{
+    AssignParamsForPage(MOD_MATRIX_PAGE);
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
+    Paint_Clear(BLACK);
+    
+    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+
+    Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
+
+    OLED_Transmit_DMA(&bg_black_data);
+
+    InitModMatrixBlocks(); 
 }
 
 // void DrawIntroPage2(){

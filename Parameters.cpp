@@ -190,29 +190,61 @@ float SynthParameter::AdjustByIncrement(int inc)
     }
 }
 
-// Getters
-float SynthParameter::GetFloat() const { return static_cast<float>(physical_value); }
+void SynthParameter::SetModifier(float value)
+{
+    modifier_value = value;
+}
+
+float SynthParameter::GetValue()
+{
+    float value = 0;
+    float m = 0.0f;
+    switch (unit)
+    {
+    case ParamUnit::HZ:
+    case ParamUnit::SECONDS:
+    case ParamUnit::SEMITONES:
+    case ParamUnit::CENTS:
+        value = physical_value;
+        m = max;
+        break;
+    case ParamUnit::PERCENT:
+        value = norm_value;
+        m = 1.0f;
+        break;
+    case ParamUnit::PICTURE:
+    case ParamUnit::UNITLESS:
+        return static_cast<float>(GetInt());
+        break;
+    case ParamUnit::BOOL:
+        return static_cast<float>(GetBool());
+        break;
+    }
+    return value + ((m - value) * modifier_value);
+}
+
 int SynthParameter::GetInt() const
 {
     if (type == ParamType::DISCRETE)
     {
         if (norm_value < 0.001f)
-            return 0; // Явна обробка нуля
+            return 0;
         return static_cast<int>(roundf(norm_value * (max)));
     }
     return static_cast<int>(physical_value);
 }
-float SynthParameter::GetNormalised() const { return norm_value; }
-bool SynthParameter::GetBool() const { return static_cast<float>(norm_value) > 0.5f; }
-const char *SynthParameter::GetLabel() const { return name_label; }
-ParamType SynthParameter::GetType() const { return type; }
-float SynthParameter::GetMin() const { return static_cast<float>(min); }
-float SynthParameter::GetMax() const { return static_cast<float>(max); }
+
 void SynthParameter::SetBool(bool value)
 {
     norm_value = value > 0.5f ? 1.0f : 0.0f;
     SetNormalized(norm_value);
 }
+
+// Getters
+float SynthParameter::GetNormalised() const { return norm_value; }
+bool SynthParameter::GetBool() const { return static_cast<float>(norm_value) > 0.5f; }
+const char *SynthParameter::GetLabel() const { return name_label; }
+ParamType SynthParameter::GetType() const { return type; }
 ParamUnit SynthParameter::GetUnit() const { return unit; }
 Curve SynthParameter::GetCurve() const { return curve; }
 
@@ -310,15 +342,16 @@ void ApplyPreset(int presetNumber)
 }
 
 #define ADD_PARAM(param_enum, min_val, max_val, label, curve, unit) \
-    params[static_cast<int>(param_enum)] = SynthParameter( \
-        min_val, max_val, label, static_cast<int>(param_enum), \
+    params[static_cast<int>(param_enum)] = SynthParameter(          \
+        min_val, max_val, label, static_cast<int>(param_enum),      \
         currentPreset.array, curve, unit)
 
 ParameterManager paramManager;
+using P = ParamUnitName;
 
 void ParameterManager::Init()
 {
-    using P = ParamUnitName;
+
     // TODO: Finish with parameters
     // TODO: Handle \n in labels
     ADD_PARAM(P::OSC_WAVEFORM_1, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE);
@@ -341,7 +374,7 @@ void ParameterManager::Init()
     ADD_PARAM(P::OSC_ACTIVE_3, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL);
     ADD_PARAM(P::FILTER_CUTOFF, 20.0f, 20000.0f, "Cut", Curve::EXPONENTIAL, ParamUnit::HZ);
     ADD_PARAM(P::FILTER_RESONANCE, 0.0f, 100.0f, "Res", Curve::LINEAR, ParamUnit::PERCENT);
-    ADD_PARAM(P::ADSR_ATTACK, 0.005f, 20.0f, "Atk" , Curve::EXPONENTIAL, ParamUnit::SECONDS);
+    ADD_PARAM(P::ADSR_ATTACK, 0.005f, 20.0f, "Atk", Curve::EXPONENTIAL, ParamUnit::SECONDS);
     ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Dcy", Curve::EXPONENTIAL, ParamUnit::SECONDS);
     ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sus", Curve::LINEAR, ParamUnit::PERCENT);
     ADD_PARAM(P::ADSR_RELEASE, 0.005f, 20.0f, "Rls", Curve::EXPONENTIAL, ParamUnit::SECONDS);
@@ -369,3 +402,10 @@ void ParameterManager::Init()
     ADD_PARAM(P::GLOBAL_LEGATO, 0, 2, "Lgt", Curve::LINEAR, ParamUnit::BOOL);
     ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 1.0f, "Prt", Curve::LINEAR, ParamUnit::SECONDS);
 }
+
+Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
+    {ModSource::LFO, 0.0f, "LFO"},
+    {ModSource::ADSR, 0.0f, "ADSR"},
+    {ModSource::MOD_WHEEL, 0.0f, "WHEEL"},
+    {ModSource::NONE, 0.0f, "-"}
+};
