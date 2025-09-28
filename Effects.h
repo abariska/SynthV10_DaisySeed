@@ -22,6 +22,7 @@ enum EffectName
     EFFECT_COUNT,
 };
 
+extern float driveGainCompensation;
 extern const char *effectLabels[];
 
 struct FXParam

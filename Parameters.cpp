@@ -17,12 +17,13 @@ static const uint32_t FLASH_BLOCK_4KB = 0x1000;
 
 Preset currentPreset;
 float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS) - 1)] = {0.0f,
-                                                                                   0.0f, 0.5f, 0.5f, 0.0f, 0.5f, 1.0f,
-                                                                                   0.0f, 0.5f, 0.5f, 0.0f, 0.5f, 0.0f,
-                                                                                   0.0f, 0.5f, 0.5f, 0.0f, 0.5f, 0.0f,
-                                                                                   0.5f, 0.0f, 0.1f, 0.1f, 1.0f, 0.1f, 1.0f, 0.0f, 1.0f, 0.0f,
+                                                                                   0.0f, 0.5f, 0.5f, 0.0f, 0.5f, 1.0f, 0.0f, 
+                                                                                   0.5f, 0.5f, 0.0f, 0.5f, 0.0f, 0.0f, 0.5f, 
+                                                                                   0.5f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.1f, 
+                                                                                   0.1f, 0.0f, 0.1f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 
+                                                                                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                                                                                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                                                                                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+                                                                                   0.0f, 0.0f, 0.0f};
 
 Preset GetDefaultPreset(int8_t presetNumber)
 {
@@ -44,13 +45,13 @@ void InitQSPI()
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), 256);
     uint32_t init_flag = *((uint32_t *)(0x90000000));
 
-    if (init_flag != 0xDEADBEEF)
+    if (init_flag != 0xDEADBEED)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
         uint8_t page[256];
         memset(page, 0xFF, sizeof(page));
-        uint32_t marker = 0xDEADBEEF;
+        uint32_t marker = 0xDEADBEED;
         memcpy(page, &marker, sizeof(marker));
 
         hw.qspi.Write(0, sizeof(page), page);
@@ -76,7 +77,7 @@ void InitQSPI()
 
 // Continuous
 SynthParameter::SynthParameter(float min_value, float max_value, const char *label,
-                               uint8_t index, float *array, Curve defaultCurve, ParamUnit param_unit)
+                               uint8_t index, float *array, Curve defaultCurve, ParamUnit param_unit, ParamType paramType, ModulateableParam modulateableParam)
     : name_label(label),
       param_index(index),
       param_array(array),
@@ -84,13 +85,14 @@ SynthParameter::SynthParameter(float min_value, float max_value, const char *lab
       max(max_value),
       curve(defaultCurve),
       unit(param_unit),
-      type(ParamType::CONTINUOUS)
+      modulateableParam(modulateableParam),
+      type(paramType)
 {
 }
 
 // Discrete
-SynthParameter::SynthParameter(int min_vals, int max_vals,
-                               const char *label, uint8_t index, float *array, Curve defaultCurve, ParamUnit param_unit)
+SynthParameter::SynthParameter(int min_vals, int max_vals, const char *label,
+                               uint8_t index, float *array, Curve defaultCurve, ParamUnit param_unit, ParamType paramType, ModulateableParam modulateableParam)
     : name_label(label),
       param_index(index),
       param_array(array),
@@ -98,7 +100,8 @@ SynthParameter::SynthParameter(int min_vals, int max_vals,
       max(max_vals),
       curve(defaultCurve),
       unit(param_unit),
-      type(ParamType::DISCRETE)
+      modulateableParam(modulateableParam),
+      type(paramType)
 {
 }
 
@@ -190,31 +193,69 @@ float SynthParameter::AdjustByIncrement(int inc)
     }
 }
 
-// Getters
-float SynthParameter::GetFloat() const { return static_cast<float>(physical_value); }
+void SynthParameter::SetModifier(float value)
+{
+    modifier_value = value;
+}
+
+float SynthParameter::GetValue()
+{
+    float value = 0;
+    float m = 0.0f;
+    switch (unit)
+    {
+    case ParamUnit::HZ:
+        value = physical_value;
+        m = max;
+        return value + ((m - value) * modifier_value);
+        break;
+    case ParamUnit::SECONDS:
+    case ParamUnit::SEMITONES:
+    case ParamUnit::CENTS:
+        value = physical_value;
+        m = max;
+        return value + ((m - value) * modifier_value);
+        break;
+    case ParamUnit::PERCENT:
+        value = norm_value;
+        m = 1.0f;
+        return value + ((m - value) * modifier_value);
+        break;
+    case ParamUnit::PICTURE:
+    case ParamUnit::UNITLESS:
+        return static_cast<float>(GetInt());
+        break;
+    case ParamUnit::BOOL:
+        return static_cast<float>(GetBool());
+        break;
+    }
+}
+
 int SynthParameter::GetInt() const
 {
     if (type == ParamType::DISCRETE)
     {
         if (norm_value < 0.001f)
-            return 0; // Явна обробка нуля
+            return 0;
         return static_cast<int>(roundf(norm_value * (max)));
     }
     return static_cast<int>(physical_value);
 }
-float SynthParameter::GetNormalised() const { return norm_value; }
-bool SynthParameter::GetBool() const { return static_cast<float>(norm_value) > 0.5f; }
-const char *SynthParameter::GetLabel() const { return name_label; }
-ParamType SynthParameter::GetType() const { return type; }
-float SynthParameter::GetMin() const { return static_cast<float>(min); }
-float SynthParameter::GetMax() const { return static_cast<float>(max); }
+
 void SynthParameter::SetBool(bool value)
 {
     norm_value = value > 0.5f ? 1.0f : 0.0f;
     SetNormalized(norm_value);
 }
+
+// Getters
+float SynthParameter::GetNormalised() const { return norm_value; }
+bool SynthParameter::GetBool() const { return static_cast<float>(norm_value) > 0.5f; }
+const char *SynthParameter::GetLabel() const { return name_label; }
+ParamType SynthParameter::GetType() const { return type; }
 ParamUnit SynthParameter::GetUnit() const { return unit; }
 Curve SynthParameter::GetCurve() const { return curve; }
+float SynthParameter::GetPhysical() const { return physical_value; }
 
 //--------------------------------
 //--------------------------------
@@ -309,59 +350,77 @@ void ApplyPreset(int presetNumber)
     page_need_update = true;
 }
 
+#define ADD_PARAM(param_enum, min_val, max_val, label, curve, unit, modulateableParam) \
+    params[static_cast<int>(param_enum)] = SynthParameter(                             \
+        min_val, max_val, label, static_cast<int>(param_enum),                         \
+        currentPreset.array, curve, unit, ParamType::CONTINUOUS, modulateableParam)
+
 ParameterManager paramManager;
+using P = ParamUnitName;
 
 void ParameterManager::Init()
 {
-    using P = ParamUnitName;
-    // TODO: Finish with parameters
-    // TODO: Handle \n in labels
-    params[static_cast<int>(P::NONE)] = SynthParameter(0, 0, "", 0, currentPreset.array);
-    params[static_cast<int>(P::OSC_WAVEFORM_1)] = SynthParameter(0, Osc::WAVE_COUNT - 1, "Wav", 1, currentPreset.array, Curve::LINEAR, ParamUnit::PICTURE);
-    params[static_cast<int>(P::OSC_PITCH_1)] = SynthParameter(-36.0f, 36.0f, "Sem", 2, currentPreset.array, Curve::LINEAR, ParamUnit::SEMITONES);
-    params[static_cast<int>(P::OSC_DETUNE_1)] = SynthParameter(-100.0f, 100.0f, "Dtn", 3, currentPreset.array, Curve::LINEAR, ParamUnit::CENTS);
-    params[static_cast<int>(P::OSC_AMP_1)] = SynthParameter(0.0f, 100.0f, "Amp", 4, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::OSC_PWM_1)] = SynthParameter(-100.0f, 100.0f, "PWM", 5, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::OSC_ACTIVE_1)] = SynthParameter(0, 2, "Actv", 6, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
-    params[static_cast<int>(P::OSC_WAVEFORM_2)] = SynthParameter(0, Osc::WAVE_COUNT - 1, "Wav", 7, currentPreset.array, Curve::LINEAR, ParamUnit::PICTURE);
-    params[static_cast<int>(P::OSC_PITCH_2)] = SynthParameter(-36.0f, 36.0f, "Sem", 8, currentPreset.array, Curve::LINEAR, ParamUnit::SEMITONES);
-    params[static_cast<int>(P::OSC_DETUNE_2)] = SynthParameter(-100.0f, 100.0f, "Dtn", 9, currentPreset.array, Curve::LINEAR, ParamUnit::CENTS);
-    params[static_cast<int>(P::OSC_AMP_2)] = SynthParameter(0.0f, 100.0f, "Amp", 10, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::OSC_PWM_2)] = SynthParameter(-100.0f, 100.0f, "PWM", 11, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::OSC_ACTIVE_2)] = SynthParameter(0, 2, "Actv", 12, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
-    params[static_cast<int>(P::OSC_WAVEFORM_3)] = SynthParameter(0, Osc::WAVE_COUNT - 1, "Wav", 13, currentPreset.array, Curve::LINEAR, ParamUnit::PICTURE);
-    params[static_cast<int>(P::OSC_PITCH_3)] = SynthParameter(-36.0f, 36.0f, "Sem", 14, currentPreset.array, Curve::LINEAR, ParamUnit::SEMITONES);
-    params[static_cast<int>(P::OSC_DETUNE_3)] = SynthParameter(-100.0f, 100.0f, "Dtn", 15, currentPreset.array, Curve::LINEAR, ParamUnit::CENTS);
-    params[static_cast<int>(P::OSC_AMP_3)] = SynthParameter(0.0f, 100.0f, "Amp", 16, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::OSC_PWM_3)] = SynthParameter(-100.0f, 100.0f, "PWM", 17, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::OSC_ACTIVE_3)] = SynthParameter(0, 2, "Actv", 18, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
-    params[static_cast<int>(P::FILTER_CUTOFF)] = SynthParameter(20.0f, 20000.0f, "Cut", 19, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::HZ);
-    params[static_cast<int>(P::FILTER_RESONANCE)] = SynthParameter(0.0f, 100.0f, "Res", 20, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::ADSR_ATTACK)] = SynthParameter(0.005f, 20.0f, "Atk", 21, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::SECONDS);
-    params[static_cast<int>(P::ADSR_DECAY)] = SynthParameter(0.005f, 20.0f, "Dcy", 22, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::SECONDS);
-    params[static_cast<int>(P::ADSR_SUSTAIN)] = SynthParameter(0.0f, 100.0f, "Sus", 23, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::ADSR_RELEASE)] = SynthParameter(0.005f, 20.0f, "Rls", 24, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::SECONDS);
-    params[static_cast<int>(P::LFO_WAVEFORM)] = SynthParameter(0, Osc::WAVE_COUNT - 1, "Wav", 25, currentPreset.array, Curve::LINEAR, ParamUnit::PICTURE);
-    params[static_cast<int>(P::LFO_FREQ)] = SynthParameter(0.01f, 100.0f, "Frq", 26, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::HZ);
-    params[static_cast<int>(P::LFO_DEPTH)] = SynthParameter(0.0f, 100.0f, "Dpt", 27, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::LFO_ACTIVE)] = SynthParameter(0, 2, "Actv", 28, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
-    params[static_cast<int>(P::EFFECT_OVERDRIVE_DRIVE)] = SynthParameter(0.0f, 100.0f, "Drv", 29, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_CHORUS_FREQ)] = SynthParameter(0.1f, 100.0f, "Frq", 30, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::HZ);
-    params[static_cast<int>(P::EFFECT_CHORUS_DEPTH)] = SynthParameter(0.0f, 100.0f, "Dpt", 31, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_CHORUS_FBK)] = SynthParameter(0.0f, 100.0f, "Fbk", 32, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_CHORUS_DELAY)] = SynthParameter(0.0f, 100.0f, "Dly", 33, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_ATTACK)] = SynthParameter(0.001f, 10.0f, "Atk", 34, currentPreset.array, Curve::LINEAR, ParamUnit::SECONDS);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_RELEASE)] = SynthParameter(0.001f, 10.0f, "Rls", 35, currentPreset.array, Curve::LINEAR, ParamUnit::SECONDS);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_THRESHOLD)] = SynthParameter(-80.0f, 0.0f, "Thr", 36, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_RATIO)] = SynthParameter(1.0f, 40.0f, "Rat", 37, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_COMPRESSOR_MAKEUP)] = SynthParameter(0.0f, 80.0f, "Mk", 38, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_REVERB_FEEDBACK)] = SynthParameter(0.0f, 100.0f, "Fbk", 39, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_REVERB_LPFREQ)] = SynthParameter(10.0f, 20000.0f, "LpF", 40, currentPreset.array, Curve::EXPONENTIAL, ParamUnit::HZ);
-    params[static_cast<int>(P::EFFECT_SLOT_1_DRYWET)] = SynthParameter(0.0f, 100.0f, "DrW", 41, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_SLOT_1_ACTIVE)] = SynthParameter(0, 2, "Actv", 42, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
-    params[static_cast<int>(P::EFFECT_SLOT_2_DRYWET)] = SynthParameter(0.0f, 100.0f, "DrW", 43, currentPreset.array, Curve::LINEAR, ParamUnit::PERCENT);
-    params[static_cast<int>(P::EFFECT_SLOT_2_ACTIVE)] = SynthParameter(0, 2, "Actv", 44, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
-    params[static_cast<int>(P::GLOBAL_MONO)] = SynthParameter(0, 2, "Mon", 45, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
-    params[static_cast<int>(P::GLOBAL_LEGATO)] = SynthParameter(0, 2, "Lgt", 46, currentPreset.array, Curve::LINEAR, ParamUnit::BOOL);
-    params[static_cast<int>(P::GLOBAL_PORTAMENTO)] = SynthParameter(0.0f, 1.0f, "Prt", 47, currentPreset.array, Curve::LINEAR, ParamUnit::SECONDS);
+    ADD_PARAM(P::NONE, 0, 0, "-", Curve::LINEAR, ParamUnit::UNITLESS, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_WAVEFORM_1, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_FREQ_1, 1.0f, 10000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_PITCH_1, -36.0f, 36.0f, "Sem", Curve::LINEAR, ParamUnit::SEMITONES, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_DETUNE_1, -100.0f, 100.0f, "Dtn", Curve::LINEAR, ParamUnit::CENTS, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_AMP_1, 0.0f, 100.0f, "Amp", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_PWM_1, -100.0f, 100.0f, "PWM", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_ACTIVE_1, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_WAVEFORM_2, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_FREQ_2, 1.0f, 10000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_PITCH_2, -36.0f, 36.0f, "Sem", Curve::LINEAR, ParamUnit::SEMITONES, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_DETUNE_2, -100.0f, 100.0f, "Dtn", Curve::LINEAR, ParamUnit::CENTS, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_AMP_2, 0.0f, 100.0f, "Amp", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_PWM_2, -100.0f, 100.0f, "PWM", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_ACTIVE_2, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_WAVEFORM_3, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_FREQ_3, 1.0f, 10000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_PITCH_3, -36.0f, 36.0f, "Sem", Curve::LINEAR, ParamUnit::SEMITONES, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_DETUNE_3, -100.0f, 100.0f, "Dtn", Curve::LINEAR, ParamUnit::CENTS, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::OSC_AMP_3, 0.0f, 100.0f, "Amp", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_PWM_3, -100.0f, 100.0f, "PWM", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_ACTIVE_3, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::FILTER_CUTOFF, 20.0f, 20000.0f, "Cut", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::FILTER_RESONANCE, 0.0f, 100.0f, "Res", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::ADSR_ATTACK, 0.005f, 20.0f, "Atk", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Dcy", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sus", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::ADSR_RELEASE, 0.005f, 20.0f, "Rls", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::MOD_LFO_FREQ, 0.01f, 100.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Dpt", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::MOD_LFO_ACTIVE, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::MOD_ADSR_ATTACK, 0.005f, 20.0f, "Atk", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::MOD_ADSR_DECAY, 0.005f, 20.0f, "Dcy", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::MOD_ADSR_SUSTAIN, 0.0f, 100.0f, "Sus", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::MOD_ADSR_RELEASE, 0.005f, 20.0f, "Rls", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::EFFECT_OVERDRIVE_DRIVE, 0.0f, 100.0f, "Drv", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_CHORUS_FREQ, 0.1f, 100.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_CHORUS_DEPTH, 0.0f, 100.0f, "Dpt", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_CHORUS_FBK, 0.0f, 100.0f, "Fbk", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::EFFECT_CHORUS_DELAY, 0.0f, 100.0f, "Dly", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_ATTACK, 0.001f, 10.0f, "Atk", Curve::LINEAR, ParamUnit::SECONDS, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_RELEASE, 0.001f, 10.0f, "Rls", Curve::LINEAR, ParamUnit::SECONDS, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_THRESHOLD, -80.0f, 0.0f, "Thr", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_RATIO, 1.0f, 40.0f, "Rat", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_MAKEUP, 0.0f, 80.0f, "Mk", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_REVERB_FEEDBACK, 0.0f, 100.0f, "Fbk", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_REVERB_LPFREQ, 10.0f, 20000.0f, "LpF", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_SLOT_1_DRYWET, 0.0f, 100.0f, "DrW", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_SLOT_1_ACTIVE, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::EFFECT_SLOT_2_DRYWET, 0.0f, 100.0f, "DrW", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::EFFECT_SLOT_2_ACTIVE, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::GLOBAL_MONO, 0, 2, "Mon", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::GLOBAL_LEGATO, 0, 2, "Lgt", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 1.0f, "Prt", Curve::LINEAR, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
 }
+
+Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
+    {ModSource::NONE, 0.0f, "-"},
+    {ModSource::LFO, 0.0f, "Lfo"},
+    {ModSource::ADSR, 0.0f, "Adsr"},
+    {ModSource::MOD_WHEEL, 0.0f, "Wheel"},
+    {ModSource::AFTERTOUCH, 0.0f, "Atch"},
+};

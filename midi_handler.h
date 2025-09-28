@@ -12,8 +12,14 @@ using namespace daisysp;
 extern MidiUartHandler midiUart;
 extern MidiUsbHandler midiUsb;
 extern bool midi_note_led;
+extern float mod_wheel_value;
+extern float pitch_bend_multiplier;
+extern float aftertouch_value;
+extern float GetPitchBendTableValue(int index);
 
 void HandleMidiMessage(MidiEvent m);
+void HandleAftertouch(uint8_t value);
+void HandleControlChange(uint8_t control, uint8_t value);
 void MidiInit();
 
 #endif

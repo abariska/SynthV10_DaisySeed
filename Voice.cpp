@@ -1,17 +1,22 @@
 #include "voice.h"
-#include "main.h"
+
 #include "daisy_seed.h"
 #include "oscillator.h"
 #include "pitchTables.h"
+#include "parameters.h"
+#include "midi_handler.h"
 
 using P = ParamUnitName;
 
+using M = ModSource;
+
 std::array<Osc, OSC_NUM> osc;
 Adsr adsrMain;
-MoogLadder fltL;
-MoogLadder fltR;
+Adsr adsrMod;
+MoogLadder flt;
 Oscillator lfo;
 Random rnd[OSC_NUM];
+ModMatrix modMatrix[MOD_MATRIX_NUM];
 
 uint8_t noteNum = 60;
 float frequency = 0;
@@ -20,22 +25,11 @@ float pitch_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float detune_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float final_freq[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float velocity_factor = 1.0f;
-float pitch_bend_multiplier = 1.0f;
 
 const int maxNotes = 16;
 int activeNotes[maxNotes];
 int activeNoteCount = 0;
 bool gate = false;
-
-float ProcessLfo()
-{
-    // Apply parameters from template
-    lfo.SetFreq(paramManager.GetValue(P::LFO_FREQ));
-    lfo.SetWaveform(paramManager.GetInt(P::LFO_WAVEFORM));
-    lfo.SetAmp(paramManager.GetNormalised(P::LFO_DEPTH));
-    // if (paramManager.GetInt(P::LFO_ACTIVE) == 0) return 0.0f;
-    return lfo.Process();
-}
 
 void SynthInit(float samplerate, int blocksize)
 {
@@ -44,9 +38,9 @@ void SynthInit(float samplerate, int blocksize)
     {
         osc[i].Init(samplerate);
     }
-    fltL.Init(samplerate);
-    fltR.Init(samplerate);
+    flt.Init(samplerate);
     adsrMain.Init(samplerate, blocksize);
+    adsrMod.Init(samplerate, blocksize);
     for (size_t i = 0; i < OSC_NUM; i++)
     {
         rnd[i].Init();
@@ -55,7 +49,22 @@ void SynthInit(float samplerate, int blocksize)
     InitPitchTables();
 }
 
-// TODO: implement tables for frequency calculation
+void ModSourcesProcess()
+{
+    lfo.SetFreq(paramManager.GetValue(P::MOD_LFO_FREQ));
+    lfo.SetWaveform(paramManager.GetValue(P::MOD_LFO_WAVEFORM));
+    lfo.SetAmp(paramManager.GetValue(P::MOD_LFO_DEPTH));
+    modulators[static_cast<int>(M::LFO)].value = lfo.Process();
+
+    adsrMod.SetAttackTime(paramManager.GetValue(P::MOD_ADSR_ATTACK), 1.0f);
+    adsrMod.SetDecayTime(paramManager.GetValue(P::MOD_ADSR_DECAY));
+    adsrMod.SetSustainLevel(paramManager.GetValue(P::MOD_ADSR_SUSTAIN));
+    adsrMod.SetReleaseTime(paramManager.GetValue(P::MOD_ADSR_RELEASE));
+    modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(gate);
+
+    modulators[static_cast<int>(M::MOD_WHEEL)].value = mod_wheel_value;
+    modulators[static_cast<int>(M::AFTERTOUCH)].value = aftertouch_value;
+}
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 {
@@ -78,6 +87,7 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
         if (!(isNotesPlaying && paramManager.GetBool(P::GLOBAL_LEGATO)))
         {
             adsrMain.Retrigger(false);
+            adsrMod.Retrigger(false);
         }
         gate = true;
     }
@@ -114,16 +124,10 @@ void HandleNoteOff(uint8_t note_in)
     {
         // Update the frequency but don't retrigger
         int mostRecentNote = activeNotes[activeNoteCount - 1];
-
+        frequency = midiNoteToFreqTable[mostRecentNote];
         noteNum = mostRecentNote;
         gate = true;
     }
-}
-
-void HandlePitchBend(int16_t pb)
-{
-    float bend_cents = ((float)(pb - 8192) / 8192.0f) * 200.0f;
-    pitch_bend_multiplier = GetPitchBendTableValue(bend_cents);
 }
 
 void VoiceProcess(float &voice_sig)
@@ -132,14 +136,15 @@ void VoiceProcess(float &voice_sig)
 
     for (size_t i = 0; i < OSC_NUM; i++)
     {
-        pitch_correction[i] = GetPitchTableValue(paramManager.GetInt(OSC_PITCH[i]));
-        detune_correction[i] = GetDetuneTableValue(paramManager.GetInt(OSC_DETUNE[i]));
+        pitch_correction[i] = GetPitchTableValue(paramManager.GetValue(OSC_PITCH[i]));
+        detune_correction[i] = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[i]));
         final_freq[i] = frequency * pitch_correction[i] * detune_correction[i] * pitch_bend_multiplier;
+        paramManager.SetFloat(OSC_FREQ[i], final_freq[i]);
 
-        osc[i].SetFreq(final_freq[i]);
-        osc[i].SetAmp(paramManager.GetNormalised(OSC_AMP[i]));
-        osc[i].SetWaveform(paramManager.GetInt(OSC_WAVEFORM[i]));
-        osc[i].SetPw(paramManager.GetNormalised(OSC_PWM[i]));
+        osc[i].SetFreq(paramManager.GetValue(OSC_FREQ[i]));
+        osc[i].SetAmp(paramManager.GetValue(OSC_AMP[i]));
+        osc[i].SetWaveform(paramManager.GetValue(OSC_WAVEFORM[i]));
+        osc[i].SetPw(paramManager.GetValue(OSC_PWM[i]));
         osc[i].PhaseProcess();
 
         if (paramManager.GetValue(OSC_ACTIVE[i]))
@@ -153,17 +158,15 @@ void VoiceProcess(float &voice_sig)
         voice_sig = daisysp::fclamp(voice_sig, -1.0f, 1.0f);
     }
 
-    // float lfoSig = ProcessLfo();
-
-    fltR.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
-    fltR.SetRes(paramManager.GetNormalised(P::FILTER_RESONANCE));
-    voice_sig = fltR.Process(voice_sig);
+    flt.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
+    flt.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
+    voice_sig = flt.Process(voice_sig);
 
     adsrMain.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
     adsrMain.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
-    adsrMain.SetSustainLevel(paramManager.GetNormalised(P::ADSR_SUSTAIN));
+    adsrMain.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
     adsrMain.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
 
     float env = adsrMain.Process(gate);
-    voice_sig *= env * velocity_factor;
+    voice_sig *= env;
 }

@@ -20,6 +20,7 @@ extern bool blinkStateChanged;
 extern bool isStoreMode;
 extern bool page_need_update;
 extern bool shift_pressed;
+extern bool isModMatrixNeedUpdate;
 
 // Для перемикання між рядами параметрів
 enum ActiveRow
@@ -48,7 +49,10 @@ void UpdateEncoderSwitches();
 void EditBlockParam(uint8_t blockIndex);
 void UpdateEncodersParams();
 void EncoderChangeEffect();
-
+void EncoderChangeModMatrix();
+void InitModMatrixBlocks();
+void InitModMatrixBlock(uint8_t blockIndex);
+void EditModBlock();
 void InitMainBlocks();
 void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t textColor = WHITE, uint16_t bgColor = BLACK);
 void InitSlots();
