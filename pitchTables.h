@@ -16,7 +16,7 @@ float DSY_SDRAM_BSS pitchTable[PITCH_TABLE_SIZE];
 float DSY_SDRAM_BSS detuneTable[DETUNE_TABLE_SIZE];
 float DSY_SDRAM_BSS pitchBendTable[PITCH_BEND_TABLE_SIZE];
 
-void InitPitchTables()
+inline void InitPitchTables()
 {
     for (int i = 0; i < 128; i++)
     {

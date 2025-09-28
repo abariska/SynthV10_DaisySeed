@@ -1,9 +1,10 @@
 #include "voice.h"
-#include "main.h"
+
 #include "daisy_seed.h"
 #include "oscillator.h"
 #include "pitchTables.h"
 #include "parameters.h"
+#include "midi_handler.h"
 
 using P = ParamUnitName;
 
@@ -24,7 +25,6 @@ float pitch_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float detune_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float final_freq[OSC_NUM] = {0.0f, 0.0f, 0.0f};
 float velocity_factor = 1.0f;
-float pitch_bend_multiplier = 1.0f;
 
 const int maxNotes = 16;
 int activeNotes[maxNotes];
@@ -62,7 +62,8 @@ void ModSourcesProcess()
     adsrMod.SetReleaseTime(paramManager.GetValue(P::MOD_ADSR_RELEASE));
     modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(gate);
 
-    modulators[static_cast<int>(M::MOD_WHEEL)].value = 0.0f;
+    modulators[static_cast<int>(M::MOD_WHEEL)].value = mod_wheel_value;
+    modulators[static_cast<int>(M::AFTERTOUCH)].value = aftertouch_value;
 }
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity)
@@ -86,6 +87,7 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
         if (!(isNotesPlaying && paramManager.GetBool(P::GLOBAL_LEGATO)))
         {
             adsrMain.Retrigger(false);
+            adsrMod.Retrigger(false);
         }
         gate = true;
     }
@@ -122,16 +124,10 @@ void HandleNoteOff(uint8_t note_in)
     {
         // Update the frequency but don't retrigger
         int mostRecentNote = activeNotes[activeNoteCount - 1];
-
+        frequency = midiNoteToFreqTable[mostRecentNote];
         noteNum = mostRecentNote;
         gate = true;
     }
-}
-
-void HandlePitchBend(int16_t pb)
-{
-    float bend_cents = ((float)(pb - 8192) / 8192.0f) * 200.0f;
-    pitch_bend_multiplier = GetPitchBendTableValue(bend_cents);
 }
 
 void VoiceProcess(float &voice_sig)
@@ -143,8 +139,9 @@ void VoiceProcess(float &voice_sig)
         pitch_correction[i] = GetPitchTableValue(paramManager.GetValue(OSC_PITCH[i]));
         detune_correction[i] = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[i]));
         final_freq[i] = frequency * pitch_correction[i] * detune_correction[i] * pitch_bend_multiplier;
+        paramManager.SetFloat(OSC_FREQ[i], final_freq[i]);
 
-        osc[i].SetFreq(final_freq[i]);
+        osc[i].SetFreq(paramManager.GetValue(OSC_FREQ[i]));
         osc[i].SetAmp(paramManager.GetValue(OSC_AMP[i]));
         osc[i].SetWaveform(paramManager.GetValue(OSC_WAVEFORM[i]));
         osc[i].SetPw(paramManager.GetValue(OSC_PWM[i]));

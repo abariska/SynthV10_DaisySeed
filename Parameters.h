@@ -96,14 +96,6 @@ const P OSC_ACTIVE[OSC_NUM] = {P::OSC_ACTIVE_1, P::OSC_ACTIVE_2, P::OSC_ACTIVE_3
 const P EFFECT_SLOT_ACTIVE[2] = {P::EFFECT_SLOT_1_ACTIVE, P::EFFECT_SLOT_2_ACTIVE};
 const P EFFECT_SLOT_DRYWET[2] = {P::EFFECT_SLOT_1_DRYWET, P::EFFECT_SLOT_2_DRYWET};
 
-enum Waves
-{
-    TRI,
-    SAW,
-    SQR,
-    OFF
-};
-
 enum class Curve
 {
     LINEAR,
@@ -251,6 +243,7 @@ enum class ModSource
     LFO,
     ADSR,
     MOD_WHEEL,
+    AFTERTOUCH,
     COUNT_MOD_SOURCES
 };
 

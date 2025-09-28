@@ -17,11 +17,11 @@ static const uint32_t FLASH_BLOCK_4KB = 0x1000;
 
 Preset currentPreset;
 float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS) - 1)] = {0.0f,
-                                                                                   0.0f, 0.5f, 0.5f, 0.0f, 0.5f, 1.0f,
-                                                                                   0.0f, 0.5f, 0.5f, 0.0f, 0.5f, 0.0f,
-                                                                                   0.0f, 0.5f, 0.5f, 0.0f, 0.5f, 0.0f,
-                                                                                   0.5f, 0.0f, 0.1f, 0.1f, 1.0f, 0.1f, 1.0f, 0.0f, 1.0f, 0.0f,
-                                                                                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
+                                                                                   0.0f, 0.5f, 0.5f, 0.0f, 0.5f, 1.0f, 0.0f, 
+                                                                                   0.5f, 0.5f, 0.0f, 0.5f, 0.0f, 0.0f, 0.5f, 
+                                                                                   0.5f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.1f, 
+                                                                                   0.1f, 0.0f, 0.1f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 
+                                                                                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                                                                                    0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
                                                                                    0.0f, 0.0f, 0.0f};
 
@@ -205,15 +205,21 @@ float SynthParameter::GetValue()
     switch (unit)
     {
     case ParamUnit::HZ:
+        value = physical_value;
+        m = max;
+        return value + ((m - value) * modifier_value * 0.1f);
+        break;
     case ParamUnit::SECONDS:
     case ParamUnit::SEMITONES:
     case ParamUnit::CENTS:
         value = physical_value;
         m = max;
+        return value + ((m - value) * modifier_value);
         break;
     case ParamUnit::PERCENT:
         value = norm_value;
         m = 1.0f;
+        return value + ((m - value) * modifier_value);
         break;
     case ParamUnit::PICTURE:
     case ParamUnit::UNITLESS:
@@ -223,7 +229,6 @@ float SynthParameter::GetValue()
         return static_cast<float>(GetBool());
         break;
     }
-    return value + ((m - value) * modifier_value);
 }
 
 int SynthParameter::GetInt() const
@@ -417,4 +422,5 @@ Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::LFO, 0.0f, "Lfo"},
     {ModSource::ADSR, 0.0f, "Adsr"},
     {ModSource::MOD_WHEEL, 0.0f, "Wheel"},
+    {ModSource::AFTERTOUCH, 0.0f, "Atch"},
 };

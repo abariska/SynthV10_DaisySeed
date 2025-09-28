@@ -4,7 +4,9 @@
 MidiUartHandler midiUart;
 MidiUsbHandler midiUsb;
 bool midi_note_led = false;
-
+float mod_wheel_value = 0.0f;
+float pitch_bend_multiplier = 1.0f;
+float aftertouch_value = 0.0f;
 void MidiInit()
 {
     MidiUsbHandler::Config midi_usb_cfg;
@@ -45,15 +47,34 @@ void HandleMidiMessage(MidiEvent m)
         HandlePitchBend(pitch_bend.value);
     }
     break;
+    case ControlChange:
+    {
+        auto control = m.AsControlChange();
+        HandleControlChange(control.control_number, control.value);
+    }
+    break;
     default:
         break;
     }
 }
 
-// // Handle Control Change
-// void MidiControlChange(uint8_t control, uint8_t value) {
-//     // TODO: Implement Control Change handling
-// }
+void HandlePitchBend(int16_t pb)
+{
+    float bend_cents = (float)(pb / 8192.0f) * 200.0f;
+    pitch_bend_multiplier = GetPitchBendTableValue(bend_cents);
+    
+}
+
+// Handle Control Change
+void HandleControlChange(uint8_t control, uint8_t value) {
+    if (control == 1) {
+        mod_wheel_value = value / 127.0f;
+    }
+}
+
+void HandleAftertouch(uint8_t value) {
+    aftertouch_value = value / 127.0f;
+}
 
 // // Handle Program Change
 // void MidiProgramChange(uint8_t program) {
