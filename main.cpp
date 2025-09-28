@@ -76,7 +76,7 @@ int main(void)
     int blocksize = 4;
 
     hw.Configure();
-    hw.Init();
+    hw.Init(true);
     UartSerialInit();
 
     hw.SetAudioBlockSize(blocksize);

@@ -207,7 +207,7 @@ float SynthParameter::GetValue()
     case ParamUnit::HZ:
         value = physical_value;
         m = max;
-        return value + ((m - value) * modifier_value * 0.1f);
+        return value + ((m - value) * modifier_value);
         break;
     case ParamUnit::SECONDS:
     case ParamUnit::SEMITONES:
@@ -362,21 +362,21 @@ void ParameterManager::Init()
 {
     ADD_PARAM(P::NONE, 0, 0, "-", Curve::LINEAR, ParamUnit::UNITLESS, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::OSC_WAVEFORM_1, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_FREQ_1, 20.0f, 20000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_FREQ_1, 1.0f, 10000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
     ADD_PARAM(P::OSC_PITCH_1, -36.0f, 36.0f, "Sem", Curve::LINEAR, ParamUnit::SEMITONES, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::OSC_DETUNE_1, -100.0f, 100.0f, "Dtn", Curve::LINEAR, ParamUnit::CENTS, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::OSC_AMP_1, 0.0f, 100.0f, "Amp", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
     ADD_PARAM(P::OSC_PWM_1, -100.0f, 100.0f, "PWM", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
     ADD_PARAM(P::OSC_ACTIVE_1, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::OSC_WAVEFORM_2, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_FREQ_2, 20.0f, 20000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_FREQ_2, 1.0f, 10000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
     ADD_PARAM(P::OSC_PITCH_2, -36.0f, 36.0f, "Sem", Curve::LINEAR, ParamUnit::SEMITONES, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::OSC_DETUNE_2, -100.0f, 100.0f, "Dtn", Curve::LINEAR, ParamUnit::CENTS, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::OSC_AMP_2, 0.0f, 100.0f, "Amp", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
     ADD_PARAM(P::OSC_PWM_2, -100.0f, 100.0f, "PWM", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
     ADD_PARAM(P::OSC_ACTIVE_2, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::OSC_WAVEFORM_3, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_FREQ_3, 20.0f, 20000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::OSC_FREQ_3, 1.0f, 10000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
     ADD_PARAM(P::OSC_PITCH_3, -36.0f, 36.0f, "Sem", Curve::LINEAR, ParamUnit::SEMITONES, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::OSC_DETUNE_3, -100.0f, 100.0f, "Dtn", Curve::LINEAR, ParamUnit::CENTS, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::OSC_AMP_3, 0.0f, 100.0f, "Amp", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
@@ -389,8 +389,8 @@ void ParameterManager::Init()
     ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sus", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::ADSR_RELEASE, 0.005f, 20.0f, "Rls", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::MOD_LFO_FREQ, 0.01f, 100.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Dpt", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::MOD_LFO_FREQ, 0.01f, 100.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
+    ADD_PARAM(P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Dpt", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
     ADD_PARAM(P::MOD_LFO_ACTIVE, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::MOD_ADSR_ATTACK, 0.005f, 20.0f, "Atk", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
     ADD_PARAM(P::MOD_ADSR_DECAY, 0.005f, 20.0f, "Dcy", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);

@@ -1,5 +1,6 @@
 #include "midi_handler.h"
 #include "voice.h"
+#include "log_uart.h"
 
 MidiUartHandler midiUart;
 MidiUsbHandler midiUsb;
@@ -13,13 +14,15 @@ void MidiInit()
     midi_usb_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
     midiUsb.Init(midi_usb_cfg);
 
+    System::Delay(10);
+
     MidiUartHandler::Config midi_uart_cfg;
     midi_uart_cfg.transport_config.periph = UartHandler::Config::Peripheral::USART_1;
     midi_uart_cfg.transport_config.rx = {DSY_GPIOB, 15}; // D30 = PB15 = USART1_RX
     midi_uart_cfg.transport_config.tx = {DSY_GPIOB, 14}; // D29 = PB14 = USART1_TX (опціонально)
     midiUart.Init(midi_uart_cfg);
 
-    System::Delay(10);
+    
 }
 
 // Handle MIDI messages
@@ -51,6 +54,12 @@ void HandleMidiMessage(MidiEvent m)
     {
         auto control = m.AsControlChange();
         HandleControlChange(control.control_number, control.value);
+    }
+    break;
+    case ChannelPressure:
+    {
+        auto aftertouch = m.AsChannelPressure();
+        HandleAftertouch(aftertouch.pressure);
     }
     break;
     default:
