@@ -18,7 +18,7 @@
 #define OSC_ON_BLOCK_WIDTH 16
 #define OSC_ON_BLOCK_HEIGHT 16
 #define SCOPE_BLOCK_WIDTH 128
-#define SCOPE_BLOCK_HEIGHT 32
+#define SCOPE_BLOCK_HEIGHT 50
 #define MOD_MATRIX_BLOCK_WIDTH 128
 #define MOD_MATRIX_BLOCK_HEIGHT 14
 #define MOD_MATRIX_BLOCKS_NUM 7
@@ -28,8 +28,8 @@
 #define NUM_ACTIVE_PARAMS 4 // Скільки параметрів активні одночасно
 #define WAVE_BUFFER_WIDTH 32
 #define WAVE_BUFFER_HEIGHT 16
-#define CPU_LOAD_BLOCK_WIDTH 16
-#define CPU_LOAD_BLOCK_HEIGHT 16
+#define CPU_LOAD_BLOCK_WIDTH 12
+#define CPU_LOAD_BLOCK_HEIGHT 12
 
 #include "OLED_1.5_Daisy_Seed/DEV_Config.h"
 #include "OLED_1.5_Daisy_Seed/OLED_Driver.h"
@@ -61,10 +61,10 @@ enum MenuPage
 extern MenuPage currentPage;
 
 // Константи для двох рядів параметрів
-const uint8_t BLOCK_ROW1_TOP_Y = 25;
-const uint8_t BLOCK_ROW1_BOTTOM_Y = 70;
-const uint8_t BLOCK_ROW2_TOP_Y = 78;
-const uint8_t BLOCK_ROW2_BOTTOM_Y = 123;
+#define BLOCK_ROW1_TOP_Y = 25;
+#define BLOCK_ROW1_BOTTOM_Y = 70;
+#define BLOCK_ROW2_TOP_Y = 78;
+#define BLOCK_ROW2_BOTTOM_Y = 123;
 
 const uint8_t BLOCK_X_START[] = {0, 32, 64, 96, 0, 32, 64, 96};
 const uint8_t BLOCK_X_END[] = {32, 64, 96, 128, 32, 64, 96, 128};
@@ -86,6 +86,11 @@ const uint8_t BLOCK_MOD_MATRIX_X_END = 128;
 const uint8_t BLOCK_MOD_MATRIX_Y_START[] = {28, 42, 56, 70, 84, 98, 112};
 const uint8_t BLOCK_MOD_MATRIX_Y_END[] = {42, 56, 70, 84, 98, 112, 126};
 
+const uint8_t BLOCK_SCOPE_X_START = 0;
+const uint8_t BLOCK_SCOPE_X_END = 128;
+const uint8_t BLOCK_SCOPE_Y_START = 22;
+const uint8_t BLOCK_SCOPE_Y_END = 72;
+
 extern ImageData intro_page_data;
 extern ImageData bg_black_data;
 extern ImageData param_block_data[NUM_PARAM_BLOCKS];
@@ -96,6 +101,7 @@ extern ImageData cpu_load_block_data;
 extern ImageData preset_name_block_data;
 extern ImageData preset_num_block_data;
 extern ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
+extern ImageData scope_block_data;
 
 void SetPage(MenuPage newPage);
 void UpdatePage();
@@ -107,5 +113,6 @@ void SelectEffectPage(uint8_t slot);
 void InitImages();
 void DrawEffectBlock(uint8_t slot);
 void DrawModMatrixPage();
+void DrawScope();
 
 #endif

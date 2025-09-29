@@ -26,6 +26,9 @@ extern SX1509 sx1509_buttons;
 extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
 extern Preset currentPreset;
+extern float scope_data[128]; 
+extern int scope_data_index;
+extern bool scope_data_ready;
 
 extern UartHandler uart_serial;
 extern ParameterManager paramManager;

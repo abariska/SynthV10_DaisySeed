@@ -7,6 +7,9 @@
 
 extern Preset currentPreset;
 extern bool update_for_preset_needed;
+extern float scope_data[128];
+extern int scope_data_index;
+extern bool scope_data_ready;
 
 const UWORD INTRO_PAGE_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
 const UWORD BG_BLACK_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
@@ -18,6 +21,7 @@ const UWORD CPU_LOAD_BLOCK_SIZE = (((CPU_LOAD_BLOCK_WIDTH % 2 == 0) ? (CPU_LOAD_
 const UWORD PRESET_NAME_BLOCK_SIZE = (((PRESET_NAME_BLOCK_WIDTH % 2 == 0) ? (PRESET_NAME_BLOCK_WIDTH / 2) : (PRESET_NAME_BLOCK_WIDTH / 2 + 1)) * PRESET_NAME_BLOCK_HEIGHT);
 const UWORD PRESET_NUM_BLOCK_SIZE = (((PRESET_NUM_BLOCK_WIDTH % 2 == 0) ? (PRESET_NUM_BLOCK_WIDTH / 2) : (PRESET_NUM_BLOCK_WIDTH / 2 + 1)) * PRESET_NUM_BLOCK_HEIGHT);
 const UWORD MOD_MATRIX_BLOCK_SIZE = (((MOD_MATRIX_BLOCK_WIDTH % 2 == 0) ? (MOD_MATRIX_BLOCK_WIDTH / 2) : (MOD_MATRIX_BLOCK_WIDTH / 2 + 1)) * MOD_MATRIX_BLOCK_HEIGHT);
+const UWORD SCOPE_BLOCK_SIZE = (((SCOPE_BLOCK_WIDTH % 2 == 0) ? (SCOPE_BLOCK_WIDTH / 2) : (SCOPE_BLOCK_WIDTH / 2 + 1)) * SCOPE_BLOCK_HEIGHT);
 UBYTE DSY_SDRAM_BSS intro_page[INTRO_PAGE_SIZE];
 UBYTE DSY_SDRAM_BSS bg_black[BG_BLACK_SIZE];
 UBYTE DSY_SDRAM_BSS param_block[NUM_PARAM_BLOCKS][PARAM_BLOCK_SIZE];
@@ -28,6 +32,7 @@ UBYTE DSY_SDRAM_BSS cpu_load_block[CPU_LOAD_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS preset_name_block[PRESET_NAME_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS preset_num_block[PRESET_NUM_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS mod_matrix_block[MOD_MATRIX_BLOCKS_NUM][MOD_MATRIX_BLOCK_SIZE];
+UBYTE DSY_SDRAM_BSS scope_block[SCOPE_BLOCK_SIZE];
 ImageData intro_page_data;
 ImageData bg_black_data;
 ImageData param_block_data[NUM_PARAM_BLOCKS];
@@ -38,7 +43,11 @@ ImageData cpu_load_block_data;
 ImageData preset_name_block_data;
 ImageData preset_num_block_data;
 ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
+ImageData scope_block_data;
+
 MenuPage currentPage = MAIN_PAGE;
+
+bool scope_draw = false;
 
 void InitImages()
 {
@@ -64,6 +73,7 @@ void InitImages()
         memset(mod_matrix_block[i], 0, MOD_MATRIX_BLOCK_SIZE);
     }
     memset(mod_matrix_block, 0, MOD_MATRIX_BLOCK_SIZE);
+    memset(scope_block, 0, SCOPE_BLOCK_SIZE);
 
     intro_page_data = {intro_page, INTRO_PAGE_SIZE};
     bg_black_data = {bg_black, BG_BLACK_SIZE};
@@ -84,7 +94,7 @@ void InitImages()
     {
         mod_matrix_block_data[i] = {mod_matrix_block[i], MOD_MATRIX_BLOCK_SIZE};
     }
-
+    scope_block_data = {scope_block, SCOPE_BLOCK_SIZE};
     System::Delay(10);
 }
 
@@ -137,15 +147,19 @@ void UpdatePage()
     {
     case MAIN_PAGE:
         DrawMainPage();
+        scope_draw = true;
         break;
     case FX_PAGE:
         DrawEffectsPage();
+        scope_draw = false;
         break;
     case MOD_MATRIX_PAGE:
         DrawModMatrixPage();
+        scope_draw = false;
         break;
     default:
         DrawParamPage(currentPage);
+        scope_draw = false;
         break;
     }
     UpdateLeds();
@@ -153,27 +167,83 @@ void UpdatePage()
     update_for_preset_needed = false;
 }
 
+void DrawScope()
+{
+    if (currentPage != MAIN_PAGE)
+    {
+        return;
+    }
+    
+    double time1 = System::GetNow();
+    static double time_end = 0;
+    
+    if (time1 - time_end > 30)
+    {
+        if (!scope_data_ready)
+        {
+            return;
+        }
+        Paint_NewImage(scope_block_data.data, SCOPE_BLOCK_WIDTH, SCOPE_BLOCK_HEIGHT, 0, BLACK);
+        Paint_Clear(BLACK);
+        // Paint_DrawLine(0, 24, 127, 24, 0x01, DOT_PIXEL_1X1, LINE_STYLE_DOTTED);
+        float max_val = 0.0f;
+        for (int i = 0; i < 128; i++)
+        {
+            float abs_val = fabs(scope_data[i]);
+            if (abs_val > max_val) max_val = abs_val;
+        }
+        
+        // Запобігаємо діленню на нуль
+        if (max_val < 0.001f) max_val = 0.001f;
+        
+        // float scale = (SCOPE_BLOCK_HEIGHT * 0.5f) / max_val;  // 80% висоти екрану
+        int center_y = SCOPE_BLOCK_HEIGHT / 2;
+        
+        for (int i = 0; i < SCOPE_BLOCK_WIDTH - 1; i++)
+        {
+            int data_index = (i * 128) / SCOPE_BLOCK_WIDTH;  // Інтерполяція
+            int y = center_y - (int)(scope_data[data_index] * 30);
+            
+            // Обмежуємо координати
+            if (y < 0) y = 0;
+            if (y >= SCOPE_BLOCK_HEIGHT) y = SCOPE_BLOCK_HEIGHT - 1;
+            
+            Paint_DrawPoint(i, y, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT);
+        }
+        
+        scope_data_ready = false;
+
+        OLED_Part_Transmit_DMA(&scope_block_data,
+                            BLOCK_SCOPE_X_START,
+                            BLOCK_SCOPE_Y_START,
+                            BLOCK_SCOPE_X_END,
+                            BLOCK_SCOPE_Y_END);
+            time_end = time1;
+    }
+    
+
+}
+
 void DrawMainPage()
 {
     char prog_num[PROGRAM_NUMBER_LENGTH];
-    char prog_name[PROGRAM_NAME_LENGTH];
+    // char prog_name[PROGRAM_NAME_LENGTH];
 
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
-    // DrawMainLines();
-    Paint_DrawLine(4, 34, 123, 34, 0x03, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(4, 36, 123, 36, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(0, 58, 127, 58, 0x01, DOT_PIXEL_1X1, LINE_STYLE_DOTTED);
+
+    Paint_DrawLine(5, 18, 123, 18, 0x03, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(5, 20, 123, 20, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
     sprintf(prog_num, "%03d", currentPreset.number);
     Paint_TextCentered(prog_num, 0, 127, 0, Font16, WHITE, BLACK);
 
-    sprintf(prog_name, "%s", currentPreset.name);
-    Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
+    // sprintf(prog_name, "%s", currentPreset.name);
+    // Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);
-
     InitMainBlocks();
+    DrawScope();
 }
 
 void DrawParamPage(MenuPage page)

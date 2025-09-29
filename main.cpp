@@ -23,6 +23,13 @@ int test = 123;
 float samplerate = 0;
 bool update_for_preset_needed = false;
 bool shift_pressed = false;
+float scope_data[128];
+int scope_data_index = 0;
+bool scope_data_ready = false;
+bool scope_triggered = false;
+float scope_prev_sample = 0.0f;
+float scope_trigger_level = 0.0f;
+int scope_trigger_delay = 0;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
                           AudioHandle::InterleavingOutputBuffer out,
@@ -32,6 +39,7 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 
     midiUart.Listen();
     midiUsb.Listen();
+    static float scope_out = 0.0f;
 
     while (midiUsb.HasEvents())
     {
@@ -67,7 +75,39 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 
         out[i] = sig_after_fxL * 0.5f;
         out[i + 1] = sig_after_fxR * 0.5f;
+
+        scope_out = out[i] + out[i + 1] * 0.5f;
     }
+       // Тригерування: шукаємо перехід через нуль знизу вгору
+       if (!scope_triggered && 
+        scope_prev_sample <= scope_trigger_level && 
+        scope_out > scope_trigger_level)
+    {
+        scope_triggered = true;
+        scope_data_index = 0;
+        scope_trigger_delay = 0;
+    }
+    
+    // Збираємо дані тільки після тригера
+    if (scope_triggered)
+    {
+        if (scope_trigger_delay > 2)  // Невелика затримка для стабілізації
+        {
+            scope_data[scope_data_index] = scope_out;
+            scope_data_index++;
+            
+            if (scope_data_index >= 128)
+            {
+                scope_data_ready = true;
+                scope_triggered = false;
+                scope_data_index = 0;
+            }
+        }
+        scope_trigger_delay++;
+    }
+    
+    scope_prev_sample = scope_out;
+    
     cpu_load.OnBlockEnd();
 }
 
@@ -76,7 +116,7 @@ int main(void)
     int blocksize = 4;
 
     hw.Configure();
-    hw.Init(true);
+    hw.Init();
     UartSerialInit();
 
     hw.SetAudioBlockSize(blocksize);
@@ -109,8 +149,9 @@ int main(void)
         ProcessEncoders();
         UpdateEncodersParams();
         UpdatePage();
+        DrawScope();
 
-        sx1509_leds.WritePin(6, midi_note_led);
+        sx1509_leds.WritePin(5, midi_note_led);
     }
 }
 
@@ -384,18 +425,18 @@ void CpuUsageDisplay(bool on)
     {
         if (currentPage == MAIN_PAGE)
         {
-            Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+            Paint_NewImage(cpu_load_block_data.data, 12, 12, 0, BLACK);
             Paint_Clear(BLACK);
             float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-            Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
-            OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+            Paint_NumCentered(cpu_avg_load, 0, 12, 0, 0, Font8, WHITE, BLACK);
+            OLED_Part_Transmit_DMA(&cpu_load_block_data, 116, 0, 128, 12);
             // UartPrint("CPU load: ", cpu_avg_load);
         }
     }
-    else
-    {
-        Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
-        Paint_Clear(BLACK);
-        OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
-    }
+    // else
+    // {
+    //     Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+    //     Paint_Clear(BLACK);
+    //     OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+    // }
 }

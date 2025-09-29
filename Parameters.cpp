@@ -228,6 +228,9 @@ float SynthParameter::GetValue()
     case ParamUnit::BOOL:
         return static_cast<float>(GetBool());
         break;
+    default:
+        return 0.0f;
+        break;
     }
 }
 

@@ -28,7 +28,7 @@ void Osc::Init(float sample_rate)
     sampleRate = sample_rate;
     targetFreq = 440.0f;
     currentFreq = 440.0f;
-    slewRate = 0.2f;
+    slewRate = 0.1f;
     mode = WAVE_SIN;
     amp = 0.1f;
     pw = 0.5f;

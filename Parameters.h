@@ -13,7 +13,7 @@
 #define PARAM_NAME_LENGTH 8
 #define PRESET_NAME_LENGTH 12
 #define PRESET_NUM 10
-#define MOD_MATRIX_NUM 8
+#define MOD_MATRIX_NUM 7
 
 template <typename T>
 constexpr const T &clamp(const T &v, const T &lo, const T &hi)
