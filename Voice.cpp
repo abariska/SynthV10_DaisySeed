@@ -1,8 +1,6 @@
 #include "voice.h"
-
 #include "daisy_seed.h"
 #include "oscillator.h"
-#include "pitchTables.h"
 #include "parameters.h"
 #include "midi_handler.h"
 
@@ -17,6 +15,11 @@ MoogLadder flt;
 Oscillator lfo;
 Random rnd[OSC_NUM];
 ModMatrix modMatrix[MOD_MATRIX_NUM];
+
+float midiNoteToFreqTable[128];
+float pitchTable[PITCH_TABLE_SIZE];
+float detuneTable[DETUNE_TABLE_SIZE];
+float pitchBendTable[PITCH_BEND_TABLE_SIZE];
 
 uint8_t noteNum = 60;
 float frequency = 0;
@@ -169,4 +172,49 @@ void VoiceProcess(float &voice_sig)
 
     float env = adsrMain.Process(gate);
     voice_sig *= env;
+}
+
+
+
+void InitPitchTables()
+{
+    for (int i = 0; i < 128; i++)
+    {
+        midiNoteToFreqTable[i] = 440.0f * powf(2.0f, (i - 69) / 12.0f);
+    }
+
+    for (int i = 0; i < PITCH_TABLE_SIZE; i++)
+    {
+        pitchTable[i] = powf(2.0f, (i - PITCH_CENTER_INDEX) / 12.0f);
+    }
+    
+    for (int i = 0; i < DETUNE_TABLE_SIZE; i++)
+    {
+        detuneTable[i] = powf(2.0f, (i - DETUNE_CENTER_INDEX) / 1200.0f);
+    }
+
+    for (int i = 0; i < PITCH_BEND_TABLE_SIZE; i++)
+    {
+        pitchBendTable[i] = powf(2.0f, (i - PITCH_BEND_CENTER_INDEX) / 1200.0f);
+    }
+}
+
+float midiNoteToFreq(int note)
+{
+    return midiNoteToFreqTable[note];
+}
+
+float GetPitchTableValue(int index)
+{
+    return pitchTable[index + PITCH_CENTER_INDEX];
+}
+
+float GetDetuneTableValue(int index)
+{
+    return detuneTable[index + DETUNE_CENTER_INDEX];
+}
+
+float GetPitchBendTableValue(int index)
+{
+    return pitchBendTable[index + PITCH_BEND_CENTER_INDEX];
 }

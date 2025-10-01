@@ -5,8 +5,6 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-extern float g_debug_freq;
-
 // PolyBLEP function to reduce aliasing on harsh waveforms
 static inline float poly_blep(float t, float dt)
 {
@@ -32,6 +30,7 @@ void Osc::Init(float sample_rate)
     mode = WAVE_SIN;
     amp = 0.1f;
     pw = 0.5f;
+    noiseState = 1;
 
     phaseOsc = 0.0f;
     phaseOffset = 0.0f;
@@ -71,6 +70,10 @@ float Osc::Process()
         out += poly_blep(phaseOsc, phaseInc) * blepGain;
         out -= poly_blep(fmodf(phaseOsc + (1.0f - pw), 1.0f), phaseInc) * blepGain;
         break;
+    case WAVE_NOISE:
+        noiseState = noiseState * 1664525U + 1013904223U;
+        out = (int32_t(noiseState)) / 2147483648.0f;
+        break;
     default:
         out = 0.0f;
         break;
@@ -83,3 +86,11 @@ void Osc::UpdateIncrement()
 {
     phaseInc = currentFreq / sampleRate;
 }
+
+// // Xorshift алгоритм (трохи швидший)
+// float GenerateNoise() {
+//     noiseState ^= noiseState << 13;
+//     noiseState ^= noiseState >> 17;
+//     noiseState ^= noiseState << 5;
+//     return (float)(int32_t(noiseState)) / 2147483648.0f;
+// }

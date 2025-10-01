@@ -16,6 +16,10 @@
 #define PRESET_NUM 100
 #define MOD_MATRIX_NUM 7
 
+extern float GetPitchTableValue(int index);
+extern float GetDetuneTableValue(int index);
+extern float GetPitchBendTableValue(int index);
+
 template <typename T>
 constexpr const T &clamp(const T &v, const T &lo, const T &hi)
 {
@@ -309,7 +313,12 @@ public:
         float modValue = GetModSourceValue();
         modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f
                                                                 : modValue;
+
         modValue = modValue * modAmount;
+        if (GetModTarget() == P::OSC_FREQ_1 || GetModTarget() == P::OSC_FREQ_2 || GetModTarget() == P::OSC_FREQ_3)
+        {
+            modValue *= 1.059463094f;
+        }
         paramManager.SetModifier(modTarget, modValue);
     }
     
