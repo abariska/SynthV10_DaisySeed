@@ -114,5 +114,9 @@ void InitImages();
 void DrawEffectBlock(uint8_t slot);
 void DrawModMatrixPage();
 void DrawScope();
+void DrawModMatrixBlock(uint8_t blockIndex);
+void DrawModMatrixBlocks();
+void DrawWaveformImage(int waveform);
+
 
 #endif

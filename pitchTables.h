@@ -11,10 +11,10 @@
 #define PITCH_BEND_TABLE_SIZE 401
 #define PITCH_BEND_CENTER_INDEX 200
 
-float DSY_SDRAM_BSS midiNoteToFreqTable[128];
-float DSY_SDRAM_BSS pitchTable[PITCH_TABLE_SIZE];
-float DSY_SDRAM_BSS detuneTable[DETUNE_TABLE_SIZE];
-float DSY_SDRAM_BSS pitchBendTable[PITCH_BEND_TABLE_SIZE];
+float midiNoteToFreqTable[128];
+float pitchTable[PITCH_TABLE_SIZE];
+float detuneTable[DETUNE_TABLE_SIZE];
+float pitchBendTable[PITCH_BEND_TABLE_SIZE];
 
 inline void InitPitchTables()
 {

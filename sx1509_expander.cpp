@@ -82,6 +82,19 @@ void InitSX1509Extenders()
         sx1509_leds.SetPinMode(i, SX_PIN_OUTPUT, 0);
     }
 
+    for (size_t i = 0; i < 8; i++)
+    {
+        sx1509_leds.WritePin(i, 1);
+        sx1509_leds.WritePin(i - 1, 0);
+        System::Delay(100);
+    }
+    for (size_t i = 6; i > 0; i--)
+    {
+        sx1509_leds.WritePin(i, 1);
+        sx1509_leds.WritePin(i + 1, 0);
+        System::Delay(100);
+    }
+
     UpdateLeds();
 
     System::Delay(10);

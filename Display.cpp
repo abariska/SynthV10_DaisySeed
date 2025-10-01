@@ -107,7 +107,7 @@ void DrawIntroPage()
     Paint_TextCentered("by abariska", 64, FULL_PAGE_WIDTH, 112, Font8, WHITE, BLACK);
 
     OLED_Transmit_DMA(&intro_page_data);
-    System::Delay(10);
+    System::Delay(1000);
 }
 
 void SetPage(MenuPage newPage)
@@ -136,6 +136,13 @@ void SetPage(MenuPage newPage)
         break;
     }
     UpdateLeds();
+    if (currentPage != MAIN_PAGE)
+    {
+        for (size_t i = 0; i < NUM_MAIN_SLOTS; i++)
+        {
+            currentPreset.mainSlots[i].isEditMode = false;
+        }
+    }
 }
 void UpdatePage()
 {
@@ -163,6 +170,13 @@ void UpdatePage()
         break;
     }
     UpdateLeds();
+    if (currentPage != MAIN_PAGE)
+    {
+        for (size_t i = 0; i < NUM_MAIN_SLOTS; i++)
+        {
+            currentPreset.mainSlots[i].isEditMode = false;
+        }
+    }
     page_need_update = false;
     update_for_preset_needed = false;
 }
@@ -242,7 +256,7 @@ void DrawMainPage()
     // Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);
-    InitMainBlocks();
+    DrawMainBlocks();
     DrawScope();
 }
 
@@ -271,7 +285,7 @@ void DrawParamPage(MenuPage page)
     // }
     OLED_Transmit_DMA(&bg_black_data);
 
-    InitParamBlocks();
+    DrawParamBlocks();
 }
 
 void DrawEffectBlock(uint8_t slot)
@@ -279,11 +293,11 @@ void DrawEffectBlock(uint8_t slot)
     Paint_NewImage(effect_block_data[slot].data, EFFECT_BLOCK_WIDTH, EFFECT_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    EffectName selected = effectSlot[slot].selectedEffect;
+    EffectName selected = currentPreset.effectSlots[slot].selectedEffect;
     if (selected != EFFECT_NONE)
     {
         Paint_TextCentered(effectLabels[selected], 0, EFFECT_BLOCK_WIDTH, 0, Font12, WHITE, BLACK);
-        Paint_TextCentered(effectSlot[slot].isActive ? "On" : "Off", 0, EFFECT_BLOCK_WIDTH, 16, Font12, WHITE, BLACK);
+        Paint_TextCentered(currentPreset.effectSlots[slot].isActive ? "On" : "Off", 0, EFFECT_BLOCK_WIDTH, 16, Font12, WHITE, BLACK);
     }
     else
     {
@@ -309,8 +323,11 @@ void DrawEffectsPage()
 
     Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
 
-    Paint_TextCentered("1", 0, 63, 40, Font12, WHITE, BLACK);
-    Paint_TextCentered("2", 64, 127, 40, Font12, WHITE, BLACK);
+    Paint_TextCentered("Fx1", 0, 63, 40, Font12, WHITE, BLACK);
+    Paint_TextCentered("Fx2", 64, 127, 40, Font12, WHITE, BLACK);
+    Paint_DrawLine(56, 46, 72, 46, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(69, 43, 72, 46, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(69, 49, 72, 46, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
     OLED_Transmit_DMA(&bg_black_data);
 
@@ -322,7 +339,7 @@ void DrawEffectsPage()
 
 void SelectEffectPage(uint8_t slot)
 {
-    EffectName effect_to_show = effectSlot[slot].selectedEffect;
+    EffectName effect_to_show = currentPreset.effectSlots[slot].selectedEffect;
     MenuPage page = MenuPage::EMPTY;
     switch (effect_to_show)
     {
@@ -347,6 +364,38 @@ void SelectEffectPage(uint8_t slot)
     SetPage(page);
 }
 
+void DrawModMatrixBlock(uint8_t blockIndex)
+{
+    Paint_NewImage(mod_matrix_block_data[blockIndex].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
+    Paint_Clear(BLACK);
+
+    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModSourceLabel(), 32, 64, 1, Font12, WHITE, BLACK);
+    Paint_NumCentered(currentPreset.modMtx[blockIndex].GetModAmount() * 100, 64, 96, 1, 0, Font12, WHITE, BLACK);
+    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModTargetLabel(), 96, 128, 1, Font12, WHITE, BLACK);
+    if (blockIndex == selModBlockIndex)
+    {
+        uint8_t arrow_y = 7;
+        Paint_DrawLine(8, arrow_y, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(20, arrow_y - 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(20, arrow_y + 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        // Paint_DrawRectangle(0, 0, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+    }
+
+    OLED_Part_Transmit_DMA(&mod_matrix_block_data[blockIndex],
+                           BLOCK_MOD_MATRIX_X_START,
+                           BLOCK_MOD_MATRIX_Y_START[blockIndex],
+                           BLOCK_MOD_MATRIX_X_END,
+                           BLOCK_MOD_MATRIX_Y_END[blockIndex]);
+}
+
+void DrawModMatrixBlocks()
+{
+    for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
+    {
+        DrawModMatrixBlock(i);
+    }
+}
+
 void DrawModMatrixPage()
 {
     AssignParamsForPage(MOD_MATRIX_PAGE);
@@ -358,8 +407,35 @@ void DrawModMatrixPage()
 
     OLED_Transmit_DMA(&bg_black_data);
 
-    InitModMatrixBlocks(); 
+    DrawModMatrixBlocks(); 
 }
+
+void DrawWaveformImage(int waveform)
+{
+
+    switch (waveform)
+    {
+    case 0: // SIN
+        Paint_DrawBitMapBlock(sin_wave, 32, 16, 0, 28);
+        break;
+    case 1: // TRI
+        Paint_DrawBitMapBlock(tri_wave, 32, 16, 0, 28);
+        break;
+    case 2: // SAW
+        Paint_DrawBitMapBlock(saw_wave, 32, 16, 0, 28);
+        break;
+    case 3: // SQR
+        Paint_DrawBitMapBlock(sqr_wave, 32, 16, 0, 28);
+        break;
+    case 4: // OFF
+
+        break;
+    default:
+        break;
+    }
+}
+
+
 
 // void DrawIntroPage2(){
 //     while (1)
@@ -367,7 +443,7 @@ void DrawModMatrixPage()
 //         static int i = 0;
 //         char text[12];
 //         Paint_NewImage(param_block_data[0].data, 32, 32, 0, BLACK);
-//         Paint_Clear(BLACK);
+//         Paint_Clear(BLACK);  
 
 //         sprintf(text, "%d", i);
 //         Paint_TextCentered(text, 0, 32, 0, Font8, WHITE, BLACK);

@@ -7,31 +7,59 @@
 #include "per/qspi.h"
 #include "sys/dma.h"
 
+// #define DTCM __attribute__((section(".dtcm_bss")))
+ParamSlot paramSlots[NUM_PARAM_BLOCKS];
+
 using namespace daisy;
 extern DaisySeed hw;
 extern bool page_need_update;
 
-static const size_t PRESET_SIZE = 256;          // округлюємо до 512 байт
+static const size_t PAGE_SIZE = 1024;           // округлюємо до 512 байт
 static const uint32_t FLASH_BASE_ADDR = 0x1000; // Починаємо пресети з 4KB
 static const uint32_t FLASH_BLOCK_4KB = 0x1000;
 
 Preset currentPreset;
-float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS) - 1)] = {0.0f,
-                                                                                   0.0f, 0.5f, 0.5f, 0.0f, 0.5f, 1.0f, 0.0f, 
-                                                                                   0.5f, 0.5f, 0.0f, 0.5f, 0.0f, 0.0f, 0.5f, 
-                                                                                   0.5f, 0.0f, 0.5f, 0.0f, 0.0f, 0.0f, 0.1f, 
-                                                                                   0.1f, 0.0f, 0.1f, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 
-                                                                                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                                                                                   0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
-                                                                                   0.0f, 0.0f, 0.0f};
+float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0.0f,
+                                                                               0.0f, 0.0f, 0.5f, 0.5f, 0.2f, 0.5f, 1.0f, //Osc1
+                                                                               0.0f, 0.0f, 0.5f, 0.5f, 0.2f, 0.5f, 0.0f, //Osc2
+                                                                               0.0f, 0.0f, 0.5f, 0.5f, 0.2f, 0.5f, 0.0f, //Osc3
+                                                                               0.1f, 0.0f, 0.01f, 0.01f, 1.0f, 0.01f, //Filter ADSR
+                                                                               0.0f, 0.01f, 0.1f, 0.0f, 0.01f, 0.01f, 0.0f, 0.01f, //Mod LFO ADSR
+                                                                               0.0f, //Drive
+                                                                               0.1f, 0.5f, 0.5f, 0.5f, //Chorus
+                                                                               0.01f, 0.01f, 0.5f, 2.0f, 0.5f, //Compressor
+                                                                               0.5f, 1.0f, //Reverb
+                                                                               0.5f, 0.0f, 0.5f, 0.0f, //FX slots
+                                                                               1.0f, 1.0f, 0.1f}; //Global
 
 Preset GetDefaultPreset(int8_t presetNumber)
 {
     Preset preset = {};
     preset.number = presetNumber;
-    strcpy(preset.name, "default");
-    memcpy(preset.array, default_preset_array, sizeof(default_preset_array));
     preset.type = PresetType::DEFAULT;
+    memcpy(preset.array, default_preset_array, sizeof(default_preset_array));
+
+    for (size_t i = 0; i < NUM_MAIN_SLOTS; i++)
+    {
+        preset.mainSlots[i] = MainSlot(); // Викликає конструктор за замовчуванням
+    }
+    preset.mainSlots[0].target_param = P::FILTER_CUTOFF;
+    preset.mainSlots[1].target_param = P::FILTER_RESONANCE;
+    preset.mainSlots[2].target_param = P::ADSR_ATTACK;
+    preset.mainSlots[3].target_param = P::ADSR_DECAY;
+
+    for (size_t i = 0; i < NUM_FX_SLOTS; i++)
+    {
+        preset.effectSlots[i] = FXSlot(); // Викликає конструктор за замовчуванням
+    }
+    preset.effectSlots[0].selectedEffect = EFFECT_CHORUS;
+    preset.effectSlots[1].selectedEffect = EFFECT_REVERB;
+
+    for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
+    {
+        preset.modMtx[i] = ModMatrix(); // Викликає конструктор за замовчуванням
+    }
+
     return preset;
 }
 
@@ -42,14 +70,14 @@ void ResetPreset(int presetNumber);
 void InitQSPI()
 {
     // Зчитуємо init_flag
-    dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), 256);
+    dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
     uint32_t init_flag = *((uint32_t *)(0x90000000));
 
     if (init_flag != 0xDEADBEED)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
-        uint8_t page[256];
+        uint8_t page[PAGE_SIZE];
         memset(page, 0xFF, sizeof(page));
         uint32_t marker = 0xDEADBEED;
         memcpy(page, &marker, sizeof(marker));
@@ -58,14 +86,14 @@ void InitQSPI()
 
         System::Delay(10);
 
-        dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), 256);
+        dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
         hw.qspi.Erase(FLASH_BASE_ADDR, PRESET_NUM * FLASH_BLOCK_4KB);
 
-        for (size_t i = 0; i <= PRESET_NUM; i++)
+        for (size_t i = 0; i < PRESET_NUM; i++)
         {
             uint32_t addr = FLASH_BASE_ADDR + i * FLASH_BLOCK_4KB;
             Preset preset = GetDefaultPreset(i);
-            uint8_t page[256];
+            uint8_t page[PAGE_SIZE];
             memset(page, 0, sizeof(page));
             memcpy(page, &preset, sizeof(preset));
 
@@ -77,7 +105,7 @@ void InitQSPI()
 
 // Continuous
 SynthParameter::SynthParameter(float min_value, float max_value, const char *label,
-                               uint8_t index, float *array, Curve defaultCurve, ParamUnit param_unit, ParamType paramType, ModulateableParam modulateableParam)
+                               uint8_t index, float *array, Curve defaultCurve, ParamUnit param_unit, ParamType paramType, UseInMain useInMain, UseInMod useInMod)
     : name_label(label),
       param_index(index),
       param_array(array),
@@ -85,14 +113,15 @@ SynthParameter::SynthParameter(float min_value, float max_value, const char *lab
       max(max_value),
       curve(defaultCurve),
       unit(param_unit),
-      modulateableParam(modulateableParam),
+      useInMain(useInMain),
+      useInMod(useInMod),
       type(paramType)
 {
 }
 
 // Discrete
 SynthParameter::SynthParameter(int min_vals, int max_vals, const char *label,
-                               uint8_t index, float *array, Curve defaultCurve, ParamUnit param_unit, ParamType paramType, ModulateableParam modulateableParam)
+                               uint8_t index, float *array, Curve defaultCurve, ParamUnit param_unit, ParamType paramType, UseInMain useInMain, UseInMod useInMod)
     : name_label(label),
       param_index(index),
       param_array(array),
@@ -100,7 +129,8 @@ SynthParameter::SynthParameter(int min_vals, int max_vals, const char *label,
       max(max_vals),
       curve(defaultCurve),
       unit(param_unit),
-      modulateableParam(modulateableParam),
+      useInMain(useInMain),
+      useInMod(useInMod),
       type(paramType)
 {
 }
@@ -284,16 +314,19 @@ void SavePreset(uint8_t preset_num, const Preset &prst)
         float v = paramManager.GetParam(static_cast<ParamUnitName>(i)).GetNormalised();
         p.type = PresetType::CUSTOM;
         p.number = prst.number;
-        strcpy(p.name, prst.name);
         p.array[i] = v;
+        for (size_t j = 0; j < MOD_MATRIX_NUM; j++)
+        {
+            p.modMtx[j] = prst.modMtx[j]; // Викликає конструктор за замовчуванням
+        }
     }
     uint32_t addr = FLASH_BASE_ADDR + preset_num * FLASH_BLOCK_4KB;
 
     hw.qspi.Erase(addr, addr + FLASH_BLOCK_4KB);
 
-    uint8_t page[256];
+    uint8_t page[PAGE_SIZE];
     memset(page, 0, sizeof(page));
-    memcpy(page, &p, sizeof(p));
+    *reinterpret_cast<Preset *>(page) = p;
 
     hw.qspi.Write(addr, sizeof(page), page);
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000) + addr, sizeof(page));
@@ -305,26 +338,24 @@ void ReadPreset(uint8_t preset_num, Preset &prst)
 {
     uint32_t addr = FLASH_BASE_ADDR + preset_num * FLASH_BLOCK_4KB;
 
-    uint8_t page[256];
+    uint8_t page[PAGE_SIZE];
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000) + addr, sizeof(page));
     memcpy(&page, hw.qspi.GetData(addr), sizeof(page));
-    memcpy(&prst, &page, sizeof(Preset));
+    prst = *reinterpret_cast<const Preset *>(page);
 
-    prst.name[11] = '\0';
     System::Delay(10);
 }
 void ResetPreset(int presetNumber)
 {
-
     Preset preset = GetDefaultPreset(presetNumber);
 
     uint32_t addr = FLASH_BASE_ADDR + presetNumber * FLASH_BLOCK_4KB;
 
     hw.qspi.Erase(addr, addr + FLASH_BLOCK_4KB);
 
-    uint8_t page[256];
+    uint8_t page[PAGE_SIZE];
     memset(page, 0, sizeof(page));
-    memcpy(page, &preset, sizeof(preset));
+    *reinterpret_cast<Preset *>(page) = preset;
 
     hw.qspi.Write(addr, sizeof(page), page);
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000) + addr, sizeof(page));
@@ -336,6 +367,7 @@ void ResetPreset(int presetNumber)
     {
         paramManager.GetParam(static_cast<ParamUnitName>(i)).SetNormalized(currentPreset.array[i]);
     }
+
     page_need_update = true;
     hw.DelayMs(10);
 }
@@ -343,7 +375,6 @@ void ResetPreset(int presetNumber)
 /** --- ApplyPreset --- */
 void ApplyPreset(int presetNumber)
 {
-
     ReadPreset(presetNumber, currentPreset);
 
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
@@ -353,71 +384,71 @@ void ApplyPreset(int presetNumber)
     page_need_update = true;
 }
 
-#define ADD_PARAM(param_enum, min_val, max_val, label, curve, unit, modulateableParam) \
-    params[static_cast<int>(param_enum)] = SynthParameter(                             \
-        min_val, max_val, label, static_cast<int>(param_enum),                         \
-        currentPreset.array, curve, unit, ParamType::CONTINUOUS, modulateableParam)
+#define ADD_PARAM(param_enum, min_val, max_val, label, curve, unit, useInMain, useInMod) \
+    params[static_cast<int>(param_enum)] = SynthParameter(                               \
+        min_val, max_val, label, static_cast<int>(param_enum),                           \
+        currentPreset.array, curve, unit, ParamType::CONTINUOUS, useInMain, useInMod)
 
 ParameterManager paramManager;
 using P = ParamUnitName;
 
 void ParameterManager::Init()
 {
-    ADD_PARAM(P::NONE, 0, 0, "-", Curve::LINEAR, ParamUnit::UNITLESS, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_WAVEFORM_1, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_FREQ_1, 1.0f, 10000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::OSC_PITCH_1, -36.0f, 36.0f, "Sem", Curve::LINEAR, ParamUnit::SEMITONES, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_DETUNE_1, -100.0f, 100.0f, "Dtn", Curve::LINEAR, ParamUnit::CENTS, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_AMP_1, 0.0f, 100.0f, "Amp", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::OSC_PWM_1, -100.0f, 100.0f, "PWM", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::OSC_ACTIVE_1, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_WAVEFORM_2, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_FREQ_2, 1.0f, 10000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::OSC_PITCH_2, -36.0f, 36.0f, "Sem", Curve::LINEAR, ParamUnit::SEMITONES, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_DETUNE_2, -100.0f, 100.0f, "Dtn", Curve::LINEAR, ParamUnit::CENTS, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_AMP_2, 0.0f, 100.0f, "Amp", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::OSC_PWM_2, -100.0f, 100.0f, "PWM", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::OSC_ACTIVE_2, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_WAVEFORM_3, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_FREQ_3, 1.0f, 10000.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::OSC_PITCH_3, -36.0f, 36.0f, "Sem", Curve::LINEAR, ParamUnit::SEMITONES, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_DETUNE_3, -100.0f, 100.0f, "Dtn", Curve::LINEAR, ParamUnit::CENTS, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::OSC_AMP_3, 0.0f, 100.0f, "Amp", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::OSC_PWM_3, -100.0f, 100.0f, "PWM", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::OSC_ACTIVE_3, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::FILTER_CUTOFF, 20.0f, 20000.0f, "Cut", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::FILTER_RESONANCE, 0.0f, 100.0f, "Res", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::ADSR_ATTACK, 0.005f, 20.0f, "Atk", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Dcy", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sus", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::ADSR_RELEASE, 0.005f, 20.0f, "Rls", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::MOD_LFO_FREQ, 0.01f, 100.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Dpt", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::MOD_LFO_ACTIVE, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::MOD_ADSR_ATTACK, 0.005f, 20.0f, "Atk", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::MOD_ADSR_DECAY, 0.005f, 20.0f, "Dcy", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::MOD_ADSR_SUSTAIN, 0.0f, 100.0f, "Sus", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::MOD_ADSR_RELEASE, 0.005f, 20.0f, "Rls", Curve::EXPONENTIAL, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::EFFECT_OVERDRIVE_DRIVE, 0.0f, 100.0f, "Drv", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_CHORUS_FREQ, 0.1f, 100.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_CHORUS_DEPTH, 0.0f, 100.0f, "Dpt", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_CHORUS_FBK, 0.0f, 100.0f, "Fbk", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::EFFECT_CHORUS_DELAY, 0.0f, 100.0f, "Dly", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_ATTACK, 0.001f, 10.0f, "Atk", Curve::LINEAR, ParamUnit::SECONDS, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_RELEASE, 0.001f, 10.0f, "Rls", Curve::LINEAR, ParamUnit::SECONDS, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_THRESHOLD, -80.0f, 0.0f, "Thr", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_RATIO, 1.0f, 40.0f, "Rat", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_MAKEUP, 0.0f, 80.0f, "Mk", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_REVERB_FEEDBACK, 0.0f, 100.0f, "Fbk", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_REVERB_LPFREQ, 10.0f, 20000.0f, "LpF", Curve::EXPONENTIAL, ParamUnit::HZ, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_SLOT_1_DRYWET, 0.0f, 100.0f, "DrW", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_SLOT_1_ACTIVE, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::EFFECT_SLOT_2_DRYWET, 0.0f, 100.0f, "DrW", Curve::LINEAR, ParamUnit::PERCENT, ModulateableParam::MODULATABLE);
-    ADD_PARAM(P::EFFECT_SLOT_2_ACTIVE, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::GLOBAL_MONO, 0, 2, "Mon", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::GLOBAL_LEGATO, 0, 2, "Lgt", Curve::LINEAR, ParamUnit::BOOL, ModulateableParam::NOT_MODULATABLE);
-    ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 1.0f, "Prt", Curve::LINEAR, ParamUnit::SECONDS, ModulateableParam::NOT_MODULATABLE);
+    ADD_PARAM(P::NONE, 0, 0, "-", Curve::LINEAR, ParamUnit::UNITLESS, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_WAVEFORM_1, 0, Osc::WAVE_COUNT - 1, "Wav1", Curve::LINEAR, ParamUnit::PICTURE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_FREQ_1, 1.0f, 10000.0f, "Frq1", Curve::EXPONENTIAL, ParamUnit::HZ, UseInMain::NONE, UseInMod::USED);
+    ADD_PARAM(P::OSC_PITCH_1, -36, 36, "Sem1", Curve::LINEAR, ParamUnit::SEMITONES, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_DETUNE_1, -100, 100, "Dtn1", Curve::LINEAR, ParamUnit::CENTS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_AMP_1, 0.0f, 100.0f, "Amp1", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_PWM_1, -100, 100, "Pwm1", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_ACTIVE_1, 0, 2, "Actv1", Curve::LINEAR, ParamUnit::BOOL, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_WAVEFORM_2, 0, Osc::WAVE_COUNT - 1, "Wav2", Curve::LINEAR, ParamUnit::PICTURE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_FREQ_2, 1.0f, 10000.0f, "Frq2", Curve::EXPONENTIAL, ParamUnit::HZ, UseInMain::NONE, UseInMod::USED);
+    ADD_PARAM(P::OSC_PITCH_2, -36, 36, "Sem2", Curve::LINEAR, ParamUnit::SEMITONES, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_DETUNE_2, -100, 100, "Dtn2", Curve::LINEAR, ParamUnit::CENTS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_AMP_2, 0.0f, 100.0f, "Amp2", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_PWM_2, -100, 100, "Pwm2", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_ACTIVE_2, 0, 2, "Actv2", Curve::LINEAR, ParamUnit::BOOL, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_WAVEFORM_3, 0, Osc::WAVE_COUNT - 1, "Wav3", Curve::LINEAR, ParamUnit::PICTURE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_FREQ_3, 1.0f, 10000.0f, "Frq3", Curve::EXPONENTIAL, ParamUnit::HZ, UseInMain::NONE, UseInMod::USED);
+    ADD_PARAM(P::OSC_PITCH_3, -36, 36, "Sem3", Curve::LINEAR, ParamUnit::SEMITONES, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_DETUNE_3, -100, 100, "Dtn3", Curve::LINEAR, ParamUnit::CENTS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_AMP_3, 0.0f, 100.0f, "Amp3", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_PWM_3, -100, 100, "Pwm3", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_ACTIVE_3, 0, 2, "Actv3", Curve::LINEAR, ParamUnit::BOOL, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::FILTER_CUTOFF, 20.0f, 20000.0f, "Cut", Curve::EXPONENTIAL, ParamUnit::HZ, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::FILTER_RESONANCE, 0.0f, 100.0f, "Res", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::ADSR_ATTACK, 0.005f, 20.0f, "Atk", Curve::EXPONENTIAL, ParamUnit::SECONDS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Dcy", Curve::EXPONENTIAL, ParamUnit::SECONDS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sus", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::ADSR_RELEASE, 0.005f, 20.0f, "Rls", Curve::EXPONENTIAL, ParamUnit::SECONDS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::MOD_LFO_FREQ, 0.01f, 100.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Dpt", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::MOD_LFO_ACTIVE, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::MOD_ADSR_ATTACK, 0.005f, 20.0f, "AtkM", Curve::EXPONENTIAL, ParamUnit::SECONDS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::MOD_ADSR_DECAY, 0.005f, 20.0f, "DcyM", Curve::EXPONENTIAL, ParamUnit::SECONDS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::MOD_ADSR_SUSTAIN, 0.0f, 100.0f, "SusM", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::MOD_ADSR_RELEASE, 0.005f, 20.0f, "RlsM", Curve::EXPONENTIAL, ParamUnit::SECONDS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::EFFECT_OVERDRIVE_DRIVE, 0.0f, 100.0f, "Drv", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_CHORUS_FREQ, 0.1f, 100.0f, "FrqC", Curve::EXPONENTIAL, ParamUnit::HZ, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_CHORUS_DEPTH, 0.0f, 100.0f, "DptC", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_CHORUS_FBK, 0.0f, 100.0f, "FbkC", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_CHORUS_DELAY, 0.0f, 100.0f, "DlyC", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_ATTACK, 0.001f, 10.0f, "AtkC", Curve::LINEAR, ParamUnit::SECONDS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_RELEASE, 0.001f, 10.0f, "RlsC", Curve::LINEAR, ParamUnit::SECONDS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_THRESHOLD, -80.0f, 0.0f, "ThrC", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_RATIO, 1.0f, 40.0f, "RatC", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_MAKEUP, 0.0f, 80.0f, "MkC", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_REVERB_FEEDBACK, 0.0f, 100.0f, "FbkR", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_REVERB_LPFREQ, 10.0f, 20000.0f, "CutxR", Curve::EXPONENTIAL, ParamUnit::HZ, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_SLOT_1_DRYWET, 0.0f, 100.0f, "DrW1", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_SLOT_1_ACTIVE, 0, 2, "Actv1", Curve::LINEAR, ParamUnit::BOOL, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::EFFECT_SLOT_2_DRYWET, 0.0f, 100.0f, "DrW2", Curve::LINEAR, ParamUnit::PERCENT, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_SLOT_2_ACTIVE, 0, 2, "Actv2", Curve::LINEAR, ParamUnit::BOOL, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::GLOBAL_MONO, 0, 2, "Mono", Curve::LINEAR, ParamUnit::BOOL, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::GLOBAL_LEGATO, 0, 2, "Lgto", Curve::LINEAR, ParamUnit::BOOL, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 1.0f, "Prto", Curve::LINEAR, ParamUnit::SECONDS, UseInMain::USED, UseInMod::USED);
 }
 
 Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
@@ -425,5 +456,5 @@ Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::LFO, 0.0f, "Lfo"},
     {ModSource::ADSR, 0.0f, "Adsr"},
     {ModSource::MOD_WHEEL, 0.0f, "Wheel"},
-    {ModSource::AFTERTOUCH, 0.0f, "Atch"},
+    {ModSource::AFTERTOUCH, 0.0f, "Aftch"},
 };

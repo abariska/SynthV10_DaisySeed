@@ -3,22 +3,24 @@
 
 #include <array>
 #include <cstdint>
-#include "parameters.h"
 #include "daisy_seed.h"
 #include "daisysp.h" // Add for using constants
 #include "oscillator.h"
+#include "display.h"
+#include "effects.h"
 
 // Required for array structures
 #define OSC_NUM 3
 #define PARAM_NAME_LENGTH 8
 #define PRESET_NAME_LENGTH 12
-#define PRESET_NUM 10
+#define PRESET_NUM 100
 #define MOD_MATRIX_NUM 7
 
 template <typename T>
 constexpr const T &clamp(const T &v, const T &lo, const T &hi)
 {
-    return (v < lo) ? lo : (v > hi) ? hi : v;
+    return (v < lo) ? lo : (v > hi) ? hi
+                                    : v;
 }
 
 struct Preset;
@@ -121,10 +123,15 @@ enum class ParamUnit
     UNITLESS
 };
 
-enum class ModulateableParam
+enum class UseInMod
 {
-    MODULATABLE,
-    NOT_MODULATABLE
+    NONE,
+    USED
+};
+enum class UseInMain
+{
+    NONE,
+    USED
 };
 
 class SynthParameter
@@ -141,7 +148,8 @@ private:
     ParamUnit unit;
     float physical_value;
     float modifier_value;
-    ModulateableParam modulateableParam;
+    UseInMain useInMain;
+    UseInMod useInMod;
     ParamType type;
 
 public:
@@ -152,14 +160,16 @@ public:
                    Curve defaultCurve,
                    ParamUnit param_unit,
                    ParamType type = ParamType::CONTINUOUS,
-                   ModulateableParam modulateableParam = ModulateableParam::NOT_MODULATABLE);
+                   UseInMain useInMain = UseInMain::NONE,
+                   UseInMod useInMod = UseInMod::NONE);
 
     SynthParameter(int min_vals, int max_vals,
                    const char *label, uint8_t index, float *array,
                    Curve defaultCurve = Curve::LINEAR,
                    ParamUnit param_unit = ParamUnit::UNITLESS,
                    ParamType type = ParamType::DISCRETE,
-                   ModulateableParam modulateableParam = ModulateableParam::NOT_MODULATABLE);
+                   UseInMain useInMain = UseInMain::NONE,
+                   UseInMod useInMod = UseInMod::NONE);
 
     // Універсальні методи
     float SetNormalized(float n);
@@ -183,7 +193,8 @@ public:
     void SetFloat(float value) { physical_value = value; }
     Curve GetCurve() const;
     void SetModifier(float value);
-    ModulateableParam GetModulateableParam() const { return modulateableParam; }
+    UseInMain GetUseInMain() const { return useInMain; }
+    UseInMod GetUseInMod() const { return useInMod; }
 };
 
 class ParameterManager
@@ -207,7 +218,8 @@ public:
     Curve GetCurve(ParamUnitName name) { return GetParam(name).GetCurve(); }
     void SetFloat(ParamUnitName name, float value) { GetParam(name).SetFloat(value); }
     float GetValue(ParamUnitName name) { return GetParam(name).GetValue(); }
-    ModulateableParam GetModulateableParam(ParamUnitName name) { return GetParam(name).GetModulateableParam(); }
+    UseInMain GetUseInMain(ParamUnitName name) { return GetParam(name).GetUseInMain(); }
+    UseInMod GetUseInMod(ParamUnitName name) { return GetParam(name).GetUseInMod(); }
 };
 
 extern ParameterManager paramManager;
@@ -221,15 +233,25 @@ enum class PresetType : uint8_t
     CUSTOM
 };
 
-struct Preset
+struct ParamSlot
 {
-    PresetType type;
-    uint8_t number;
-    char name[PRESET_NAME_LENGTH];
-    float array[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
+    ParamUnitName target_param = P::NONE;
+    bool need_update = false;
 };
-
-extern Preset currentPreset;
+extern ParamSlot paramSlots[NUM_PARAM_BLOCKS];
+struct MainSlot
+{
+    ParamUnitName target_param = P::NONE;
+    bool need_update = false;
+    bool isEditMode = false;
+};
+struct FXSlot
+{
+    EffectName selectedEffect = EFFECT_NONE;
+    const char *label = "-";
+    bool need_update = false;
+    bool isActive = false;
+};
 
 void ApplyPreset(int presetNumber);
 void ReadPreset(uint8_t preset_num, Preset &prst);
@@ -255,50 +277,58 @@ struct Modulator
 };
 
 extern Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)];
-
 // Mod Matrix
 class ModMatrix
 {
 public:
     ModMatrix()
     {
-        modSourceType = ModSource::NONE;
+        modSource.source = ModSource::NONE;
+        modSource.value = 0.0f;
+        modSource.label = "-";
         modTarget = ParamUnitName::NONE;
-        modTargetLabel = "-";
         modAmount = 0.0f;
     }
 
-    ModSource modSourceType;
-    Modulator modSource;
-    ParamUnitName modTarget;
-    const char *modTargetLabel;
-    float modAmount;
+public:
 
-    void SetModSource(ModSource source) { modSourceType = source; }
+    void SetModSource(ModSource source) { modSource.source = modulators[static_cast<int>(source)].source; }
     void SetModTarget(ParamUnitName target) { modTarget = target; }
-    void SetModTargetLabel(const char *label) { modTargetLabel = label; }
     void SetModAmount(float amount) { modAmount = amount; }
-    
     // Зчитування значення з глобального масиву modulators
-    float GetModValue() const 
-    { 
-        return modulators[static_cast<int>(modSourceType)].value; 
-    }
-    
-    const char* GetModLabel() const 
-    { 
-        return modulators[static_cast<int>(modSourceType)].label; 
-    }
+
+    float GetModAmount() const { return modAmount; }
+    ModSource GetModSource() const{ return modSource.source; }
+    float GetModSourceValue() const { return modulators[static_cast<int>(modSource.source)].value; }
+    const char *GetModSourceLabel() const { return modulators[static_cast<int>(modSource.source)].label; }
+    ParamUnitName GetModTarget() const { return modTarget; }
+    const char *GetModTargetLabel() const { return paramManager.GetLabel(modTarget); }
 
     void RunMod()
     {
-        float modValue = GetModValue();
-        modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f : modValue;
+        float modValue = GetModSourceValue();
+        modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f
+                                                                : modValue;
         modValue = modValue * modAmount;
         paramManager.SetModifier(modTarget, modValue);
     }
+    
+private:
+    Modulator modSource;
+    ParamUnitName modTarget;
+    float modAmount;
 };
 
-extern ModMatrix modMatrix[MOD_MATRIX_NUM];
+struct Preset
+{
+    PresetType type;
+    uint8_t number;
+    float array[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
+    ModMatrix modMtx[MOD_MATRIX_NUM];
+    MainSlot mainSlots[NUM_MAIN_SLOTS];
+    FXSlot effectSlots[NUM_FX_SLOTS];
+};
+
+extern Preset currentPreset;
 
 #endif // PARAMETERS_H

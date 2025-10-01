@@ -11,6 +11,7 @@
 using namespace daisy;
 
 using P = ParamUnitName;
+using M = ModSource;
 
 DaisySeed hw;
 TimerHandle tim_display;
@@ -25,7 +26,7 @@ bool update_for_preset_needed = false;
 bool shift_pressed = false;
 float scope_data[128];
 int scope_data_index = 0;
-bool scope_data_ready = false;
+bool scope_data_ready = true;
 bool scope_triggered = false;
 float scope_prev_sample = 0.0f;
 float scope_trigger_level = 0.0f;
@@ -57,7 +58,7 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
-        modMatrix[i].RunMod();
+        currentPreset.modMtx[i].RunMod();
     }
 
     for (size_t i = 0; i < size; i += 2)
@@ -126,15 +127,13 @@ int main(void)
     OLED_1in5_Init();
     InitImages();
     DrawIntroPage();
-    System::Delay(1000);
     InitQSPI();
 
+    InitSlots();
     InitSynthParams();
     SynthInit(samplerate, blocksize);
-    EffectsInit(samplerate);
     MidiInit();
 
-    InitSlots();
     InitSX1509Extenders();
     SetPage(MAIN_PAGE);
 
@@ -171,12 +170,12 @@ void ProcessButtons()
             {
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW))
                 {
-                    effectSlot[0].isActive = !effectSlot[0].isActive;
+                    currentPreset.effectSlots[0].isActive = !currentPreset.effectSlots[0].isActive;
                     DrawEffectBlock(0);
                 }
                 if (sx1509_buttons.isFallingEdge(ENC_4_SW))
                 {
-                    effectSlot[1].isActive = !effectSlot[1].isActive;
+                    currentPreset.effectSlots[1].isActive = !currentPreset.effectSlots[1].isActive;
                     DrawEffectBlock(1);
                 }
             }
@@ -198,11 +197,15 @@ void ProcessButtons()
             { // Тільки 4 енкодери
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW + i))
                 {
-                    menu_slots[i].isEditMode = !menu_slots[i].isEditMode;
-                    if (!menu_slots[i].isEditMode)
+                    currentPreset.mainSlots[i].isEditMode = !currentPreset.mainSlots[i].isEditMode;
+                    if (!currentPreset.mainSlots[i].isEditMode)
                     {
-                        InitOneParamBlock(i, menu_slots[i].target_param, WHITE, BLACK);
+                        DrawOneParamBlock(i, currentPreset.mainSlots[i].target_param, WHITE, BLACK);
                     }
+                } else if (shift_pressed && currentPreset.mainSlots[i].isEditMode)
+                {
+                    currentPreset.mainSlots[i].isEditMode = false;
+                    DrawOneParamBlock(i, currentPreset.mainSlots[i].target_param, WHITE, BLACK);
                 }
             }
         }
@@ -357,18 +360,18 @@ void ProcessEncoders()
         { // Only 4 encoders
             if (encoderIncs[i] != 0)
             {
-                menu_slots[i].need_update = true;
+                currentPreset.mainSlots[i].need_update = true;
             }
         }
         break;
     case FX_PAGE:
         if (encoderIncs[0] != 0)
         {
-            effectSlot[0].need_update = true;
+            currentPreset.effectSlots[0].need_update = true;
         }
         if (encoderIncs[3] != 0)
         {
-            effectSlot[1].need_update = true;
+            currentPreset.effectSlots[1].need_update = true;
         }
         break;
     case MOD_MATRIX_PAGE:
@@ -383,7 +386,7 @@ void ProcessEncoders()
             if (encoderIncs[i] != 0)
             {
                 uint8_t paramIndex = GetActiveParamIndex(i); // Get index of active parameter
-                slots[paramIndex].need_update = true;
+                paramSlots[paramIndex].need_update = true;
             }
         }
         break;

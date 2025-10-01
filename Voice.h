@@ -10,6 +10,8 @@
 #include "parameters.h"
 #include "oscillator.h"
 
+#define DTCM __attribute__((section(".dtcm_bss")))
+
 using namespace daisy;
 using namespace daisysp;
 

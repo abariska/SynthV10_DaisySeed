@@ -20,10 +20,10 @@ ModMatrix modMatrix[MOD_MATRIX_NUM];
 
 uint8_t noteNum = 60;
 float frequency = 0;
-float phaseOffsets[OSC_NUM] = {0.0f, 0.0f, 0.0f};
-float pitch_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
-float detune_correction[OSC_NUM] = {0.0f, 0.0f, 0.0f};
-float final_freq[OSC_NUM] = {0.0f, 0.0f, 0.0f};
+float phaseOffsets[OSC_NUM];
+float pitch_correction[OSC_NUM];
+float detune_correction[OSC_NUM];
+float final_freq[OSC_NUM];
 float velocity_factor = 1.0f;
 
 const int maxNotes = 16;
@@ -33,7 +33,7 @@ bool gate = false;
 
 void SynthInit(float samplerate, int blocksize)
 {
-
+    InitPitchTables();
     for (size_t i = 0; i < OSC_NUM; i++)
     {
         osc[i].Init(samplerate);
@@ -46,7 +46,7 @@ void SynthInit(float samplerate, int blocksize)
         rnd[i].Init();
     }
     lfo.Init(samplerate);
-    InitPitchTables();
+    EffectsInit(samplerate);
 }
 
 void ModSourcesProcess()

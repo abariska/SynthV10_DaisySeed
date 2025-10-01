@@ -2,6 +2,8 @@
 #include "parameters.h"
 #include "reverb.h"
 
+FXParam fx;
+
 using P = ParamUnitName;
 
 float driveGainCompensation = 0.0f;
@@ -13,9 +15,6 @@ const char *effectLabels[] = {
     "Comp",
     "Reverb"};
 
-FXParam fx;
-FXSlot effectSlot[2];
-
 // Реалізація функцій
 void EffectsInit(float samplerate)
 {
@@ -24,15 +23,6 @@ void EffectsInit(float samplerate)
     fx.chorus.Init(samplerate);
     fx.reverb.Init(samplerate);
     fx.compressor.Init(samplerate);
-
-    effectSlot[0].selectedEffect = EFFECT_OVERDRIVE;
-    effectSlot[1].selectedEffect = EFFECT_CHORUS;
-    effectSlot[0].need_update = false;
-    effectSlot[1].need_update = false;
-    effectSlot[0].isActive = false;
-    effectSlot[1].isActive = false;
-    effectSlot[0].label = "";
-    effectSlot[1].label = "";
 }
 
 void ProcessEffectsReverb(float inL, float inR, float &outL, float &outR)
@@ -44,7 +34,7 @@ void ProcessEffectsReverb(float inL, float inR, float &outL, float &outR)
 
 void ProcessEffects(uint8_t slot, float inL, float inR, float &outL, float &outR)
 {
-    if (!effectSlot[slot].isActive)
+    if (!currentPreset.effectSlots[slot].isActive)
     {
         outL = inL;
         outR = inR;
@@ -53,7 +43,7 @@ void ProcessEffects(uint8_t slot, float inL, float inR, float &outL, float &outR
     else
     {
         float dryWet = paramManager.GetValue(EFFECT_SLOT_DRYWET[slot]);
-        switch (effectSlot[slot].selectedEffect)
+        switch (currentPreset.effectSlots[slot].selectedEffect)
         {
         case EFFECT_OVERDRIVE:
             fx.drive.SetDrive(paramManager.GetValue(P::EFFECT_OVERDRIVE_DRIVE));

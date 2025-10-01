@@ -34,14 +34,6 @@ struct FXParam
 };
 extern FXParam fx;
 
-struct FXSlot
-{
-    EffectName selectedEffect;
-    const char *label;
-    bool need_update;
-    bool isActive;
-};
-extern FXSlot effectSlot[2];
 
 void EffectsInit(float samplerate);
 void ProcessEffects(uint8_t slot, float inL, float inR, float &outL, float &outR);
