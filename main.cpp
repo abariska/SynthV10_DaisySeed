@@ -79,7 +79,6 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 
         scope_out = out[i] + out[i + 1] * 0.5f;
     }
-       // Тригерування: шукаємо перехід через нуль знизу вгору
        if (!scope_triggered && 
         scope_prev_sample <= scope_trigger_level && 
         scope_out > scope_trigger_level)
@@ -89,10 +88,9 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         scope_trigger_delay = 0;
     }
     
-    // Збираємо дані тільки після тригера
     if (scope_triggered)
     {
-        if (scope_trigger_delay > 2)  // Невелика затримка для стабілізації
+        if (scope_trigger_delay > 2)
         {
             scope_data[scope_data_index] = scope_out;
             scope_data_index++;
