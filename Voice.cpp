@@ -4,6 +4,8 @@
 #include "parameters.h"
 #include "midi_handler.h"
 
+#define DTCM __attribute__((section(".dtcmram_bss")))
+
 using P = ParamUnitName;
 
 using M = ModSource;

@@ -18,7 +18,6 @@
 #define DETUNE_CENTER_INDEX 100
 #define PITCH_BEND_TABLE_SIZE 401
 #define PITCH_BEND_CENTER_INDEX 200
-#define DTCM __attribute__((section(".dtcm_bss")))
 
 using namespace daisy;
 using namespace daisysp;
