@@ -18,6 +18,13 @@
 using namespace daisy;
 using namespace daisysp;
 
+enum ProcessType {
+    PROCESS_CONTROLS,
+    UPDATE_PARAMS,
+    PROCESS_DISPLAY
+};
+
+
 extern MenuPage currentPage;
 
 extern CpuLoadMeter cpu_load;

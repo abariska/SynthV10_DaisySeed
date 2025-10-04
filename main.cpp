@@ -16,6 +16,7 @@ using M = ModSource;
 DaisySeed hw;
 TimerHandle tim_display;
 CpuLoadMeter cpu_load;
+ProcessType process_type;
 
 extern Preset currentPreset;
 
@@ -37,11 +38,11 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
                           size_t size)
 {
     cpu_load.OnBlockStart();
-
+    static float scope_out = 0.0f;
+    
     midiUart.Listen();
     midiUsb.Listen();
-    static float scope_out = 0.0f;
-
+    
     while (midiUsb.HasEvents())
     {
         auto msg = midiUsb.PopEvent();
@@ -112,7 +113,7 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 
 int main(void)
 {
-    int blocksize = 4;
+    int blocksize = 16;
 
     hw.Configure();
     hw.Init();
@@ -139,16 +140,29 @@ int main(void)
 
     Timer500ms();
     System::Delay(10);
+    process_type = PROCESS_CONTROLS;
 
     while (1)
     {
-        ProcessButtons();
-        ProcessEncoders();
-        UpdateEncodersParams();
-        UpdatePage();
-        DrawScope();
+        switch (process_type)
+        {
 
-        sx1509_leds.WritePin(5, midi_note_led);
+            case PROCESS_CONTROLS:
+                ProcessButtons();
+                ProcessEncoders();
+                break;
+            case UPDATE_PARAMS: 
+                UpdateModSourcesParams();
+                UpdateEncodersParams();
+                break;
+            case PROCESS_DISPLAY:
+                UpdatePage();
+                DrawScope();
+                CpuUsageDisplay();
+                break;
+        }
+        UpdateSynthParams();
+        process_type = (ProcessType)((process_type + 1) % 3);
     }
 }
 
@@ -395,7 +409,7 @@ void Callback(void *data)
 {
     isBlink = !isBlink;
     blinkStateChanged = true;
-    CpuUsageDisplay();
+    // CpuUsageDisplay();
 }
 
 void Timer500ms()
