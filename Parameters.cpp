@@ -148,11 +148,18 @@ float SynthParameter::SetNormalized(float n)
     param_array[param_index] = norm_value;
     if (type == ParamType::DISCRETE)
     {
-        int num_values = static_cast<int>(max - min) + 1;
-        float exact_value = min + norm_value * (num_values - 1);
-        physical_value = roundf(exact_value);
-        norm_value = (physical_value - min) / (num_values - 1);
-        param_array[param_index] = norm_value;
+        if (unit == ParamUnit::BOOL)
+        {
+            physical_value = norm_value > 0.5f ? 1.0f : 0.0f;
+        }
+        else
+        {
+            int num_values = static_cast<int>(max - min) + 1;
+            float exact_value = min + norm_value * (num_values - 1);
+            physical_value = roundf(exact_value);
+            norm_value = (physical_value - min) / (num_values - 1);
+            param_array[param_index] = norm_value;
+        }
     }
     else
     {
@@ -166,10 +173,18 @@ float SynthParameter::SetPhysicalValue(float v)
     physical_value = clamp(v, min, max);
     if (type == ParamType::DISCRETE)
     {
+        if (unit == ParamUnit::BOOL)
+        {
+            physical_value = v > 0.5f ? 1.0f : 0.0f;
+            norm_value = physical_value;
+        }
+        else
+        {
         physical_value = roundf(physical_value);
         int num_values = static_cast<int>(max - min) + 1;
-        norm_value = (physical_value - min) / (num_values - 1);
-        param_array[param_index] = norm_value;
+            norm_value = (physical_value - min) / (num_values - 1);
+            param_array[param_index] = norm_value;
+        }
     }
     else
     {
@@ -183,9 +198,19 @@ float SynthParameter::AdjustByIncrement(int inc)
 {
     if (type == ParamType::DISCRETE )
     {
-        int current_int = GetInt();
-        int new_int = current_int + inc;
-        return SetPhysicalValue(static_cast<float>(new_int));
+        if (unit == ParamUnit::BOOL)
+        {
+            float newValue = static_cast<float>(GetNormalised());
+            newValue += inc;
+            SetNormalized(newValue);
+            return static_cast<float>(newValue);
+        }
+        else
+        {
+            int current_int = GetInt();
+            int new_int = current_int + inc;
+            return SetPhysicalValue(static_cast<float>(new_int));
+        }
     }
 
     switch (unit)
@@ -287,8 +312,8 @@ int SynthParameter::GetInt() const
 
 void SynthParameter::SetBool(bool value)
 {
-    norm_value = value > 0.5f ? 1.0f : 0.0f;
-    SetNormalized(norm_value);
+    float val = value ? 1.0f : 0.0f;
+    SetNormalized(val);
 }
 
 // Getters
@@ -457,8 +482,8 @@ void ParameterManager::Init()
     ADD_PARAM(P::EFFECT_SLOT_2_DRYWET, 0.0f, 100.0f, "DrW2", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_SLOT_2_ACTIVE, 0, 2, "Actv2", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::GLOBAL_MONO, 0, 2, "Mono", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::GLOBAL_LEGATO, 0, 2, "Lgto", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 1.0f, "Prto", Curve::LINEAR, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::GLOBAL_LEGATO, 0, 2, "Legato", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 100.0f, "Prtmnto", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
 }
 
 Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {

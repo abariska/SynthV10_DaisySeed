@@ -21,7 +21,9 @@ bool blinkStateChanged = false;
 bool isStoreMode = false;
 bool page_need_update = false;
 uint8_t selModBlockIndex = 0;
+uint8_t selSettingsBlockIndex = 0;
 bool isModMatrixNeedUpdate = false;
+bool isSettingsNeedUpdate = false;
 
 char page_name[16] = "";
 ActiveRow currentActiveRow = ROW_1; // Початково активний перший ряд
@@ -395,6 +397,10 @@ void UpdateEncodersParams()
     {
         EncoderChangeModMatrix();
     }
+    else if (currentPage == SETTINGS_PAGE)
+    {
+        EncoderChangeSettings();
+    }
     else
     {
         UpdateParamSlots();
@@ -492,6 +498,9 @@ void AssignParamsForPage(MenuPage page)
         break;
     case MOD_MATRIX_PAGE:
         SetPageName("Mod Matrix");
+        break;
+    case SETTINGS_PAGE:
+        SetPageName("Settings");
         break;
     default:
         SetPageName(" - ");
@@ -644,6 +653,46 @@ void EncoderChangeModMatrix()
     if (isModMatrixNeedUpdate)
     {
         EditModBlock();
+    }
+}
+
+void EditSettingsBlock()
+{
+    if (encoderIncs[0] != 0)
+    {
+        int dir = (encoderIncs[0] > 0) ? 1 : -1;
+        int prevSettingsBlockIndex = selSettingsBlockIndex;
+        int value = prevSettingsBlockIndex;
+        value += dir;
+        if (value >= SETTINGS_BLOCKS_NUM)
+        {
+            value = SETTINGS_BLOCKS_NUM - 1;
+        }
+        if (value < 0)
+        {
+            value = 0;
+        }
+        selSettingsBlockIndex = value;
+        DrawSettingsBlock(prevSettingsBlockIndex);
+        encoderIncs[0] = 0;
+    }
+
+    if (encoderIncs[3] != 0)
+    {
+        int dir = (encoderIncs[3] > 0) ? 1 : -1;
+
+        paramManager.GetParam(SETTINGS_PARAMS[selSettingsBlockIndex]).AdjustByIncrement(dir);
+        encoderIncs[3] = 0;
+    }
+    DrawSettingsBlock(selSettingsBlockIndex);
+    isSettingsNeedUpdate = false;
+}
+
+void EncoderChangeSettings()
+{
+    if (isSettingsNeedUpdate)
+    {
+        EditSettingsBlock();
     }
 }
 

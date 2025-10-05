@@ -22,6 +22,8 @@ const UWORD PRESET_NAME_BLOCK_SIZE = (((PRESET_NAME_BLOCK_WIDTH % 2 == 0) ? (PRE
 const UWORD PRESET_NUM_BLOCK_SIZE = (((PRESET_NUM_BLOCK_WIDTH % 2 == 0) ? (PRESET_NUM_BLOCK_WIDTH / 2) : (PRESET_NUM_BLOCK_WIDTH / 2 + 1)) * PRESET_NUM_BLOCK_HEIGHT);
 const UWORD MOD_MATRIX_BLOCK_SIZE = (((MOD_MATRIX_BLOCK_WIDTH % 2 == 0) ? (MOD_MATRIX_BLOCK_WIDTH / 2) : (MOD_MATRIX_BLOCK_WIDTH / 2 + 1)) * MOD_MATRIX_BLOCK_HEIGHT);
 const UWORD SCOPE_BLOCK_SIZE = (((SCOPE_BLOCK_WIDTH % 2 == 0) ? (SCOPE_BLOCK_WIDTH / 2) : (SCOPE_BLOCK_WIDTH / 2 + 1)) * SCOPE_BLOCK_HEIGHT);
+const UWORD SETTINGS_BLOCK_SIZE = (((SETTINGS_BLOCK_WIDTH % 2 == 0) ? (SETTINGS_BLOCK_WIDTH / 2) : (SETTINGS_BLOCK_WIDTH / 2 + 1)) * SETTINGS_BLOCK_HEIGHT);
+
 UBYTE DSY_SDRAM_BSS intro_page[INTRO_PAGE_SIZE];
 UBYTE DSY_SDRAM_BSS bg_black[BG_BLACK_SIZE];
 UBYTE DSY_SDRAM_BSS param_block[NUM_PARAM_BLOCKS][PARAM_BLOCK_SIZE];
@@ -33,6 +35,7 @@ UBYTE DSY_SDRAM_BSS preset_name_block[PRESET_NAME_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS preset_num_block[PRESET_NUM_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS mod_matrix_block[MOD_MATRIX_BLOCKS_NUM][MOD_MATRIX_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS scope_block[SCOPE_BLOCK_SIZE];
+UBYTE DSY_SDRAM_BSS settings_block[SETTINGS_BLOCKS_NUM][SETTINGS_BLOCK_SIZE];
 ImageData intro_page_data;
 ImageData bg_black_data;
 ImageData param_block_data[NUM_PARAM_BLOCKS];
@@ -44,6 +47,7 @@ ImageData preset_name_block_data;
 ImageData preset_num_block_data;
 ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
 ImageData scope_block_data;
+ImageData settings_block_data[SETTINGS_BLOCKS_NUM];
 
 MenuPage currentPage = MAIN_PAGE;
 
@@ -74,6 +78,7 @@ void InitImages()
     }
     memset(mod_matrix_block, 0, MOD_MATRIX_BLOCK_SIZE);
     memset(scope_block, 0, SCOPE_BLOCK_SIZE);
+    memset(settings_block, 0, SETTINGS_BLOCK_SIZE);
 
     intro_page_data = {intro_page, INTRO_PAGE_SIZE};
     bg_black_data = {bg_black, BG_BLACK_SIZE};
@@ -95,6 +100,10 @@ void InitImages()
         mod_matrix_block_data[i] = {mod_matrix_block[i], MOD_MATRIX_BLOCK_SIZE};
     }
     scope_block_data = {scope_block, SCOPE_BLOCK_SIZE};
+    for (size_t i = 0; i < SETTINGS_BLOCKS_NUM; i++)
+    {
+        settings_block_data[i] = {settings_block[i], SETTINGS_BLOCK_SIZE};
+    }
     System::Delay(10);
 }
 
@@ -131,6 +140,9 @@ void SetPage(MenuPage newPage)
     case MOD_MATRIX_PAGE:
         DrawModMatrixPage();
         break;
+    case SETTINGS_PAGE:
+        DrawSettingsPage();
+        break;
     default:
         DrawParamPage(newPage);
         break;
@@ -162,6 +174,10 @@ void UpdatePage()
         break;
     case MOD_MATRIX_PAGE:
         DrawModMatrixPage();
+        scope_draw = false;
+        break;
+    case SETTINGS_PAGE:
+        DrawSettingsPage();
         scope_draw = false;
         break;
     default:
@@ -216,7 +232,7 @@ void DrawScope()
         for (int i = 0; i < SCOPE_BLOCK_WIDTH - 1; i++)
         {
             int data_index = (i * 128) / SCOPE_BLOCK_WIDTH;  // Інтерполяція
-            int y = center_y - (int)(scope_data[data_index] * 30);
+            int y = center_y - (int)(scope_data[data_index] * 35);
             
             // Обмежуємо координати
             if (y < 0) y = 0;
@@ -369,16 +385,15 @@ void DrawModMatrixBlock(uint8_t blockIndex)
     Paint_NewImage(mod_matrix_block_data[blockIndex].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModSourceLabel(), 32, 64, 1, Font12, WHITE, BLACK);
-    Paint_NumCentered(currentPreset.modMtx[blockIndex].GetModAmount() * 100, 64, 96, 1, 0, Font12, WHITE, BLACK);
-    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModTargetLabel(), 96, 128, 1, Font12, WHITE, BLACK);
+    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModSourceLabel(), 32, 64, 0, Font12, WHITE, BLACK);
+    Paint_NumCentered(currentPreset.modMtx[blockIndex].GetModAmount() * 100, 64, 96, 0, 0, Font12, WHITE, BLACK);
+    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModTargetLabel(), 96, 128, 0, Font12, WHITE, BLACK);
     if (blockIndex == selModBlockIndex)
     {
         uint8_t arrow_y = 7;
         Paint_DrawLine(8, arrow_y, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
         Paint_DrawLine(20, arrow_y - 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
         Paint_DrawLine(20, arrow_y + 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        // Paint_DrawRectangle(0, 0, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
     }
 
     OLED_Part_Transmit_DMA(&mod_matrix_block_data[blockIndex],
@@ -427,15 +442,65 @@ void DrawWaveformImage(int waveform)
     case 3: // SQR
         Paint_DrawBitMapBlock(sqr_wave, 32, 16, 0, 28);
         break;
-    case 4: // OFF
-
+    case 4: // NOISE
+        Paint_DrawBitMapBlock(noise_wave, 32, 16, 0, 28);
         break;
     default:
         break;
     }
 }
 
+void DrawSettingsBlock(uint8_t blockIndex)
+{
+    Paint_NewImage(settings_block_data[blockIndex].data, SETTINGS_BLOCK_WIDTH, SETTINGS_BLOCK_HEIGHT, 0, BLACK);
+    Paint_Clear(BLACK);
 
+    Paint_TextCentered(paramManager.GetLabel(SETTINGS_PARAMS[blockIndex]), 32, 96, 0, Font12, WHITE, BLACK);
+    if (paramManager.GetType(SETTINGS_PARAMS[blockIndex]) == ParamType::DISCRETE)
+    {
+        Paint_TextCentered(paramManager.GetBool(SETTINGS_PARAMS[blockIndex]) ? "On" : "Off", 96, 128, 0, Font12, WHITE, BLACK);
+    }
+    else
+    {
+        Paint_NumCentered((paramManager.GetValue(SETTINGS_PARAMS[blockIndex]) * 100), 96, 128, 0, 0, Font12, WHITE, BLACK);
+    }
+
+    if (blockIndex == selSettingsBlockIndex)
+    {
+        uint8_t arrow_y = 7;
+        Paint_DrawLine(8, arrow_y, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(20, arrow_y - 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(20, arrow_y + 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    }
+
+    OLED_Part_Transmit_DMA(&settings_block_data[blockIndex],
+                           BLOCK_SETTINGS_X_START,
+                           BLOCK_SETTINGS_Y_START[blockIndex],
+                           BLOCK_SETTINGS_X_END,
+                           BLOCK_SETTINGS_Y_END[blockIndex]);
+    
+}
+
+void DrawSettingsPage()
+{
+    AssignParamsForPage(SETTINGS_PAGE);
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
+    Paint_Clear(BLACK);
+
+    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+
+    Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
+
+    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
+
+    OLED_Transmit_DMA(&bg_black_data);
+
+    for (size_t i = 0; i < SETTINGS_BLOCKS_NUM; i++)
+    {
+        DrawSettingsBlock(i);
+    }
+}
 
 // void DrawIntroPage2(){
 //     while (1)

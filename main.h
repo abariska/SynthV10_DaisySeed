@@ -21,7 +21,8 @@ using namespace daisysp;
 enum ProcessType {
     PROCESS_CONTROLS,
     UPDATE_PARAMS,
-    PROCESS_DISPLAY
+    PROCESS_DISPLAY,
+    COUNT_PROCESS_TYPES
 };
 
 
@@ -41,6 +42,7 @@ extern UartHandler uart_serial;
 extern ParameterManager paramManager;
 
 void Timer500ms();
+void Timer1ms();
 void ProcessButtons();
 void ProcessEncoders();
 void InitImages();
@@ -48,6 +50,6 @@ void DrawIntroPage();
 void UpdateEncoderSwitches();
 void UpdateEncodersParams();
 void InitParamBlocks();
-void CpuUsageDisplay(bool on = true);
+void CpuUsageDisplay();
 
 #endif

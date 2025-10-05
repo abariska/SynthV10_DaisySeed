@@ -4,6 +4,7 @@
 SX1509 sx1509_buttons;
 SX1509 sx1509_encoders;
 SX1509 sx1509_leds;
+using M = ModSource;
 
 void InitSX1509Buttons()
 {
@@ -52,8 +53,12 @@ void UpdateLeds()
     sx1509_leds.WritePin(LED_OSC_1, paramManager.GetBool(P::OSC_ACTIVE_1));
     sx1509_leds.WritePin(LED_OSC_2, paramManager.GetBool(P::OSC_ACTIVE_2));
     sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(P::OSC_ACTIVE_3));
-    // sx1509_leds.WritePin(LED_LFO, params.lfo.active);
+    
     // sx1509_leds.WritePin(LED_MTX, params.mtx.active);
+}
+void UpdatePWMLeds()
+{
+    sx1509_leds.WritePWM(LED_LFO, (int)(modulators[static_cast<int>(M::LFO)].value * 255));
 }
 
 void InitSX1509Extenders()
@@ -81,6 +86,7 @@ void InitSX1509Extenders()
     {
         sx1509_leds.SetPinMode(i, SX_PIN_OUTPUT, 0);
     }
+    
 
     for (size_t i = 0; i < 8; i++)
     {
@@ -94,7 +100,8 @@ void InitSX1509Extenders()
         sx1509_leds.WritePin(i + 1, 0);
         System::Delay(100);
     }
-
+    sx1509_leds.LedDriverInit(LED_LFO, 1, true);
+    sx1509_leds.WritePWM(LED_LFO, 0);
     UpdateLeds();
 
     System::Delay(10);

@@ -22,6 +22,8 @@ extern bool page_need_update;
 extern bool shift_pressed;
 extern bool isModMatrixNeedUpdate;
 extern uint8_t selModBlockIndex;
+extern uint8_t selSettingsBlockIndex;
+extern bool isSettingsNeedUpdate;
 
 // Для перемикання між рядами параметрів
 enum ActiveRow
@@ -36,6 +38,7 @@ void EditBlockParam(uint8_t blockIndex);
 void UpdateEncodersParams();
 void EncoderChangeEffect();
 void EncoderChangeModMatrix();
+void EncoderChangeSettings();
 void DrawModMatrixBlocks();
 void DrawModMatrixBlock(uint8_t blockIndex);
 void EditModBlock();

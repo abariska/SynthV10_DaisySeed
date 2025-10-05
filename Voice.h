@@ -18,7 +18,7 @@
 #define DETUNE_CENTER_INDEX 100
 #define PITCH_BEND_TABLE_SIZE 401
 #define PITCH_BEND_CENTER_INDEX 200
-#define VOICE_NUM 4
+#define VOICE_NUM 5
 
 using namespace daisy;
 using namespace daisysp;
@@ -27,7 +27,7 @@ extern std::array<Osc, OSC_NUM * VOICE_NUM> osc;
 extern Adsr adsrMain[VOICE_NUM];
 
 extern MoogLadder flt;
-extern Oscillator lfo;
+extern Osc lfo;
 extern float samplerate;
 
 extern float midiNoteToFreqTable[128];

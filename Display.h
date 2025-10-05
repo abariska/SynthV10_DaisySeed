@@ -22,6 +22,9 @@
 #define MOD_MATRIX_BLOCK_WIDTH 128
 #define MOD_MATRIX_BLOCK_HEIGHT 14
 #define MOD_MATRIX_BLOCKS_NUM 7
+#define SETTINGS_BLOCK_WIDTH 128
+#define SETTINGS_BLOCK_HEIGHT 14
+#define SETTINGS_BLOCKS_NUM 3
 #define NUM_PARAM_BLOCKS 8
 #define NUM_MAIN_SLOTS 4
 #define NUM_FX_SLOTS 2
@@ -86,6 +89,11 @@ const uint8_t BLOCK_MOD_MATRIX_X_END = 128;
 const uint8_t BLOCK_MOD_MATRIX_Y_START[] = {28, 42, 56, 70, 84, 98, 112};
 const uint8_t BLOCK_MOD_MATRIX_Y_END[] = {42, 56, 70, 84, 98, 112, 126};
 
+const uint8_t BLOCK_SETTINGS_X_START = 0;
+const uint8_t BLOCK_SETTINGS_X_END = 128;
+const uint8_t BLOCK_SETTINGS_Y_START[] = {28, 42, 56, 70, 84, 98, 112};
+const uint8_t BLOCK_SETTINGS_Y_END[] = {42, 56, 70, 84, 98, 112, 126};
+
 const uint8_t BLOCK_SCOPE_X_START = 0;
 const uint8_t BLOCK_SCOPE_X_END = 128;
 const uint8_t BLOCK_SCOPE_Y_START = 22;
@@ -101,6 +109,7 @@ extern ImageData cpu_load_block_data;
 extern ImageData preset_name_block_data;
 extern ImageData preset_num_block_data;
 extern ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
+extern ImageData settings_block_data[SETTINGS_BLOCKS_NUM];
 extern ImageData scope_block_data;
 
 void SetPage(MenuPage newPage);
@@ -117,6 +126,8 @@ void DrawScope();
 void DrawModMatrixBlock(uint8_t blockIndex);
 void DrawModMatrixBlocks();
 void DrawWaveformImage(int waveform);
+void DrawSettingsPage();
+void DrawSettingsBlock(uint8_t blockIndex);
 
 
 #endif

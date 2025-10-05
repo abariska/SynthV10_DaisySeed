@@ -3,6 +3,7 @@
 #include "oscillator.h"
 #include "parameters.h"
 #include "midi_handler.h"
+#include "sx1509_expander.h"
 
 #define DTCM __attribute__((section(".dtcmram_bss")))
 
@@ -12,9 +13,9 @@ using M = ModSource;
 
 std::array<Osc, OSC_NUM * VOICE_NUM> osc;
 Adsr adsrMain[VOICE_NUM];
-Adsr adsrMod[VOICE_NUM];
+Adsr adsrMod;
 MoogLadder flt;
-Oscillator lfo;
+Osc lfo;
 Random rnd[OSC_NUM * VOICE_NUM];
 ModMatrix modMatrix[MOD_MATRIX_NUM];
 VoiceState voiceState[VOICE_NUM];
@@ -32,6 +33,7 @@ float detune_correction[OSC_NUM * VOICE_NUM];
 float final_freq[OSC_NUM * VOICE_NUM];
 float voice_velocity[VOICE_NUM] = {1.0f};
 bool is_any_voice_active = false;
+int voiceId = 0;
 
 bool gate = false;
 
@@ -47,27 +49,23 @@ void SynthInit(float samplerate, int blocksize)
     {
         adsrMain[v].Init(samplerate, blocksize);
     }
-    for (size_t v = 0; v < VOICE_NUM; ++v)
-    {
-        adsrMod[v].Init(samplerate, blocksize);
-    }
+
+    adsrMod.Init(samplerate, blocksize);
+
     for (size_t i = 0; i < OSC_NUM * VOICE_NUM; i++)
     {
         rnd[i].Init();
     }
     lfo.Init(samplerate);
     EffectsInit(samplerate);
-    paramManager.SetBool(P::GLOBAL_LEGATO, false);
-    paramManager.SetBool(P::GLOBAL_MONO, false);
 }
 
 void ModSourcesProcess()
 {
-    modulators[static_cast<int>(M::LFO)].value = lfo.Process();
-    for (size_t v = 0; v < VOICE_NUM; ++v)
-    {
-        modulators[static_cast<int>(M::ADSR)].value = adsrMod[v].Process(gate);
-    }
+    lfo.PhaseProcess();
+    modulators[static_cast<int>(M::LFO)].value = lfo.Process() / 2.0f + 0.5f;
+    modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(gate);
+
     modulators[static_cast<int>(M::MOD_WHEEL)].value = mod_wheel_value;
     modulators[static_cast<int>(M::AFTERTOUCH)].value = aftertouch_value;
 }
@@ -78,13 +76,11 @@ void UpdateModSourcesParams()
     lfo.SetWaveform(paramManager.GetValue(P::MOD_LFO_WAVEFORM));
     lfo.SetAmp(paramManager.GetValue(P::MOD_LFO_DEPTH));
 
-    for (size_t v = 0; v < VOICE_NUM; ++v)
-    {
-        adsrMod[v].SetAttackTime(paramManager.GetValue(P::MOD_ADSR_ATTACK), 1.0f);
-        adsrMod[v].SetDecayTime(paramManager.GetValue(P::MOD_ADSR_DECAY));
-        adsrMod[v].SetSustainLevel(paramManager.GetValue(P::MOD_ADSR_SUSTAIN));
-        adsrMod[v].SetReleaseTime(paramManager.GetValue(P::MOD_ADSR_RELEASE));
-    }
+    adsrMod.SetAttackTime(paramManager.GetValue(P::MOD_ADSR_ATTACK), 1.0f);
+    adsrMod.SetDecayTime(paramManager.GetValue(P::MOD_ADSR_DECAY));
+    adsrMod.SetSustainLevel(paramManager.GetValue(P::MOD_ADSR_SUSTAIN));
+    adsrMod.SetReleaseTime(paramManager.GetValue(P::MOD_ADSR_RELEASE));
+
 }
 
 int FindOldestVoice()
@@ -104,19 +100,35 @@ int AllocVoice()
 {
     if (!paramManager.GetBool(P::GLOBAL_MONO))
     {
+        voiceId = (voiceId + 1) % VOICE_NUM;
+        bool found = false;
         for(int v=0; v<VOICE_NUM; ++v)
-            if(!voiceState[v].active) return v;
-
-        // 2. якщо нема – steal найстарішого (lowest note / oldest timestamp)
-        int victim = FindOldestVoice();
-        voiceState[victim].gate = false;
-        voiceState[victim].active = false; // залишаємо огинаючій відпасти
-        return victim;
+        {
+            if(!voiceState[v].active)
+            {
+                found = true;
+            }
+        }
+        if(!found || paramManager.GetBool(P::GLOBAL_MONO))
+        {
+            int victim = FindOldestVoice();
+            voiceState[victim].gate = false;
+            voiceState[victim].active = false; // залишаємо огинаючій відпасти
+            return victim;
+        }
+        else
+        {
+            return voiceId;
+        }
     }
     else
     {
-        return 0;
+        int victim = FindOldestVoice();
+            voiceState[victim].gate = false;
+            voiceState[victim].active = false; // залишаємо огинаючій відпасти
+            return victim;
     }
+
 }
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity)
@@ -129,10 +141,10 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
     voiceState[v].gate = true;
     voiceState[v].timestamp = System::GetNow();
     
-    if (!paramManager.GetBool(P::GLOBAL_LEGATO))
+    if (!paramManager.GetBool(P::GLOBAL_LEGATO) && !paramManager.GetBool(P::GLOBAL_MONO))
     {
         adsrMain[v].Retrigger(false);
-        adsrMod[v].Retrigger(false);
+        adsrMod.Retrigger(false);
     }
     gate = true;
 }
@@ -175,7 +187,6 @@ void UpdateSynthParams()
             float detune = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[oscId]));
             float freq = voiceFreq * pitch * detune * pitch_bend_multiplier;
             float amp = paramManager.GetValue(OSC_AMP[oscId]) * voiceVel;
-            bool active = paramManager.GetValue(OSC_ACTIVE[oscId]);
             float pw = paramManager.GetValue(OSC_PWM[oscId]);
             int waveform = static_cast<int>(paramManager.GetValue(OSC_WAVEFORM[oscId]));
 

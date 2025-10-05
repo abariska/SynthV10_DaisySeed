@@ -14,7 +14,8 @@ using P = ParamUnitName;
 using M = ModSource;
 
 DaisySeed hw;
-TimerHandle tim_display;
+TimerHandle timer_500ms;
+TimerHandle timer_1ms;
 CpuLoadMeter cpu_load;
 ProcessType process_type;
 
@@ -32,6 +33,8 @@ bool scope_triggered = false;
 float scope_prev_sample = 0.0f;
 float scope_trigger_level = 0.0f;
 int scope_trigger_delay = 0;
+bool update_1ms = false;
+bool update_500ms = false;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
                           AudioHandle::InterleavingOutputBuffer out,
@@ -75,8 +78,8 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         ProcessEffects(0, mix, mix, outL, outR);
         ProcessEffects(1, outL, outR, sig_after_fxL, sig_after_fxR);
 
-        out[i] = sig_after_fxL * 0.5f;
-        out[i + 1] = sig_after_fxR * 0.5f;
+        out[i] = sig_after_fxL * 0.5f + in[i];
+        out[i + 1] = sig_after_fxR * 0.5f + in[i + 1];
 
         scope_out = out[i] + out[i + 1] * 0.5f;
     }
@@ -139,17 +142,17 @@ int main(void)
     hw.StartAudio(AudioCallback);
 
     Timer500ms();
+    Timer1ms();
     System::Delay(10);
     process_type = PROCESS_CONTROLS;
 
     while (1)
     {
+        ProcessEncoders();
         switch (process_type)
         {
-
             case PROCESS_CONTROLS:
                 ProcessButtons();
-                ProcessEncoders();
                 break;
             case UPDATE_PARAMS: 
                 UpdateModSourcesParams();
@@ -158,11 +161,21 @@ int main(void)
             case PROCESS_DISPLAY:
                 UpdatePage();
                 DrawScope();
-                CpuUsageDisplay();
                 break;
         }
         UpdateSynthParams();
-        process_type = (ProcessType)((process_type + 1) % 3);
+        
+        if (update_1ms)
+        {
+            UpdatePWMLeds();
+            update_1ms = false;
+        }
+        if (update_500ms)
+        {
+            CpuUsageDisplay();
+            update_500ms = false;
+        }
+        process_type = (ProcessType)((process_type + 1) % COUNT_PROCESS_TYPES);
     }
 }
 
@@ -247,6 +260,10 @@ void ProcessButtons()
                 update_for_preset_needed = true;
                 isStoreMode = true;
                 ResetPreset(currentPreset.number);
+            }
+            if (sx1509_buttons.isFallingEdge(BUTTON_MTX))
+            {
+                SetPage(MenuPage::SETTINGS_PAGE);
             }
         }
         else
@@ -392,6 +409,12 @@ void ProcessEncoders()
             isModMatrixNeedUpdate = true;
         }
         break;
+    case SETTINGS_PAGE:
+        if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
+        {
+            isSettingsNeedUpdate = true;
+        }
+        break;
     default:
         for (size_t i = 0; i < 4; i++)
         { // Only 4 encoders
@@ -405,49 +428,71 @@ void ProcessEncoders()
     }
 }
 
-void Callback(void *data)
+void Callback500ms(void *data)
 {
     isBlink = !isBlink;
     blinkStateChanged = true;
+    update_500ms = true;
     // CpuUsageDisplay();
 }
 
-void Timer500ms()
+void Callback1ms(void *data)
 {
-    TimerHandle::Config tim_cfg;
+    update_1ms = true;
 
-    tim_cfg.periph = TimerHandle::Config::Peripheral::TIM_5;
-    tim_cfg.enable_irq = true;
+}
 
-    auto tim_target_freq = 1;
+void Timer1ms()
+{
+    TimerHandle::Config tim_1ms_cfg;
+
+    tim_1ms_cfg.periph = TimerHandle::Config::Peripheral::TIM_3;
+    tim_1ms_cfg.enable_irq = true;
+
+    auto tim_target_freq = 10;
     auto tim_base_freq = System::GetPClk2Freq();
-    tim_cfg.period = tim_base_freq / tim_target_freq;
+    tim_1ms_cfg.period = tim_base_freq / tim_target_freq;
 
-    tim_display.Init(tim_cfg);
-    tim_display.SetCallback(Callback);
-    tim_display.Start();
+    timer_1ms.Init(tim_1ms_cfg);
+    timer_1ms.SetCallback(Callback1ms);
+    timer_1ms.Start();
 
     System::Delay(10);
 }
 
-void CpuUsageDisplay(bool on)
+void Timer500ms()
+{
+    TimerHandle::Config tim_500ms_cfg;
+
+    tim_500ms_cfg.periph = TimerHandle::Config::Peripheral::TIM_5;
+    tim_500ms_cfg.enable_irq = true;
+
+    auto tim_target_freq = 1;
+    auto tim_base_freq = System::GetPClk2Freq();
+    tim_500ms_cfg.period = tim_base_freq / tim_target_freq;
+
+    timer_500ms.Init(tim_500ms_cfg);
+    timer_500ms.SetCallback(Callback500ms);
+    timer_500ms.Start();
+
+    System::Delay(10);
+}
+
+void CpuUsageDisplay()
 {
 
     // float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
     // UartPrintf("CPU load: ", cpu_avg_load);
-
-    if (on)
+    if (currentPage == MAIN_PAGE)
     {
-        if (currentPage == MAIN_PAGE)
-        {
-            Paint_NewImage(cpu_load_block_data.data, 12, 12, 0, BLACK);
-            Paint_Clear(BLACK);
-            float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-            Paint_NumCentered(cpu_avg_load, 0, 12, 0, 0, Font8, WHITE, BLACK);
-            OLED_Part_Transmit_DMA(&cpu_load_block_data, 116, 0, 128, 12);
-            // UartPrint("CPU load: ", cpu_avg_load);
-        }
+        Paint_NewImage(cpu_load_block_data.data, 12, 12, 0, BLACK);
+        Paint_Clear(BLACK);
+        float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+        Paint_NumCentered(cpu_avg_load, 0, 12, 0, 0, Font8, WHITE, BLACK);
+        OLED_Part_Transmit_DMA(&cpu_load_block_data, 116, 0, 128, 12);
+        // UartPrint("CPU load: ", cpu_avg_load);
     }
+    
     // else
     // {
     //     Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
