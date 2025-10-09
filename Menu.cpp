@@ -12,11 +12,7 @@
 using P = ParamUnitName;
 using M = ModSource;
 
-ParamSlot slots[NUM_PARAM_BLOCKS];
-MenuSlot menu_slots[NUM_MAIN_SLOTS];
-// ModMatrixSlot mod_matrix_slots[MOD_MATRIX_BLOCKS_NUM];
 extern ParameterManager paramManager;
-extern ModMatrix modMatrix[MOD_MATRIX_NUM];
 
 const uint8_t yBlockLabel = 10;
 const uint8_t yBlockValue = 30;
@@ -25,43 +21,27 @@ bool blinkStateChanged = false;
 bool isStoreMode = false;
 bool page_need_update = false;
 uint8_t selModBlockIndex = 0;
+uint8_t selSettingsBlockIndex = 0;
 bool isModMatrixNeedUpdate = false;
+bool isSettingsNeedUpdate = false;
 
 char page_name[16] = "";
 ActiveRow currentActiveRow = ROW_1; // Початково активний перший ряд
 
-void DrawWaveformImage(int waveform)
+uint8_t GetActiveParamIndex(uint8_t encoderIndex)
 {
-
-    switch (waveform)
+    if (currentActiveRow == ROW_1)
     {
-    case 0: // SIN
-        Paint_DrawBitMapBlock(sin_wave, 32, 16, 0, 28);
-        break;
-    case 1: // TRI
-        Paint_DrawBitMapBlock(tri_wave, 32, 16, 0, 28);
-        break;
-    case 2: // SAW
-        Paint_DrawBitMapBlock(saw_wave, 32, 16, 0, 28);
-        break;
-    case 3: // SQR
-        Paint_DrawBitMapBlock(sqr_wave, 32, 16, 0, 28);
-        break;
-    case 4: // OFF
-
-        break;
-    default:
-        break;
+        return encoderIndex;
+    }
+    else
+    {
+        return encoderIndex + 4;
     }
 }
 
-void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t textColor, uint16_t bgColor)
+void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t textColor, uint16_t bgColor)
 {
-
-    if (target_param == ParamUnitName::NONE)
-    {
-        return;
-    }
 
     Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor);
     Paint_Clear(bgColor);
@@ -75,18 +55,18 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 
     if (currentPage == MAIN_PAGE)
     {
-        value = paramManager.GetPhysical(menu_slots[blockIndex].target_param);
-        label = paramManager.GetLabel(menu_slots[blockIndex].target_param);
+        value = paramManager.GetPhysical(currentPreset.mainSlots[blockIndex].target_param);
+        label = paramManager.GetLabel(currentPreset.mainSlots[blockIndex].target_param);
     }
     else
     {
-        value = paramManager.GetPhysical(slots[blockIndex].target_param);
-        label = paramManager.GetLabel(slots[blockIndex].target_param);
+        value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
+        label = paramManager.GetLabel(paramSlots[blockIndex].target_param);
     }
 
     if (param_unit == ParamUnit::PICTURE)
     {
-        value = paramManager.GetPhysical(slots[blockIndex].target_param);
+        value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
         DrawWaveformImage(value);
     }
@@ -112,9 +92,9 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             else
             {
                 unit = "Hz";
-                if (value < 100.0)
+                if (value <= 100.0)
                 {
-                    if (value < 10.0)
+                    if (value <=10.0)
                     {
                         sprintf(value_str, "%.2f", value);
                     }
@@ -133,7 +113,14 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             if (value >= 1)
             {
                 unit = "s";
-                sprintf(value_str, "%.2f", value);
+                if (value >= 10.0)
+                {
+                    sprintf(value_str, "%.1f", value);
+                }
+                else
+                {
+                    sprintf(value_str, "%.2f", value);
+                }
             }
             else
             {
@@ -168,7 +155,7 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 
     if (currentPage == MAIN_PAGE)
     {
-        if (menu_slots[blockIndex].isEditMode && isBlink)
+        if (currentPreset.mainSlots[blockIndex].isEditMode && isBlink)
         {
             Paint_DrawRectangle(1, 2, 32, 50, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
         }
@@ -188,25 +175,12 @@ void InitOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     }
 }
 
-void InitMainBlocks()
-{
-
-    for (size_t i = 0; i < NUM_MAIN_SLOTS; i++)
-    {
-        if (menu_slots[i].target_param == ParamUnitName::NONE)
-        {
-            continue;
-        }
-        InitOneParamBlock(i, menu_slots[i].target_param);
-    }
-}
-
-void InitParamBlocks()
+void DrawParamBlocks()
 {
 
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++)
     {
-        if (slots[i].target_param == ParamUnitName::NONE)
+        if (paramSlots[i].target_param == ParamUnitName::NONE)
         {
             continue;
         }
@@ -215,27 +189,39 @@ void InitParamBlocks()
         uint16_t textColor = isActiveRow ? WHITE : 0x02; // Активні - білі, неактивні - темні
         uint16_t bgColor = BLACK;
 
-        InitOneParamBlock(i, slots[i].target_param, textColor, bgColor);
+        DrawOneParamBlock(i, paramSlots[i].target_param, textColor, bgColor);
     }
 }
 
-uint8_t GetActiveParamIndex(uint8_t encoderIndex)
+void DrawMainBlocks()
 {
-    if (currentActiveRow == ROW_1)
+
+    for (size_t i = 0; i < NUM_MAIN_SLOTS; i++)
     {
-        return encoderIndex;
-    }
-    else
-    {
-        return encoderIndex + 4;
+        DrawOneParamBlock(i, currentPreset.mainSlots[i].target_param);
     }
 }
 
 void ToggleActiveRow()
 {
-    currentActiveRow = (currentActiveRow == ROW_1) ? ROW_2 : ROW_1;
+    if (currentActiveRow == ROW_1)
+    {
+        if (paramSlots[4].target_param != P::NONE)
+        {
+            currentActiveRow = ROW_2;
+        }
+        else
+        {
+            return;
+        }
+    }
+    else
+    {
+        currentActiveRow = ROW_1;
+    }
+
     DrawParamPage(currentPage);
-    InitParamBlocks();
+    DrawParamBlocks();
 }
 
 void UpdateEncoderSwitches()
@@ -250,7 +236,7 @@ void UpdateEncoderSwitches()
         for (size_t i = 0; i < NUM_MAIN_SLOTS; i++)
         {
 
-            if (menu_slots[i].isEditMode)
+            if (currentPreset.mainSlots[i].isEditMode)
             {
                 if (currentEditSlot == i)
                 {
@@ -260,17 +246,17 @@ void UpdateEncoderSwitches()
                 else
                 {
 
-                    menu_slots[currentEditSlot].isEditMode = false;
-                    InitOneParamBlock(currentEditSlot, menu_slots[currentEditSlot].target_param);
+                    currentPreset.mainSlots[currentEditSlot].isEditMode = false;
+                    DrawOneParamBlock(currentEditSlot, currentPreset.mainSlots[currentEditSlot].target_param);
                     init_block[currentEditSlot] = true;
                     currentEditSlot = i;
-                    menu_slots[currentEditSlot].isEditMode = true;
+                    currentPreset.mainSlots[currentEditSlot].isEditMode = true;
                     EditBlockParam(currentEditSlot);
                 }
             }
             if (init_block[i])
             {
-                InitOneParamBlock(i, menu_slots[i].target_param);
+                DrawOneParamBlock(i, currentPreset.mainSlots[i].target_param);
                 init_block[i] = false;
             }
         }
@@ -299,50 +285,65 @@ void EditBlockParam(uint8_t blockIndex)
     {
         for (size_t i = 0; i < NUM_ENCODERS; i++)
         {
-            if (i != blockIndex && (int)menu_slots[i].target_param == val)
+            if (i != blockIndex && (int)currentPreset.mainSlots[i].target_param == val)
                 return true;
         }
         return false;
     };
 
-    if (menu_slots[blockIndex].need_update)
+    if (currentPreset.mainSlots[blockIndex].need_update)
     { // if encoder is turned
 
         int inc = encoderIncs[blockIndex];
         if (inc == 0)
         {
-            menu_slots[blockIndex].need_update = false;
+            currentPreset.mainSlots[blockIndex].need_update = false;
             return;
         }
         int dir = (inc > 0) ? 1 : -1;
 
-        int value = (int)menu_slots[blockIndex].target_param;
+        int value = (int)currentPreset.mainSlots[blockIndex].target_param;
         value += dir;
 
-        while (paramManager.GetUnit(static_cast<P>(value)) == ParamUnit::BOOL || isDuplicate(value))
+        while (paramManager.GetUseInMain(static_cast<P>(value)) != UseInMain::USED
+            || isDuplicate(value))
         {
             value += dir;
         }
-        if (value > (int)P::COUNT_PARAMS - 1)
+        if (value >= (int)P::COUNT_PARAMS - 1)
         {
-            value = (int)P::COUNT_PARAMS - 1;
+            if (paramManager.GetUseInMain(static_cast<P>(value)) != UseInMain::USED)
+            {
+                value -= 1;
+            }
+            else
+            {
+                value = (int)P::COUNT_PARAMS - 1;
+            }
         }
-        else if (value <= (int)P::NONE + 1)
+        else if (value <= (int)P::NONE)
         {
-            value = (int)P::NONE + 1;
+            if (paramManager.GetUseInMain(static_cast<P>(value)) != UseInMain::USED)
+            {
+                value += 1;
+            }
+            else
+            {
+                value = (int)P::NONE;
+            }
         }
 
         encoderIncs[blockIndex] = 0;
-        menu_slots[blockIndex].target_param = (ParamUnitName)value;
-        InitOneParamBlock(blockIndex, menu_slots[blockIndex].target_param);
-        menu_slots[blockIndex].need_update = false;
+        currentPreset.mainSlots[blockIndex].target_param = (ParamUnitName)value;
+        DrawOneParamBlock(blockIndex, currentPreset.mainSlots[blockIndex].target_param);
+        currentPreset.mainSlots[blockIndex].need_update = false;
     }
 
     if (blinkStateChanged)
     {
 
         blinkStateChanged = false;
-        InitOneParamBlock(blockIndex, menu_slots[blockIndex].target_param);
+        DrawOneParamBlock(blockIndex, currentPreset.mainSlots[blockIndex].target_param);
     }
 }
 
@@ -351,17 +352,17 @@ void UpdateMainSlots()
     for (size_t i = 0; i < 4; i++)
     {
 
-        if (menu_slots[i].isEditMode)
+        if (currentPreset.mainSlots[i].isEditMode)
         {
             EditBlockParam(i);
         }
-        else if (menu_slots[i].need_update)
+        else if (currentPreset.mainSlots[i].need_update)
         {
-            P paramName = menu_slots[i].target_param;
+            P paramName = currentPreset.mainSlots[i].target_param;
 
             paramManager.GetParam(paramName).AdjustByIncrement(encoderIncs[i]);
-            InitOneParamBlock(i, paramName, WHITE, BLACK);
-            menu_slots[i].need_update = false;
+            DrawOneParamBlock(i, paramName, WHITE, BLACK);
+            currentPreset.mainSlots[i].need_update = false;
             encoderIncs[i] = 0;
         }
     }
@@ -373,17 +374,17 @@ void UpdateParamSlots()
     {
         uint8_t paramIndex = GetActiveParamIndex(i);
 
-        if (slots[paramIndex].need_update)
+        if (paramSlots[paramIndex].need_update)
         {
-            P paramName = slots[paramIndex].target_param;
+            P paramName = paramSlots[paramIndex].target_param;
             paramManager.GetParam(paramName).AdjustByIncrement(encoderIncs[i]);
 
             bool isActiveRow = (paramIndex < 4 && currentActiveRow == ROW_1) ||
                                (paramIndex >= 4 && currentActiveRow == ROW_2);
             uint16_t textColor = isActiveRow ? WHITE : 0x02;
 
-            InitOneParamBlock(paramIndex, paramName, textColor, BLACK);
-            slots[paramIndex].need_update = false;
+            DrawOneParamBlock(paramIndex, paramName, textColor, BLACK);
+            paramSlots[paramIndex].need_update = false;
             encoderIncs[i] = 0;
         }
     }
@@ -391,6 +392,11 @@ void UpdateParamSlots()
 
 void UpdateEncodersParams()
 {
+    if (isStoreMode)
+    {
+        EncoderChangeStore();
+        return;
+    }
     if (currentPage == MAIN_PAGE)
     {
         UpdateMainSlots();
@@ -402,6 +408,10 @@ void UpdateEncodersParams()
     else if (currentPage == MOD_MATRIX_PAGE)
     {
         EncoderChangeModMatrix();
+    }
+    else if (currentPage == SETTINGS_PAGE)
+    {
+        EncoderChangeSettings();
     }
     else
     {
@@ -419,94 +429,103 @@ void AssignParamsForPage(MenuPage page)
 
     for (int i = 0; i < NUM_PARAM_BLOCKS; i++)
     {
-        slots[i].target_param = P::NONE;
+        paramSlots[i].target_param = P::NONE;
     }
     switch (page)
     {
     case OSCILLATOR_1_PAGE:
         SetPageName("Oscillator 1");
-        slots[0].target_param = P::OSC_WAVEFORM_1;
-        slots[1].target_param = P::OSC_PITCH_1;
-        slots[2].target_param = P::OSC_DETUNE_1;
-        slots[3].target_param = P::OSC_AMP_1;
-        slots[4].target_param = P::OSC_PWM_1;
+        paramSlots[0].target_param = P::OSC_WAVEFORM_1;
+        paramSlots[1].target_param = P::OSC_PITCH_1;
+        paramSlots[2].target_param = P::OSC_DETUNE_1;
+        paramSlots[3].target_param = P::OSC_AMP_1;
+        paramSlots[4].target_param = P::OSC_PWM_1;
         break;
     case OSCILLATOR_2_PAGE:
         SetPageName("Oscillator 2");
-        slots[0].target_param = P::OSC_WAVEFORM_2;
-        slots[1].target_param = P::OSC_PITCH_2;
-        slots[2].target_param = P::OSC_DETUNE_2;
-        slots[3].target_param = P::OSC_AMP_2;
-        slots[4].target_param = P::OSC_PWM_2;
+        paramSlots[0].target_param = P::OSC_WAVEFORM_2;
+        paramSlots[1].target_param = P::OSC_PITCH_2;
+        paramSlots[2].target_param = P::OSC_DETUNE_2;
+        paramSlots[3].target_param = P::OSC_AMP_2;
+        paramSlots[4].target_param = P::OSC_PWM_2;
         break;
     case OSCILLATOR_3_PAGE:
         SetPageName("Oscillator 3");
-        slots[0].target_param = P::OSC_WAVEFORM_3;
-        slots[1].target_param = P::OSC_PITCH_3;
-        slots[2].target_param = P::OSC_DETUNE_3;
-        slots[3].target_param = P::OSC_AMP_3;
-        slots[4].target_param = P::OSC_PWM_3;
+        paramSlots[0].target_param = P::OSC_WAVEFORM_3;
+        paramSlots[1].target_param = P::OSC_PITCH_3;
+        paramSlots[2].target_param = P::OSC_DETUNE_3;
+        paramSlots[3].target_param = P::OSC_AMP_3;
+        paramSlots[4].target_param = P::OSC_PWM_3;
         break;
     case AMPLIFIER_PAGE:
         SetPageName("Amplifier");
-        slots[0].target_param = P::ADSR_ATTACK;
-        slots[1].target_param = P::ADSR_DECAY;
-        slots[2].target_param = P::ADSR_SUSTAIN;
-        slots[3].target_param = P::ADSR_RELEASE;
-        slots[4].target_param = P::MOD_ADSR_ATTACK;
-        slots[5].target_param = P::MOD_ADSR_DECAY;
-        slots[6].target_param = P::MOD_ADSR_SUSTAIN;
-        slots[7].target_param = P::MOD_ADSR_RELEASE;
+        paramSlots[0].target_param = P::ADSR_ATTACK;
+        paramSlots[1].target_param = P::ADSR_DECAY;
+        paramSlots[2].target_param = P::ADSR_SUSTAIN;
+        paramSlots[3].target_param = P::ADSR_RELEASE;
+        paramSlots[4].target_param = P::MOD_ADSR_ATTACK;
+        paramSlots[5].target_param = P::MOD_ADSR_DECAY;
+        paramSlots[6].target_param = P::MOD_ADSR_SUSTAIN;
+        paramSlots[7].target_param = P::MOD_ADSR_RELEASE;
         break;
     case FILTER_PAGE:
         SetPageName("Filter");
-        slots[0].target_param = P::FILTER_CUTOFF;
-        slots[1].target_param = P::FILTER_RESONANCE;
-        slots[2].target_param = P::NONE;
-        slots[3].target_param = P::NONE;
+        paramSlots[0].target_param = P::FILTER_CUTOFF;
+        paramSlots[1].target_param = P::FILTER_RESONANCE;
+        paramSlots[2].target_param = P::FILTER_DRIVE;
+        paramSlots[3].target_param = P::NONE;
         break;
     case LFO_PAGE:
         SetPageName("LFO");
-        slots[0].target_param = P::MOD_LFO_WAVEFORM;
-        slots[1].target_param = P::MOD_LFO_FREQ;
-        slots[2].target_param = P::MOD_LFO_DEPTH;
+        paramSlots[0].target_param = P::MOD_LFO_WAVEFORM;
+        paramSlots[1].target_param = P::MOD_LFO_FREQ;
+        paramSlots[2].target_param = P::MOD_LFO_DEPTH;
+        paramSlots[3].target_param = P::NONE;
         break;
     case FX_PAGE:
         SetPageName("Effects");
         break;
     case OVERDRIVE_PAGE:
         SetPageName("Overdrive");
-        slots[0].target_param = P::EFFECT_OVERDRIVE_DRIVE;
+        paramSlots[0].target_param = P::EFFECT_OVERDRIVE_DRIVE;
+        paramSlots[1].target_param = P::NONE;
+        paramSlots[2].target_param = P::NONE;
+        paramSlots[3].target_param = P::NONE;
         break;
     case CHORUS_PAGE:
         SetPageName("Chorus");
-        slots[0].target_param = P::EFFECT_CHORUS_FREQ;
-        slots[1].target_param = P::EFFECT_CHORUS_DEPTH;
-        slots[2].target_param = P::EFFECT_CHORUS_FBK;
-        slots[3].target_param = P::EFFECT_CHORUS_DELAY;
+        paramSlots[0].target_param = P::EFFECT_CHORUS_FREQ;
+        paramSlots[1].target_param = P::EFFECT_CHORUS_DEPTH;
+        paramSlots[2].target_param = P::EFFECT_CHORUS_FBK;
+        paramSlots[3].target_param = P::EFFECT_CHORUS_DELAY;
         break;
     case COMPRESSOR_PAGE:
         SetPageName("Compressor");
-        slots[0].target_param = P::EFFECT_COMPRESSOR_ATTACK;
-        slots[1].target_param = P::EFFECT_COMPRESSOR_RELEASE;
-        slots[2].target_param = P::EFFECT_COMPRESSOR_THRESHOLD;
-        slots[3].target_param = P::EFFECT_COMPRESSOR_RATIO;
-        slots[4].target_param = P::EFFECT_COMPRESSOR_MAKEUP;
+        paramSlots[0].target_param = P::EFFECT_COMPRESSOR_ATTACK;
+        paramSlots[1].target_param = P::EFFECT_COMPRESSOR_RELEASE;
+        paramSlots[2].target_param = P::EFFECT_COMPRESSOR_THRESHOLD;
+        paramSlots[3].target_param = P::EFFECT_COMPRESSOR_RATIO;
+        paramSlots[4].target_param = P::EFFECT_COMPRESSOR_MAKEUP;
         break;
     case REVERB_PAGE:
         SetPageName("Reverb");
-        slots[0].target_param = P::EFFECT_REVERB_FEEDBACK;
-        slots[1].target_param = P::EFFECT_REVERB_LPFREQ;
+        paramSlots[0].target_param = P::EFFECT_REVERB_FEEDBACK;
+        paramSlots[1].target_param = P::EFFECT_REVERB_LPFREQ;
+        paramSlots[2].target_param = P::NONE;
+        paramSlots[3].target_param = P::NONE;
         break;
     case MOD_MATRIX_PAGE:
         SetPageName("Mod Matrix");
         break;
+    case SETTINGS_PAGE:
+        SetPageName("Settings");
+        break;
     default:
         SetPageName(" - ");
-        slots[0].target_param = P::NONE;
-        slots[1].target_param = P::NONE;
-        slots[2].target_param = P::NONE;
-        slots[3].target_param = P::NONE;
+        paramSlots[0].target_param = P::NONE;
+        paramSlots[1].target_param = P::NONE;
+        paramSlots[2].target_param = P::NONE;
+        paramSlots[3].target_param = P::NONE;
         break;
     }
 }
@@ -517,20 +536,20 @@ void EncoderChangeEffect()
 
     for (size_t i = 0; i < 2; i++)
     {
-        if (effectSlot[i].need_update)
+        if (currentPreset.effectSlots[i].need_update)
         {
             if (shift_pressed)
             {
-                int newEffect = static_cast<int>(effectSlot[i].selectedEffect) + dir_enc_value[i];
+                int newEffect = static_cast<int>(currentPreset.effectSlots[i].selectedEffect) + dir_enc_value[i];
 
-                if ((i == 0 && effectSlot[1].selectedEffect == newEffect) || (i == 1 && effectSlot[0].selectedEffect == newEffect))
+                if ((i == 0 && currentPreset.effectSlots[1].selectedEffect == newEffect) || (i == 1 && currentPreset.effectSlots[0].selectedEffect == newEffect))
                 {
                     newEffect += dir_enc_value[i];
                     if (newEffect >= EFFECT_COUNT - 1)
                     {
                         newEffect = EFFECT_COUNT - 1;
                     }
-                    if ((i == 0 && effectSlot[1].selectedEffect == newEffect) || (i == 1 && effectSlot[0].selectedEffect == newEffect))
+                    if ((i == 0 && currentPreset.effectSlots[1].selectedEffect == newEffect) || (i == 1 && currentPreset.effectSlots[0].selectedEffect == newEffect))
                     {
                         newEffect -= dir_enc_value[i];
                     }
@@ -540,49 +559,17 @@ void EncoderChangeEffect()
                 if (newEffect >= EFFECT_COUNT - 1)
                     newEffect = EFFECT_COUNT - 1;
 
-                effectSlot[i].selectedEffect = static_cast<EffectName>(newEffect);
+                currentPreset.effectSlots[i].selectedEffect = static_cast<EffectName>(newEffect);
             }
             else
             {
                 paramManager.GetParam(EFFECT_SLOT_DRYWET[i]).AdjustByIncrement(dir_enc_value[i]);
             }
             DrawEffectBlock(i);
-            effectSlot[i].need_update = false;
+            currentPreset.effectSlots[i].need_update = false;
         }
     }
     encoderIncs[0] = encoderIncs[3] = 0;
-}
-
-void InitModMatrixBlock(uint8_t blockIndex)
-{
-    Paint_NewImage(mod_matrix_block_data[blockIndex].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
-
-    Paint_TextCentered(modMatrix[blockIndex].GetModLabel(), 32, 64, 1, Font12, WHITE, BLACK);
-    Paint_NumCentered(modMatrix[blockIndex].modAmount * 100, 64, 96, 1, 0, Font12, WHITE, BLACK);
-    Paint_TextCentered(modMatrix[blockIndex].modTargetLabel, 96, 128, 1, Font12, WHITE, BLACK);
-    if (blockIndex == selModBlockIndex)
-    {
-        uint8_t arrow_y = 7;
-        Paint_DrawLine(4, arrow_y, 20, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        Paint_DrawLine(16, arrow_y - 3, 20, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        Paint_DrawLine(16, arrow_y + 3, 20, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        // Paint_DrawRectangle(0, 0, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-    }
-
-    OLED_Part_Transmit_DMA(&mod_matrix_block_data[blockIndex],
-                           BLOCK_MOD_MATRIX_X_START,
-                           BLOCK_MOD_MATRIX_Y_START[blockIndex],
-                           BLOCK_MOD_MATRIX_X_END,
-                           BLOCK_MOD_MATRIX_Y_END[blockIndex]);
-}
-
-void InitModMatrixBlocks()
-{
-    for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
-    {
-        InitModMatrixBlock(i);
-    }
 }
 
 void EditModBlock()
@@ -602,14 +589,14 @@ void EditModBlock()
             value = 0;
         }
         selModBlockIndex = value;
-        InitModMatrixBlock(prevModBlockIndex);
+        DrawModMatrixBlock(prevModBlockIndex);
         encoderIncs[0] = 0;
     }
 
     if (encoderIncs[1] != 0)
     {
         int dir = (encoderIncs[1] > 0) ? 1 : -1;
-        int mod = (int)modMatrix[selModBlockIndex].modSourceType;
+        int mod = (int)currentPreset.modMtx[selModBlockIndex].GetModSource();
         mod += dir;
         if (mod >= static_cast<int>(M::COUNT_MOD_SOURCES) - 1)
         {
@@ -619,13 +606,13 @@ void EditModBlock()
         {
             mod = 0;
         }
-        modMatrix[selModBlockIndex].modSourceType = static_cast<M>(mod);
+        currentPreset.modMtx[selModBlockIndex].SetModSource(static_cast<M>(mod));
         encoderIncs[1] = 0;
     }
     if (encoderIncs[2] != 0)
     {
         int dir = (encoderIncs[2] > 0) ? 1 : -1;
-        float amount = modMatrix[selModBlockIndex].modAmount;
+        float amount = currentPreset.modMtx[selModBlockIndex].GetModAmount();
         amount += dir * 0.01f;
         if (amount > 1.0f)
         {
@@ -635,44 +622,47 @@ void EditModBlock()
         {
             amount = 0.0f;
         }
-        modMatrix[selModBlockIndex].modAmount = amount;
+        currentPreset.modMtx[selModBlockIndex].SetModAmount(amount);
         encoderIncs[2] = 0;
     }
     if (encoderIncs[3] != 0)
     {
         int dir = (encoderIncs[3] > 0) ? 1 : -1;
-        int oldTarget = (int)modMatrix[selModBlockIndex].modTarget;
+        int oldTarget = (int)currentPreset.modMtx[selModBlockIndex].GetModTarget();
         int target = oldTarget;
         target += dir;
-        while (paramManager.GetModulateableParam(static_cast<P>(target)) == ModulateableParam::NOT_MODULATABLE)
+        while (paramManager.GetUseInMod(static_cast<P>(target)) != UseInMod::USED)
         {
             target += dir;
         }
         // ToDo: Переробити
         if (target >= (int)P::COUNT_PARAMS - 1)
         {
-            if (paramManager.GetModulateableParam(static_cast<P>(target)) == ModulateableParam::NOT_MODULATABLE)
+            if (paramManager.GetUseInMod(static_cast<P>(target)) != UseInMod::USED)
             {
                 target -= 1;
-            } else {
+            }
+            else
+            {
                 target = (int)P::COUNT_PARAMS - 1;
             }
         }
         else if (target <= (int)P::NONE)
         {
-            if (paramManager.GetModulateableParam(static_cast<P>(target)) == ModulateableParam::NOT_MODULATABLE)
+            if (paramManager.GetUseInMod(static_cast<P>(target)) != UseInMod::USED)
             {
                 target += 1;
-            } else {
+            }
+            else
+            {
                 target = (int)P::NONE;
             }
         }
         paramManager.GetParam(static_cast<P>(oldTarget)).SetModifier(0.0f);
-        modMatrix[selModBlockIndex].modTarget = (ParamUnitName)target;
-        modMatrix[selModBlockIndex].modTargetLabel = paramManager.GetLabel(modMatrix[selModBlockIndex].modTarget);
+        currentPreset.modMtx[selModBlockIndex].SetModTarget((ParamUnitName)target);
         encoderIncs[3] = 0;
     }
-    InitModMatrixBlock(selModBlockIndex);
+    DrawModMatrixBlock(selModBlockIndex);
     isModMatrixNeedUpdate = false;
 }
 
@@ -684,6 +674,46 @@ void EncoderChangeModMatrix()
     }
 }
 
+void EditSettingsBlock()
+{
+    if (encoderIncs[0] != 0)
+    {
+        int dir = (encoderIncs[0] > 0) ? 1 : -1;
+        int prevSettingsBlockIndex = selSettingsBlockIndex;
+        int value = prevSettingsBlockIndex;
+        value += dir;
+        if (value >= SETTINGS_BLOCKS_NUM)
+        {
+            value = SETTINGS_BLOCKS_NUM - 1;
+        }
+        if (value < 0)
+        {
+            value = 0;
+        }
+        selSettingsBlockIndex = value;
+        DrawSettingsBlock(prevSettingsBlockIndex);
+        encoderIncs[0] = 0;
+    }
+
+    if (encoderIncs[3] != 0)
+    {
+        int dir = (encoderIncs[3] > 0) ? 1 : -1;
+
+        paramManager.GetParam(SETTINGS_PARAMS[selSettingsBlockIndex]).AdjustByIncrement(dir);
+        encoderIncs[3] = 0;
+    }
+    DrawSettingsBlock(selSettingsBlockIndex);
+    isSettingsNeedUpdate = false;
+}
+
+void EncoderChangeSettings()
+{
+    if (isSettingsNeedUpdate)
+    {
+        EditSettingsBlock();
+    }
+}
+
 void InitSlots()
 {
     currentPage = EMPTY;
@@ -691,32 +721,49 @@ void InitSlots()
 
     for (int i = 0; i < NUM_PARAM_BLOCKS; i++)
     {
-        slots[i].target_param = P::NONE;
-        slots[i].need_update = false;
+        paramSlots[i].target_param = P::NONE;
+        paramSlots[i].need_update = false;
     }
     for (int i = 0; i < NUM_MAIN_SLOTS; i++)
     {
-        menu_slots[i].isEditMode = false;
-        menu_slots[i].need_update = false;
+        currentPreset.mainSlots[i].target_param = P::NONE;
+        currentPreset.mainSlots[i].isEditMode = false;
+        currentPreset.mainSlots[i].need_update = false;
     }
-    menu_slots[0].target_param = P::FILTER_CUTOFF;
-    menu_slots[1].target_param = P::FILTER_RESONANCE;
-    menu_slots[2].target_param = P::ADSR_ATTACK;
-    menu_slots[3].target_param = P::ADSR_DECAY;
 
-    effectSlot[0].selectedEffect = EFFECT_NONE;
-    effectSlot[1].selectedEffect = EFFECT_REVERB;
+    for (int i = 0; i < NUM_FX_SLOTS; i++)
+    {
+        currentPreset.effectSlots[i].selectedEffect = EFFECT_NONE;
+        currentPreset.effectSlots[i].label = "-";
+        currentPreset.effectSlots[i].need_update = false;
+        currentPreset.effectSlots[i].isActive = false;
+    }
 
     for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
     {
-        modMatrix[i].modTarget = P::NONE;
-        modMatrix[i].modSource.value = 0.0f;
-        modMatrix[i].modSource.label = "-";
-        modMatrix[i].modAmount = 0.0f;
-        modMatrix[i].modSourceType = M::NONE;
-        modMatrix[i].modSource.label = "-";
-        modMatrix[i].modTargetLabel = "-";
+        currentPreset.modMtx[i] = ModMatrix();
     }
 
     System::Delay(10);
+}
+
+void EncoderChangeStore()
+{
+    if (encoderIncs[4] != 0)
+    {
+        int dir = (encoderIncs[4] > 0) ? 1 : -1;
+        int preset = currentPreset.number;
+        preset += dir;
+        if (preset < 0)
+        {
+            preset = 0;
+        }
+        if (preset >= PRESET_NUM)
+        {
+            preset = PRESET_NUM - 1;
+        }
+        currentPreset.number = preset;
+        DrawStoreBlock();
+        encoderIncs[4] = 0;
+    }
 }

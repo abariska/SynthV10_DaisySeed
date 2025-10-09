@@ -18,6 +18,14 @@
 using namespace daisy;
 using namespace daisysp;
 
+enum ProcessType {
+    PROCESS_CONTROLS,
+    UPDATE_PARAMS,
+    PROCESS_DISPLAY,
+    COUNT_PROCESS_TYPES
+};
+
+
 extern MenuPage currentPage;
 
 extern CpuLoadMeter cpu_load;
@@ -26,11 +34,15 @@ extern SX1509 sx1509_buttons;
 extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
 extern Preset currentPreset;
+extern float scope_data[128]; 
+extern int scope_data_index;
+extern bool scope_data_ready;
 
 extern UartHandler uart_serial;
 extern ParameterManager paramManager;
 
 void Timer500ms();
+void Timer1ms();
 void ProcessButtons();
 void ProcessEncoders();
 void InitImages();
@@ -38,6 +50,6 @@ void DrawIntroPage();
 void UpdateEncoderSwitches();
 void UpdateEncodersParams();
 void InitParamBlocks();
-void CpuUsageDisplay(bool on = true);
+void CpuUsageDisplay();
 
 #endif

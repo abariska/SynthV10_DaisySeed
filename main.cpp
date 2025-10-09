@@ -11,28 +11,41 @@
 using namespace daisy;
 
 using P = ParamUnitName;
+using M = ModSource;
 
 DaisySeed hw;
-TimerHandle tim_display;
+TimerHandle timer_500ms;
+TimerHandle timer_1ms;
 CpuLoadMeter cpu_load;
+ProcessType process_type;
 
 extern Preset currentPreset;
 
 int encoderIncs[5];
 int test = 123;
 float samplerate = 0;
-bool update_for_preset_needed = false;
 bool shift_pressed = false;
+float scope_data[128];
+int scope_data_index = 0;
+bool scope_data_ready = true;
+bool scope_triggered = false;
+float scope_prev_sample = 0.0f;
+float scope_trigger_level = 0.0f;
+int scope_trigger_delay = 0;
+bool update_1ms = false;
+bool update_500ms = false;
+uint8_t old_preset_number = 0;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
                           AudioHandle::InterleavingOutputBuffer out,
                           size_t size)
 {
     cpu_load.OnBlockStart();
-
+    static float scope_out = 0.0f;
+    
     midiUart.Listen();
     midiUsb.Listen();
-
+    
     while (midiUsb.HasEvents())
     {
         auto msg = midiUsb.PopEvent();
@@ -45,11 +58,9 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         HandleMidiMessage(msg);
     }
 
-    ModSourcesProcess();
-
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
-        modMatrix[i].RunMod();
+        currentPreset.modMtx[i].RunMod();
     }
 
     for (size_t i = 0; i < size; i += 2)
@@ -60,23 +71,54 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         float outL = 0.0f;
         float outR = 0.0f;
 
+        ModSourcesProcess();
         VoiceProcess(mix);
 
         ProcessEffects(0, mix, mix, outL, outR);
         ProcessEffects(1, outL, outR, sig_after_fxL, sig_after_fxR);
 
-        out[i] = sig_after_fxL * 0.5f;
-        out[i + 1] = sig_after_fxR * 0.5f;
+        out[i] = sig_after_fxL * 0.5f + in[i];
+        out[i + 1] = sig_after_fxR * 0.5f + in[i + 1];
+
+        scope_out = out[i] + out[i + 1] * 0.5f;
     }
+       if (!scope_triggered && 
+        scope_prev_sample <= scope_trigger_level && 
+        scope_out > scope_trigger_level)
+    {
+        scope_triggered = true;
+        scope_data_index = 0;
+        scope_trigger_delay = 0;
+    }
+    
+    if (scope_triggered)
+    {
+        if (scope_trigger_delay > 2)
+        {
+            scope_data[scope_data_index] = scope_out;
+            scope_data_index++;
+            
+            if (scope_data_index >= 128)
+            {
+                scope_data_ready = true;
+                scope_triggered = false;
+                scope_data_index = 0;
+            }
+        }
+        scope_trigger_delay++;
+    }
+    
+    scope_prev_sample = scope_out;
+    
     cpu_load.OnBlockEnd();
 }
 
 int main(void)
 {
-    int blocksize = 4;
+    int blocksize = 16;
 
     hw.Configure();
-    hw.Init(true);
+    hw.Init();
     UartSerialInit();
 
     hw.SetAudioBlockSize(blocksize);
@@ -86,31 +128,53 @@ int main(void)
     OLED_1in5_Init();
     InitImages();
     DrawIntroPage();
-    System::Delay(1000);
     InitQSPI();
 
+    InitSlots();
     InitSynthParams();
     SynthInit(samplerate, blocksize);
-    EffectsInit(samplerate);
     MidiInit();
 
-    InitSlots();
     InitSX1509Extenders();
     SetPage(MAIN_PAGE);
 
     hw.StartAudio(AudioCallback);
 
     Timer500ms();
+    Timer1ms();
     System::Delay(10);
+    process_type = PROCESS_CONTROLS;
 
     while (1)
     {
-        ProcessButtons();
         ProcessEncoders();
-        UpdateEncodersParams();
-        UpdatePage();
-
-        sx1509_leds.WritePin(6, midi_note_led);
+        switch (process_type)
+        {
+            case PROCESS_CONTROLS:
+                ProcessButtons();
+                break;
+            case UPDATE_PARAMS: 
+                UpdateModSourcesParams();
+                UpdateEncodersParams();
+                break;
+            case PROCESS_DISPLAY:
+                UpdatePage();
+                DrawScope();
+                break;
+        }
+        UpdateSynthParams();
+        
+        if (update_1ms)
+        {
+            UpdatePWMLeds();
+            update_1ms = false;
+        }
+        if (update_500ms)
+        {
+            CpuUsageDisplay();
+            update_500ms = false;
+        }
+        process_type = (ProcessType)((process_type + 1) % COUNT_PROCESS_TYPES);
     }
 }
 
@@ -119,10 +183,29 @@ void ProcessButtons()
     bool any_button_change = sx1509_buttons.ReadAllPins();
     shift_pressed = sx1509_buttons.IsPressed(BUTTON_SHIFT);
 
-    UpdateEncoderSwitches();
-
     if (any_button_change)
     {
+        if (isStoreMode)
+        {
+            if (shift_pressed)
+            {
+                isStoreMode = false;
+                currentPreset.number = old_preset_number;
+                page_need_update = true;
+                UpdatePage();
+            } 
+            if (sx1509_buttons.isFallingEdge(BUTTON_STORE))
+            {
+                SavePreset(currentPreset.number, currentPreset);
+                page_need_update = true;
+                UpdatePage();
+                isStoreMode = false;
+                old_preset_number = currentPreset.number;
+            }
+            return;
+        }
+
+        UpdateEncoderSwitches();
 
         if (currentPage == MenuPage::FX_PAGE)
         {
@@ -130,12 +213,12 @@ void ProcessButtons()
             {
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW))
                 {
-                    effectSlot[0].isActive = !effectSlot[0].isActive;
+                    currentPreset.effectSlots[0].isActive = !currentPreset.effectSlots[0].isActive;
                     DrawEffectBlock(0);
                 }
                 if (sx1509_buttons.isFallingEdge(ENC_4_SW))
                 {
-                    effectSlot[1].isActive = !effectSlot[1].isActive;
+                    currentPreset.effectSlots[1].isActive = !currentPreset.effectSlots[1].isActive;
                     DrawEffectBlock(1);
                 }
             }
@@ -157,11 +240,15 @@ void ProcessButtons()
             { // Тільки 4 енкодери
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW + i))
                 {
-                    menu_slots[i].isEditMode = !menu_slots[i].isEditMode;
-                    if (!menu_slots[i].isEditMode)
+                    currentPreset.mainSlots[i].isEditMode = !currentPreset.mainSlots[i].isEditMode;
+                    if (!currentPreset.mainSlots[i].isEditMode)
                     {
-                        InitOneParamBlock(i, menu_slots[i].target_param, WHITE, BLACK);
+                        DrawOneParamBlock(i, currentPreset.mainSlots[i].target_param, WHITE, BLACK);
                     }
+                } else if (shift_pressed && currentPreset.mainSlots[i].isEditMode)
+                {
+                    currentPreset.mainSlots[i].isEditMode = false;
+                    DrawOneParamBlock(i, currentPreset.mainSlots[i].target_param, WHITE, BLACK);
                 }
             }
         }
@@ -188,9 +275,12 @@ void ProcessButtons()
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_STORE))
             {
-                update_for_preset_needed = true;
-                isStoreMode = true;
+                page_need_update = true;
                 ResetPreset(currentPreset.number);
+            }
+            if (sx1509_buttons.isFallingEdge(BUTTON_MTX))
+            {
+                SetPage(MenuPage::SETTINGS_PAGE);
             }
         }
         else
@@ -275,9 +365,10 @@ void ProcessButtons()
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_STORE))
             {
-                update_for_preset_needed = true;
                 isStoreMode = true;
-                SavePreset(currentPreset.number, currentPreset);
+                old_preset_number = currentPreset.number;
+                DrawStoreBlock();
+                    
             }
         }
     }
@@ -296,106 +387,137 @@ void ProcessEncoders()
         encoderIncs[4] = EncoderInc(ENC_DIAL_A, ENC_DIAL_B);
     }
 
-    if (encoderIncs[4] != 0)
+    if (!isStoreMode)
     {
-        uint8_t newPresetNum = currentPreset.number + encoderIncs[4];
-        if (newPresetNum < 0 || newPresetNum > PRESET_NUM - 1)
+        if (encoderIncs[4] != 0)
         {
-            return;
-        }
-        else
-        {
-            ApplyPreset(newPresetNum);
-        }
-        encoderIncs[4] = 0;
-    }
-    switch (currentPage)
-    {
-    case MAIN_PAGE:
-        for (size_t i = 0; i < NUM_ENCODERS; i++)
-        { // Only 4 encoders
-            if (encoderIncs[i] != 0)
+            uint8_t newPresetNum = currentPreset.number + encoderIncs[4];
+            if (newPresetNum < 0 || newPresetNum > PRESET_NUM - 1)
             {
-                menu_slots[i].need_update = true;
+                return;
             }
-        }
-        break;
-    case FX_PAGE:
-        if (encoderIncs[0] != 0)
-        {
-            effectSlot[0].need_update = true;
-        }
-        if (encoderIncs[3] != 0)
-        {
-            effectSlot[1].need_update = true;
-        }
-        break;
-    case MOD_MATRIX_PAGE:
-        if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
-        {
-            isModMatrixNeedUpdate = true;
-        }
-        break;
-    default:
-        for (size_t i = 0; i < 4; i++)
-        { // Only 4 encoders
-            if (encoderIncs[i] != 0)
+            else
             {
-                uint8_t paramIndex = GetActiveParamIndex(i); // Get index of active parameter
-                slots[paramIndex].need_update = true;
+                ApplyPreset(newPresetNum);
             }
+            encoderIncs[4] = 0;
+            }
+        switch (currentPage)
+        {
+        case MAIN_PAGE:
+            for (size_t i = 0; i < NUM_ENCODERS; i++)
+            { // Only 4 encoders
+                if (encoderIncs[i] != 0)
+                {
+                    currentPreset.mainSlots[i].need_update = true;
+                }
+            }
+            break;
+        case FX_PAGE:
+            if (encoderIncs[0] != 0)
+            {
+                currentPreset.effectSlots[0].need_update = true;
+            }
+            if (encoderIncs[3] != 0)
+            {
+                currentPreset.effectSlots[1].need_update = true;
+            }
+            break;
+        case MOD_MATRIX_PAGE:
+            if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
+            {
+                isModMatrixNeedUpdate = true;
+            }
+            break;
+        case SETTINGS_PAGE:
+            if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
+            {
+                isSettingsNeedUpdate = true;
+            }
+            break;
+        default:
+            for (size_t i = 0; i < 4; i++)
+            { // Only 4 encoders
+                if (encoderIncs[i] != 0)
+                {
+                    uint8_t paramIndex = GetActiveParamIndex(i); // Get index of active parameter
+                    paramSlots[paramIndex].need_update = true;
+                }
+            }
+            break;
         }
-        break;
     }
 }
 
-void Callback(void *data)
+void Callback500ms(void *data)
 {
     isBlink = !isBlink;
     blinkStateChanged = true;
-    CpuUsageDisplay();
+    update_500ms = true;
+    // CpuUsageDisplay();
 }
 
-void Timer500ms()
+void Callback1ms(void *data)
 {
-    TimerHandle::Config tim_cfg;
+    update_1ms = true;
 
-    tim_cfg.periph = TimerHandle::Config::Peripheral::TIM_5;
-    tim_cfg.enable_irq = true;
+}
 
-    auto tim_target_freq = 1;
+void Timer1ms()
+{
+    TimerHandle::Config tim_1ms_cfg;
+
+    tim_1ms_cfg.periph = TimerHandle::Config::Peripheral::TIM_3;
+    tim_1ms_cfg.enable_irq = true;
+
+    auto tim_target_freq = 10;
     auto tim_base_freq = System::GetPClk2Freq();
-    tim_cfg.period = tim_base_freq / tim_target_freq;
+    tim_1ms_cfg.period = tim_base_freq / tim_target_freq;
 
-    tim_display.Init(tim_cfg);
-    tim_display.SetCallback(Callback);
-    tim_display.Start();
+    timer_1ms.Init(tim_1ms_cfg);
+    timer_1ms.SetCallback(Callback1ms);
+    timer_1ms.Start();
 
     System::Delay(10);
 }
 
-void CpuUsageDisplay(bool on)
+void Timer500ms()
+{
+    TimerHandle::Config tim_500ms_cfg;
+
+    tim_500ms_cfg.periph = TimerHandle::Config::Peripheral::TIM_5;
+    tim_500ms_cfg.enable_irq = true;
+
+    auto tim_target_freq = 1;
+    auto tim_base_freq = System::GetPClk2Freq();
+    tim_500ms_cfg.period = tim_base_freq / tim_target_freq;
+
+    timer_500ms.Init(tim_500ms_cfg);
+    timer_500ms.SetCallback(Callback500ms);
+    timer_500ms.Start();
+
+    System::Delay(10);
+}
+
+void CpuUsageDisplay()
 {
 
     // float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
     // UartPrintf("CPU load: ", cpu_avg_load);
-
-    if (on)
+    if (currentPage == MAIN_PAGE)
     {
-        if (currentPage == MAIN_PAGE)
-        {
-            Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
-            Paint_Clear(BLACK);
-            float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-            Paint_NumCentered(cpu_avg_load, 0, 24, 0, 1, Font8, WHITE, BLACK);
-            OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
-            // UartPrint("CPU load: ", cpu_avg_load);
-        }
-    }
-    else
-    {
-        Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+        Paint_NewImage(cpu_load_block_data.data, 12, 12, 0, BLACK);
         Paint_Clear(BLACK);
-        OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+        float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+        Paint_NumCentered(cpu_avg_load, 0, 12, 0, 0, Font8, WHITE, BLACK);
+        OLED_Part_Transmit_DMA(&cpu_load_block_data, 116, 0, 128, 12);
+        // UartPrint("CPU load: ", cpu_avg_load);
     }
+    
+    // else
+    // {
+    //     Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
+    //     Paint_Clear(BLACK);
+    //     OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
+    // }
 }
