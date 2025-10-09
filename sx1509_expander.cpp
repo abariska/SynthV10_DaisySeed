@@ -113,21 +113,42 @@ int8_t EncoderInc(uint8_t pin_a, uint8_t pin_b)
     static uint8_t a_[16] = {0};
     static uint8_t b_[16] = {0};
     static uint32_t last_increment_time_[16] = {0};
-    int8_t inc_ = 0;
 
     // Shift Button states to debounce
     a_[pin_a] = (a_[pin_a] << 1) | sx1509_encoders.CurrentPinState(pin_a);
     b_[pin_b] = (b_[pin_b] << 1) | sx1509_encoders.CurrentPinState(pin_b);
 
-    // infer increment direction
-    if ((a_[pin_a] & 0x03) == 0x02 && (b_[pin_b] & 0x03) == 0x00)
-    {
-        inc_ = 1;
-    }
-    else if ((b_[pin_b] & 0x03) == 0x02 && (a_[pin_a] & 0x03) == 0x00)
-    {
-        inc_ = -1;
-    }
+    static const int8_t kDeltaLut[16] = {
+        // idx = (prev<<2)|curr :  00->00 00->01 00->10 00->11  01->00 01->01 01->10 01->11 ...
+             0,   -1,   +1,    0,
+            +1,    0,    0,   -1,
+            -1,    0,    0,   +1,
+             0,   +1,   -1,    0
+        };
+
+        uint8_t prev = ((a_[pin_a] >> 1) & 1) | (((b_[pin_b] >> 1) & 1) << 1);
+        uint8_t curr =  (a_[pin_a]        & 1) | (( b_[pin_b]        & 1) << 1);
+        uint8_t idx  = (prev << 2) | curr;
+
+        static int8_t acc_[16] = {0};
+        const uint8_t DETENT = 0;  
+
+        int8_t step = kDeltaLut[idx];
+        int8_t inc_ = 0;
+
+        if (step) {
+            int8_t s = acc_[pin_a] + step;
+            if (s > 3)  s = 3;
+            if (s < -3) s = -3;
+            acc_[pin_a] = s;
+        }
+        
+        if (curr == DETENT) {
+            if (acc_[pin_a] >= +2) inc_ = +1;
+            else if (acc_[pin_a] <= -2) inc_ = -1;
+            acc_[pin_a] = 0;
+        }
+        
     if (inc_ != 0)
     {
         // Determine rotation speed
@@ -138,7 +159,7 @@ int8_t EncoderInc(uint8_t pin_a, uint8_t pin_b)
         // Update speed multiplier
         if (time_diff < 10)
         { // Fast rotation
-            if (time_diff < 5)
+            if (time_diff < 6)
             {
                 speed_factor_ = 100;
             }

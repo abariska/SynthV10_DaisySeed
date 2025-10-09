@@ -24,7 +24,6 @@ extern Preset currentPreset;
 int encoderIncs[5];
 int test = 123;
 float samplerate = 0;
-bool update_for_preset_needed = false;
 bool shift_pressed = false;
 float scope_data[128];
 int scope_data_index = 0;
@@ -35,6 +34,7 @@ float scope_trigger_level = 0.0f;
 int scope_trigger_delay = 0;
 bool update_1ms = false;
 bool update_500ms = false;
+uint8_t old_preset_number = 0;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
                           AudioHandle::InterleavingOutputBuffer out,
@@ -58,8 +58,6 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         HandleMidiMessage(msg);
     }
 
-    ModSourcesProcess();
-
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
         currentPreset.modMtx[i].RunMod();
@@ -73,6 +71,7 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         float outL = 0.0f;
         float outR = 0.0f;
 
+        ModSourcesProcess();
         VoiceProcess(mix);
 
         ProcessEffects(0, mix, mix, outL, outR);
@@ -184,10 +183,29 @@ void ProcessButtons()
     bool any_button_change = sx1509_buttons.ReadAllPins();
     shift_pressed = sx1509_buttons.IsPressed(BUTTON_SHIFT);
 
-    UpdateEncoderSwitches();
-
     if (any_button_change)
     {
+        if (isStoreMode)
+        {
+            if (shift_pressed)
+            {
+                isStoreMode = false;
+                currentPreset.number = old_preset_number;
+                page_need_update = true;
+                UpdatePage();
+            } 
+            if (sx1509_buttons.isFallingEdge(BUTTON_STORE))
+            {
+                SavePreset(currentPreset.number, currentPreset);
+                page_need_update = true;
+                UpdatePage();
+                isStoreMode = false;
+                old_preset_number = currentPreset.number;
+            }
+            return;
+        }
+
+        UpdateEncoderSwitches();
 
         if (currentPage == MenuPage::FX_PAGE)
         {
@@ -257,8 +275,7 @@ void ProcessButtons()
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_STORE))
             {
-                update_for_preset_needed = true;
-                isStoreMode = true;
+                page_need_update = true;
                 ResetPreset(currentPreset.number);
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_MTX))
@@ -348,9 +365,10 @@ void ProcessButtons()
             }
             if (sx1509_buttons.isFallingEdge(BUTTON_STORE))
             {
-                update_for_preset_needed = true;
                 isStoreMode = true;
-                SavePreset(currentPreset.number, currentPreset);
+                old_preset_number = currentPreset.number;
+                DrawStoreBlock();
+                    
             }
         }
     }
@@ -369,62 +387,65 @@ void ProcessEncoders()
         encoderIncs[4] = EncoderInc(ENC_DIAL_A, ENC_DIAL_B);
     }
 
-    if (encoderIncs[4] != 0)
+    if (!isStoreMode)
     {
-        uint8_t newPresetNum = currentPreset.number + encoderIncs[4];
-        if (newPresetNum < 0 || newPresetNum > PRESET_NUM - 1)
+        if (encoderIncs[4] != 0)
         {
-            return;
-        }
-        else
-        {
-            ApplyPreset(newPresetNum);
-        }
-        encoderIncs[4] = 0;
-    }
-    switch (currentPage)
-    {
-    case MAIN_PAGE:
-        for (size_t i = 0; i < NUM_ENCODERS; i++)
-        { // Only 4 encoders
-            if (encoderIncs[i] != 0)
+            uint8_t newPresetNum = currentPreset.number + encoderIncs[4];
+            if (newPresetNum < 0 || newPresetNum > PRESET_NUM - 1)
             {
-                currentPreset.mainSlots[i].need_update = true;
+                return;
             }
-        }
-        break;
-    case FX_PAGE:
-        if (encoderIncs[0] != 0)
-        {
-            currentPreset.effectSlots[0].need_update = true;
-        }
-        if (encoderIncs[3] != 0)
-        {
-            currentPreset.effectSlots[1].need_update = true;
-        }
-        break;
-    case MOD_MATRIX_PAGE:
-        if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
-        {
-            isModMatrixNeedUpdate = true;
-        }
-        break;
-    case SETTINGS_PAGE:
-        if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
-        {
-            isSettingsNeedUpdate = true;
-        }
-        break;
-    default:
-        for (size_t i = 0; i < 4; i++)
-        { // Only 4 encoders
-            if (encoderIncs[i] != 0)
+            else
             {
-                uint8_t paramIndex = GetActiveParamIndex(i); // Get index of active parameter
-                paramSlots[paramIndex].need_update = true;
+                ApplyPreset(newPresetNum);
             }
+            encoderIncs[4] = 0;
+            }
+        switch (currentPage)
+        {
+        case MAIN_PAGE:
+            for (size_t i = 0; i < NUM_ENCODERS; i++)
+            { // Only 4 encoders
+                if (encoderIncs[i] != 0)
+                {
+                    currentPreset.mainSlots[i].need_update = true;
+                }
+            }
+            break;
+        case FX_PAGE:
+            if (encoderIncs[0] != 0)
+            {
+                currentPreset.effectSlots[0].need_update = true;
+            }
+            if (encoderIncs[3] != 0)
+            {
+                currentPreset.effectSlots[1].need_update = true;
+            }
+            break;
+        case MOD_MATRIX_PAGE:
+            if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
+            {
+                isModMatrixNeedUpdate = true;
+            }
+            break;
+        case SETTINGS_PAGE:
+            if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
+            {
+                isSettingsNeedUpdate = true;
+            }
+            break;
+        default:
+            for (size_t i = 0; i < 4; i++)
+            { // Only 4 encoders
+                if (encoderIncs[i] != 0)
+                {
+                    uint8_t paramIndex = GetActiveParamIndex(i); // Get index of active parameter
+                    paramSlots[paramIndex].need_update = true;
+                }
+            }
+            break;
         }
-        break;
     }
 }
 

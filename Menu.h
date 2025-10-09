@@ -49,6 +49,7 @@ void InitSlots();
 void AssignParamsForPage(MenuPage page);
 void SetPageName(const char *name);
 void ToggleActiveRow();
+void EncoderChangeStore();
 
 uint8_t GetActiveParamIndex(uint8_t encoderIndex); // Повертає індекс активного параметра для енкодера
 

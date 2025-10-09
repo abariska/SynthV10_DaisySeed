@@ -19,6 +19,7 @@
 extern float GetPitchTableValue(int index);
 extern float GetDetuneTableValue(int index);
 extern float GetPitchBendTableValue(int index);
+extern float GetFreqModTableValue(int index);
 
 template <typename T>
 constexpr const T &clamp(const T &v, const T &lo, const T &hi)
@@ -55,6 +56,7 @@ enum class ParamUnitName
     OSC_ACTIVE_3,
     FILTER_CUTOFF,
     FILTER_RESONANCE,
+    FILTER_DRIVE,
     ADSR_ATTACK,
     ADSR_DECAY,
     ADSR_SUSTAIN,
@@ -120,6 +122,7 @@ enum class ParamType
 enum class ParamUnit
 {
     HZ,
+    FREQ,
     SECONDS,
     PERCENT,
     SEMITONES,
@@ -153,7 +156,6 @@ private:
     Curve curve;
     ParamUnit unit;
     float physical_value;
-    float modifier_value;
     UseInMain useInMain;
     UseInMod useInMod;
     ParamType type;
@@ -177,6 +179,7 @@ public:
                    UseInMain useInMain = UseInMain::NONE,
                    UseInMod useInMod = UseInMod::NONE);
 
+    float modifier_value;
     // Універсальні методи
     float SetNormalized(float n);
 
@@ -199,6 +202,7 @@ public:
     void SetFloat(float value) { physical_value = value; }
     Curve GetCurve() const;
     void SetModifier(float value);
+    float GetModifier() const;
     UseInMain GetUseInMain() const { return useInMain; }
     UseInMod GetUseInMod() const { return useInMod; }
 };
@@ -218,7 +222,7 @@ public:
     ParamType GetType(ParamUnitName name) { return GetParam(name).GetType(); }
     void AdjustByIncrement(ParamUnitName name, int inc) { GetParam(name).AdjustByIncrement(inc); }
     void SetModifier(ParamUnitName name, float mod_value) { GetParam(name).SetModifier(mod_value); }
-    void SetValue(ParamUnitName name, float value) { GetParam(name).SetNormalized(value); }
+    void SetValue(ParamUnitName name, float value) { GetParam(name).SetPhysicalValue(value); }
     void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
     ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).GetUnit(); }
     Curve GetCurve(ParamUnitName name) { return GetParam(name).GetCurve(); }
@@ -317,9 +321,10 @@ public:
                                                                 : modValue;
 
         modValue = modValue * modAmount;
-        if (GetModTarget() == P::OSC_FREQ_1 || GetModTarget() == P::OSC_FREQ_2 || GetModTarget() == P::OSC_FREQ_3)
+        if (paramManager.GetUnit(GetModTarget()) == ParamUnit::FREQ)
         {
-            modValue *= 1.059463094f;
+            float ratio = GetFreqModTableValue(modAmount * 12.0f); 
+            modValue = modValue * ratio;
         }
         paramManager.SetModifier(modTarget, modValue);
     }

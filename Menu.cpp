@@ -92,9 +92,9 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             else
             {
                 unit = "Hz";
-                if (value < 100.0)
+                if (value <= 100.0)
                 {
-                    if (value < 10.0)
+                    if (value <=10.0)
                     {
                         sprintf(value_str, "%.2f", value);
                     }
@@ -113,7 +113,14 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             if (value >= 1)
             {
                 unit = "s";
-                sprintf(value_str, "%.2f", value);
+                if (value >= 10.0)
+                {
+                    sprintf(value_str, "%.1f", value);
+                }
+                else
+                {
+                    sprintf(value_str, "%.2f", value);
+                }
             }
             else
             {
@@ -385,6 +392,11 @@ void UpdateParamSlots()
 
 void UpdateEncodersParams()
 {
+    if (isStoreMode)
+    {
+        EncoderChangeStore();
+        return;
+    }
     if (currentPage == MAIN_PAGE)
     {
         UpdateMainSlots();
@@ -460,7 +472,7 @@ void AssignParamsForPage(MenuPage page)
         SetPageName("Filter");
         paramSlots[0].target_param = P::FILTER_CUTOFF;
         paramSlots[1].target_param = P::FILTER_RESONANCE;
-        paramSlots[2].target_param = P::NONE;
+        paramSlots[2].target_param = P::FILTER_DRIVE;
         paramSlots[3].target_param = P::NONE;
         break;
     case LFO_PAGE:
@@ -468,6 +480,7 @@ void AssignParamsForPage(MenuPage page)
         paramSlots[0].target_param = P::MOD_LFO_WAVEFORM;
         paramSlots[1].target_param = P::MOD_LFO_FREQ;
         paramSlots[2].target_param = P::MOD_LFO_DEPTH;
+        paramSlots[3].target_param = P::NONE;
         break;
     case FX_PAGE:
         SetPageName("Effects");
@@ -475,6 +488,9 @@ void AssignParamsForPage(MenuPage page)
     case OVERDRIVE_PAGE:
         SetPageName("Overdrive");
         paramSlots[0].target_param = P::EFFECT_OVERDRIVE_DRIVE;
+        paramSlots[1].target_param = P::NONE;
+        paramSlots[2].target_param = P::NONE;
+        paramSlots[3].target_param = P::NONE;
         break;
     case CHORUS_PAGE:
         SetPageName("Chorus");
@@ -495,6 +511,8 @@ void AssignParamsForPage(MenuPage page)
         SetPageName("Reverb");
         paramSlots[0].target_param = P::EFFECT_REVERB_FEEDBACK;
         paramSlots[1].target_param = P::EFFECT_REVERB_LPFREQ;
+        paramSlots[2].target_param = P::NONE;
+        paramSlots[3].target_param = P::NONE;
         break;
     case MOD_MATRIX_PAGE:
         SetPageName("Mod Matrix");
@@ -727,4 +745,25 @@ void InitSlots()
     }
 
     System::Delay(10);
+}
+
+void EncoderChangeStore()
+{
+    if (encoderIncs[4] != 0)
+    {
+        int dir = (encoderIncs[4] > 0) ? 1 : -1;
+        int preset = currentPreset.number;
+        preset += dir;
+        if (preset < 0)
+        {
+            preset = 0;
+        }
+        if (preset >= PRESET_NUM)
+        {
+            preset = PRESET_NUM - 1;
+        }
+        currentPreset.number = preset;
+        DrawStoreBlock();
+        encoderIncs[4] = 0;
+    }
 }

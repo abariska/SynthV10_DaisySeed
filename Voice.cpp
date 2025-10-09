@@ -24,6 +24,7 @@ float midiNoteToFreqTable[128];
 float pitchTable[PITCH_TABLE_SIZE];
 float detuneTable[DETUNE_TABLE_SIZE];
 float pitchBendTable[PITCH_BEND_TABLE_SIZE];
+float freqModTable[FREQ_MOD_TABLE_SIZE];
 
 uint8_t noteNum = 60;
 float frequency = 0;
@@ -34,6 +35,7 @@ float final_freq[OSC_NUM * VOICE_NUM];
 float voice_velocity[VOICE_NUM] = {1.0f};
 bool is_any_voice_active = false;
 int voiceId = 0;
+float filter_drive = 0.0f;
 
 bool gate = false;
 
@@ -186,11 +188,12 @@ void UpdateSynthParams()
             float pitch = GetPitchTableValue(paramManager.GetValue(OSC_PITCH[oscId]));
             float detune = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[oscId]));
             float freq = voiceFreq * pitch * detune * pitch_bend_multiplier;
+            paramManager.SetValue(OSC_FREQ[oscId], freq);
             float amp = paramManager.GetValue(OSC_AMP[oscId]) * voiceVel;
             float pw = paramManager.GetValue(OSC_PWM[oscId]);
             int waveform = static_cast<int>(paramManager.GetValue(OSC_WAVEFORM[oscId]));
 
-            osc[idx].SetFreq(freq);
+            osc[idx].SetFreq(paramManager.GetValue(OSC_FREQ[oscId]));
             osc[idx].SetAmp(amp);
             osc[idx].SetWaveform(waveform);
             osc[idx].SetPw(pw);
@@ -223,23 +226,20 @@ void VoiceProcess(float &voice_sig)
             }
         }
 
-        voiceMix = daisysp::fclamp(voiceMix, -1.0f, 1.0f) / VOICE_NUM;
-
         float env = adsrMain[v].Process(voiceState[v].gate);
-
-        voice_sig += voiceMix * env;
+        voice_sig += voiceMix * env / VOICE_NUM;
 
         if (!(voiceState[v].active && voiceState[v].gate) && env <= 0.00001f)
         {
             voiceState[v].gate = false;
         }
     }
-    // voice_sig = daisysp::fclamp(voice_sig, -1.0f, 1.0f);
-
+    voice_sig = voice_sig * (1.0f + paramManager.GetValue(P::FILTER_DRIVE) * 100.0f);
+    voice_sig = daisysp::fclamp(voice_sig, -1.0f, 1.0f);
     voice_sig = flt.Process(voice_sig);
+    voice_sig = voice_sig;
+    
 }
-
-
 
 void InitPitchTables()
 {
@@ -262,6 +262,11 @@ void InitPitchTables()
     {
         pitchBendTable[i] = powf(2.0f, (i - PITCH_BEND_CENTER_INDEX) / 1200.0f);
     }
+
+    for (int i = 0; i < FREQ_MOD_TABLE_SIZE; i++)
+    {
+        freqModTable[i] = powf(2.0f, i / 12.0f);
+    }
 }
 
 float midiNoteToFreq(int note)
@@ -282,4 +287,9 @@ float GetDetuneTableValue(int index)
 float GetPitchBendTableValue(int index)
 {
     return pitchBendTable[index + PITCH_BEND_CENTER_INDEX];
+}
+
+float GetFreqModTableValue(int index)
+{
+    return freqModTable[index];
 }

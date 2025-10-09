@@ -23,7 +23,7 @@ float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.2f, 0.5f, 1.0f, //Osc1
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.2f, 0.5f, 0.0f, //Osc2
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.2f, 0.5f, 0.0f, //Osc3
-                                                                               0.1f, 0.0f, 0.01f, 0.01f, 1.0f, 0.01f, //Filter ADSR
+                                                                               0.1f, 0.0f, 0.01f, 0.01f, 1.0f, 0.01f, 0.0f, //Filter ADSR
                                                                                0.0f, 0.01f, 0.1f, 0.0f, 0.01f, 0.01f, 0.0f, 0.01f, //Mod LFO ADSR
                                                                                0.0f, //Drive
                                                                                0.1f, 0.5f, 0.5f, 0.5f, //Chorus
@@ -73,13 +73,13 @@ void InitQSPI()
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
     uint32_t init_flag = *((uint32_t *)(0x90000000));
 
-    if (init_flag != 0xDEADBEEF)
+    if (init_flag != 0xDEADBEED)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
         uint8_t page[PAGE_SIZE];
         memset(page, 0xFF, sizeof(page));
-        uint32_t marker = 0xDEADBEEF;
+        uint32_t marker = 0xDEADBEED;
         memcpy(page, &marker, sizeof(marker));
 
         hw.qspi.Write(0, sizeof(page), page);
@@ -176,7 +176,7 @@ float SynthParameter::SetPhysicalValue(float v)
         if (unit == ParamUnit::BOOL)
         {
             physical_value = v > 0.5f ? 1.0f : 0.0f;
-            norm_value = physical_value;
+            norm_value = physical_value > 0.5f ? 1.0f : 0.0f;
         }
         else
         {
@@ -216,6 +216,7 @@ float SynthParameter::AdjustByIncrement(int inc)
     switch (unit)
     {
     case ParamUnit::HZ:
+    case ParamUnit::FREQ:
     {
         float newValue = 0.0f;
         if (physical_value >= 1.0f)
@@ -272,6 +273,10 @@ float SynthParameter::GetValue()
     float m = 0.0f;
     switch (unit)
     {
+    case ParamUnit::FREQ:
+        value = physical_value;
+        return value + (value * modifier_value);
+        break;
     case ParamUnit::HZ:
     case ParamUnit::SECONDS:
         value = physical_value;
@@ -324,6 +329,7 @@ ParamType SynthParameter::GetType() const { return type; }
 ParamUnit SynthParameter::GetUnit() const { return unit; }
 Curve SynthParameter::GetCurve() const { return curve; }
 float SynthParameter::GetPhysical() const { return physical_value; }
+float SynthParameter::GetModifier() const { return modifier_value; }
 
 //--------------------------------
 //--------------------------------
@@ -431,21 +437,21 @@ void ParameterManager::Init()
 {
     ADD_PARAM(P::NONE, 0, 0, "-", Curve::LINEAR, ParamUnit::UNITLESS, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::OSC_WAVEFORM_1, 0, Osc::WAVE_COUNT - 1, "Wav1", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_FREQ_1, 1.0f, 10000.0f, "Frq1", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
+    ADD_PARAM(P::OSC_FREQ_1, 1.0f, 10000.0f, "Frq1", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
     ADD_PARAM(P::OSC_PITCH_1, -36, 36, "Sem1", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_DETUNE_1, -100, 100, "Dtn1", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_AMP_1, 0.0f, 100.0f, "Amp1", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_PWM_1, -100, 100, "Pwm1", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_ACTIVE_1, 0, 2, "Actv1", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::OSC_WAVEFORM_2, 0, Osc::WAVE_COUNT - 1, "Wav2", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_FREQ_2, 1.0f, 10000.0f, "Frq2", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
+    ADD_PARAM(P::OSC_FREQ_2, 1.0f, 10000.0f, "Frq2", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
     ADD_PARAM(P::OSC_PITCH_2, -36, 36, "Sem2", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_DETUNE_2, -100, 100, "Dtn2", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_AMP_2, 0.0f, 100.0f, "Amp2", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_PWM_2, -100, 100, "Pwm2", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_ACTIVE_2, 0, 2, "Actv2", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE); 
     ADD_PARAM(P::OSC_WAVEFORM_3, 0, Osc::WAVE_COUNT - 1, "Wav3", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_FREQ_3, 1.0f, 10000.0f, "Frq3", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
+    ADD_PARAM(P::OSC_FREQ_3, 1.0f, 10000.0f, "Frq3", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
     ADD_PARAM(P::OSC_PITCH_3, -36, 36, "Sem3", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_DETUNE_3, -100, 100, "Dtn3", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_AMP_3, 0.0f, 100.0f, "Amp3", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
@@ -453,6 +459,7 @@ void ParameterManager::Init()
     ADD_PARAM(P::OSC_ACTIVE_3, 0, 2, "Actv3", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::FILTER_CUTOFF, 20.0f, 20000.0f, "Cut", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::FILTER_RESONANCE, 0.0f, 100.0f, "Res", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::FILTER_DRIVE, 0.0f, 100.0f, "Fdrv", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::ADSR_ATTACK, 0.005f, 20.0f, "Atk", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Dcy", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sus", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);

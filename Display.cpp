@@ -6,7 +6,6 @@
 #include "parameters.h"
 
 extern Preset currentPreset;
-extern bool update_for_preset_needed;
 extern float scope_data[128];
 extern int scope_data_index;
 extern bool scope_data_ready;
@@ -23,6 +22,7 @@ const UWORD PRESET_NUM_BLOCK_SIZE = (((PRESET_NUM_BLOCK_WIDTH % 2 == 0) ? (PRESE
 const UWORD MOD_MATRIX_BLOCK_SIZE = (((MOD_MATRIX_BLOCK_WIDTH % 2 == 0) ? (MOD_MATRIX_BLOCK_WIDTH / 2) : (MOD_MATRIX_BLOCK_WIDTH / 2 + 1)) * MOD_MATRIX_BLOCK_HEIGHT);
 const UWORD SCOPE_BLOCK_SIZE = (((SCOPE_BLOCK_WIDTH % 2 == 0) ? (SCOPE_BLOCK_WIDTH / 2) : (SCOPE_BLOCK_WIDTH / 2 + 1)) * SCOPE_BLOCK_HEIGHT);
 const UWORD SETTINGS_BLOCK_SIZE = (((SETTINGS_BLOCK_WIDTH % 2 == 0) ? (SETTINGS_BLOCK_WIDTH / 2) : (SETTINGS_BLOCK_WIDTH / 2 + 1)) * SETTINGS_BLOCK_HEIGHT);
+const UWORD STORE_BLOCK_SIZE = (((STORE_BLOCK_WIDTH % 2 == 0) ? (STORE_BLOCK_WIDTH / 2) : (STORE_BLOCK_WIDTH / 2 + 1)) * STORE_BLOCK_HEIGHT);
 
 UBYTE DSY_SDRAM_BSS intro_page[INTRO_PAGE_SIZE];
 UBYTE DSY_SDRAM_BSS bg_black[BG_BLACK_SIZE];
@@ -36,6 +36,7 @@ UBYTE DSY_SDRAM_BSS preset_num_block[PRESET_NUM_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS mod_matrix_block[MOD_MATRIX_BLOCKS_NUM][MOD_MATRIX_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS scope_block[SCOPE_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS settings_block[SETTINGS_BLOCKS_NUM][SETTINGS_BLOCK_SIZE];
+UBYTE DSY_SDRAM_BSS store_block[STORE_BLOCK_SIZE];
 ImageData intro_page_data;
 ImageData bg_black_data;
 ImageData param_block_data[NUM_PARAM_BLOCKS];
@@ -48,6 +49,7 @@ ImageData preset_num_block_data;
 ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
 ImageData scope_block_data;
 ImageData settings_block_data[SETTINGS_BLOCKS_NUM];
+ImageData store_block_data;
 
 MenuPage currentPage = MAIN_PAGE;
 
@@ -79,6 +81,7 @@ void InitImages()
     memset(mod_matrix_block, 0, MOD_MATRIX_BLOCK_SIZE);
     memset(scope_block, 0, SCOPE_BLOCK_SIZE);
     memset(settings_block, 0, SETTINGS_BLOCK_SIZE);
+    memset(store_block, 0, STORE_BLOCK_SIZE);
 
     intro_page_data = {intro_page, INTRO_PAGE_SIZE};
     bg_black_data = {bg_black, BG_BLACK_SIZE};
@@ -104,6 +107,7 @@ void InitImages()
     {
         settings_block_data[i] = {settings_block[i], SETTINGS_BLOCK_SIZE};
     }
+    store_block_data = {store_block, STORE_BLOCK_SIZE};
     System::Delay(10);
 }
 
@@ -121,6 +125,7 @@ void DrawIntroPage()
 
 void SetPage(MenuPage newPage)
 {
+
     if (currentPage == newPage)
     {
         return;
@@ -158,7 +163,7 @@ void SetPage(MenuPage newPage)
 }
 void UpdatePage()
 {
-    if (!page_need_update && !update_for_preset_needed)
+    if (!page_need_update)
     {
         return;
     }
@@ -170,19 +175,15 @@ void UpdatePage()
         break;
     case FX_PAGE:
         DrawEffectsPage();
-        scope_draw = false;
         break;
     case MOD_MATRIX_PAGE:
         DrawModMatrixPage();
-        scope_draw = false;
         break;
     case SETTINGS_PAGE:
         DrawSettingsPage();
-        scope_draw = false;
         break;
     default:
         DrawParamPage(currentPage);
-        scope_draw = false;
         break;
     }
     UpdateLeds();
@@ -194,12 +195,11 @@ void UpdatePage()
         }
     }
     page_need_update = false;
-    update_for_preset_needed = false;
 }
 
 void DrawScope()
 {
-    if (currentPage != MAIN_PAGE)
+    if (currentPage != MAIN_PAGE || isStoreMode)
     {
         return;
     }
@@ -500,6 +500,23 @@ void DrawSettingsPage()
     {
         DrawSettingsBlock(i);
     }
+}
+
+void DrawStoreBlock()
+{
+    Paint_NewImage(store_block_data.data, STORE_BLOCK_WIDTH, STORE_BLOCK_HEIGHT, 0, BLACK);
+    Paint_Clear(BLACK);
+    
+    Paint_DrawRectangle(1, 2, 96, 96, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+    Paint_TextCentered("Store", 0, 96, 20, Font12, WHITE, BLACK);
+    Paint_TextCentered("preset to", 0, 96, 36, Font12, WHITE, BLACK);
+    Paint_NumCentered(currentPreset.number, 0, 96, 60, 0, Font16, WHITE, BLACK);
+
+    OLED_Part_Transmit_DMA(&store_block_data,
+                           BLOCK_STORE_X_START,
+                           BLOCK_STORE_Y_START,
+                           BLOCK_STORE_X_END,
+                           BLOCK_STORE_Y_END);
 }
 
 // void DrawIntroPage2(){

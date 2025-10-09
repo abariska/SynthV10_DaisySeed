@@ -18,6 +18,7 @@
 #define DETUNE_CENTER_INDEX 100
 #define PITCH_BEND_TABLE_SIZE 401
 #define PITCH_BEND_CENTER_INDEX 200
+#define FREQ_MOD_TABLE_SIZE 101
 #define VOICE_NUM 5
 
 using namespace daisy;
