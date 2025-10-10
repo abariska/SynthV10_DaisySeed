@@ -4,6 +4,7 @@
 #include "OLED_1.5_Daisy_Seed/fonts.h"
 #include "effects.h"
 #include "parameters.h"
+#include "voice.h"
 
 extern Preset currentPreset;
 extern float scope_data[128];
@@ -23,6 +24,7 @@ const UWORD MOD_MATRIX_BLOCK_SIZE = (((MOD_MATRIX_BLOCK_WIDTH % 2 == 0) ? (MOD_M
 const UWORD SCOPE_BLOCK_SIZE = (((SCOPE_BLOCK_WIDTH % 2 == 0) ? (SCOPE_BLOCK_WIDTH / 2) : (SCOPE_BLOCK_WIDTH / 2 + 1)) * SCOPE_BLOCK_HEIGHT);
 const UWORD SETTINGS_BLOCK_SIZE = (((SETTINGS_BLOCK_WIDTH % 2 == 0) ? (SETTINGS_BLOCK_WIDTH / 2) : (SETTINGS_BLOCK_WIDTH / 2 + 1)) * SETTINGS_BLOCK_HEIGHT);
 const UWORD STORE_BLOCK_SIZE = (((STORE_BLOCK_WIDTH % 2 == 0) ? (STORE_BLOCK_WIDTH / 2) : (STORE_BLOCK_WIDTH / 2 + 1)) * STORE_BLOCK_HEIGHT);
+const UWORD VOICES_BLOCK_SIZE = (((VOICES_BLOCK_WIDTH % 2 == 0) ? (VOICES_BLOCK_WIDTH / 2) : (VOICES_BLOCK_WIDTH / 2 + 1)) * VOICES_BLOCK_HEIGHT);
 
 UBYTE DSY_SDRAM_BSS intro_page[INTRO_PAGE_SIZE];
 UBYTE DSY_SDRAM_BSS bg_black[BG_BLACK_SIZE];
@@ -37,6 +39,7 @@ UBYTE DSY_SDRAM_BSS mod_matrix_block[MOD_MATRIX_BLOCKS_NUM][MOD_MATRIX_BLOCK_SIZ
 UBYTE DSY_SDRAM_BSS scope_block[SCOPE_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS settings_block[SETTINGS_BLOCKS_NUM][SETTINGS_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS store_block[STORE_BLOCK_SIZE];
+UBYTE DSY_SDRAM_BSS voices_block[VOICES_BLOCK_SIZE];
 ImageData intro_page_data;
 ImageData bg_black_data;
 ImageData param_block_data[NUM_PARAM_BLOCKS];
@@ -50,7 +53,7 @@ ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
 ImageData scope_block_data;
 ImageData settings_block_data[SETTINGS_BLOCKS_NUM];
 ImageData store_block_data;
-
+ImageData voices_block_data;
 MenuPage currentPage = MAIN_PAGE;
 
 bool scope_draw = false;
@@ -82,7 +85,7 @@ void InitImages()
     memset(scope_block, 0, SCOPE_BLOCK_SIZE);
     memset(settings_block, 0, SETTINGS_BLOCK_SIZE);
     memset(store_block, 0, STORE_BLOCK_SIZE);
-
+    memset(voices_block, 0, VOICES_BLOCK_SIZE);
     intro_page_data = {intro_page, INTRO_PAGE_SIZE};
     bg_black_data = {bg_black, BG_BLACK_SIZE};
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++)
@@ -108,6 +111,7 @@ void InitImages()
         settings_block_data[i] = {settings_block[i], SETTINGS_BLOCK_SIZE};
     }
     store_block_data = {store_block, STORE_BLOCK_SIZE};
+    voices_block_data = {voices_block, VOICES_BLOCK_SIZE};
     System::Delay(10);
 }
 
@@ -215,7 +219,11 @@ void DrawScope()
         }
         Paint_NewImage(scope_block_data.data, SCOPE_BLOCK_WIDTH, SCOPE_BLOCK_HEIGHT, 0, BLACK);
         Paint_Clear(BLACK);
-        // Paint_DrawLine(0, 24, 127, 24, 0x01, DOT_PIXEL_1X1, LINE_STYLE_DOTTED);
+        // uint8_t voice_num = 0;
+        // for (size_t i = 0; i < VOICE_NUM; i++)
+        // {
+        //     voice_num += voiceState[i].active ? 1 : 0;
+        // }
         float max_val = 0.0f;
         for (int i = 0; i < 128; i++)
         {
@@ -232,7 +240,7 @@ void DrawScope()
         for (int i = 0; i < SCOPE_BLOCK_WIDTH - 1; i++)
         {
             int data_index = (i * 128) / SCOPE_BLOCK_WIDTH;  // Інтерполяція
-            int y = center_y - (int)(scope_data[data_index] * 35);
+            int y = center_y - (int)(scope_data[data_index] * 40);
             
             // Обмежуємо координати
             if (y < 0) y = 0;

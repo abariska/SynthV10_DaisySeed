@@ -34,6 +34,7 @@ float scope_trigger_level = 0.0f;
 int scope_trigger_delay = 0;
 bool update_1ms = false;
 bool update_500ms = false;
+bool updateStoreLed = false;
 uint8_t old_preset_number = 0;
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
@@ -118,7 +119,7 @@ int main(void)
     int blocksize = 16;
 
     hw.Configure();
-    hw.Init();
+    hw.Init(true);
     UartSerialInit();
 
     hw.SetAudioBlockSize(blocksize);
@@ -147,34 +148,37 @@ int main(void)
 
     while (1)
     {
-        ProcessEncoders();
         switch (process_type)
         {
             case PROCESS_CONTROLS:
                 ProcessButtons();
+                ProcessEncoders();
                 break;
             case UPDATE_PARAMS: 
                 UpdateModSourcesParams();
                 UpdateEncodersParams();
+                UpdateSynthParams();
                 break;
             case PROCESS_DISPLAY:
                 UpdatePage();
                 DrawScope();
                 break;
         }
-        UpdateSynthParams();
         
         if (update_1ms)
         {
             UpdatePWMLeds();
+            DrawVoicesBlock();
+
             update_1ms = false;
         }
         if (update_500ms)
         {
             CpuUsageDisplay();
+            UpdateStoreLed();
             update_500ms = false;
         }
-        process_type = (ProcessType)((process_type + 1) % COUNT_PROCESS_TYPES);
+        process_type = (ProcessType)((process_type + 1) % 3);
     }
 }
 
@@ -201,6 +205,7 @@ void ProcessButtons()
                 UpdatePage();
                 isStoreMode = false;
                 old_preset_number = currentPreset.number;
+                sx1509_leds.WritePin(LED_STORE, false);
             }
             return;
         }
@@ -367,8 +372,7 @@ void ProcessButtons()
             {
                 isStoreMode = true;
                 old_preset_number = currentPreset.number;
-                DrawStoreBlock();
-                    
+                DrawStoreBlock();                    
             }
         }
     }
@@ -520,4 +524,23 @@ void CpuUsageDisplay()
     //     Paint_Clear(BLACK);
     //     OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
     // }
+}
+
+void DrawVoicesBlock()
+{
+    Paint_NewImage(voices_block_data.data, 20, 20, 0, BLACK);
+    Paint_Clear(BLACK);
+    
+    int x1 = 1, x2 = 1;
+    for (size_t i = 0; i < VOICE_NUM; i++)
+    {
+        x2 = x1 + 2;
+        Paint_DrawLine(x1, 16, x2, 16, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        if (voiceState[i].active)
+        {
+            Paint_DrawRectangle(x1, 2, x2, 12, 0x01, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+        }
+        x1 += 4;
+    }
+    OLED_Part_Transmit_DMA(&voices_block_data, 0, 0, 20, 16);
 }

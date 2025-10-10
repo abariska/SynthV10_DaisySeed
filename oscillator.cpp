@@ -21,6 +21,14 @@ static inline float poly_blep(float t, float dt)
     return 0.0f;
 }
 
+static constexpr float kWaveGain[] = {
+    0.8f, // WAVE_SIN
+    0.95f, // WAVE_TRIANGLE
+    1.0f, // WAVE_SAW
+    0.6f, // WAVE_SQUARE
+    0.8f  // WAVE_NOISE (рівномірний)
+};
+
 void Osc::Init(float sample_rate)
 {
     sampleRate = sample_rate;
@@ -53,6 +61,8 @@ float Osc::Process()
 
     float out = 0.0f;
 
+    float gain = kWaveGain[mode] * 0.5f;
+
     switch (mode)
     {
     case WAVE_SIN:
@@ -79,7 +89,7 @@ float Osc::Process()
         break;
     }
     prev_phase = phaseOsc;
-    return out * amp;
+    return out * amp * gain;
 }
 
 void Osc::UpdateIncrement()

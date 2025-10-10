@@ -42,7 +42,7 @@
 #define LED_MTX 4
 #define LED_INPUT 5
 #define LED_OUTPUT 6
-#define LED_MIDI 7
+#define LED_STORE 7
 
 #define NUM_BUTTONS 16
 #define NUM_ENCODERS 4
@@ -55,5 +55,6 @@ void InitSX1509Extenders();
 int8_t EncoderInc(uint8_t pin_a, uint8_t pin_b);
 void UpdateLeds();
 void UpdatePWMLeds();
+void UpdateStoreLed();
 
 #endif

@@ -24,6 +24,8 @@ extern bool isModMatrixNeedUpdate;
 extern uint8_t selModBlockIndex;
 extern uint8_t selSettingsBlockIndex;
 extern bool isSettingsNeedUpdate;
+extern bool updateStoreLed;
+extern bool isStoreMode;
 
 // Для перемикання між рядами параметрів
 enum ActiveRow
@@ -50,6 +52,7 @@ void AssignParamsForPage(MenuPage page);
 void SetPageName(const char *name);
 void ToggleActiveRow();
 void EncoderChangeStore();
+void UpdateStoreLed();
 
 uint8_t GetActiveParamIndex(uint8_t encoderIndex); // Повертає індекс активного параметра для енкодера
 

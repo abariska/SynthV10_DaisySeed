@@ -21,8 +21,7 @@ using namespace daisysp;
 enum ProcessType {
     PROCESS_CONTROLS,
     UPDATE_PARAMS,
-    PROCESS_DISPLAY,
-    COUNT_PROCESS_TYPES
+    PROCESS_DISPLAY
 };
 
 
@@ -49,7 +48,7 @@ void InitImages();
 void DrawIntroPage();
 void UpdateEncoderSwitches();
 void UpdateEncodersParams();
-void InitParamBlocks();
 void CpuUsageDisplay();
+void DrawVoicesBlock();
 
 #endif

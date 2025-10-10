@@ -35,6 +35,8 @@
 #define CPU_LOAD_BLOCK_HEIGHT 12
 #define STORE_BLOCK_WIDTH 96
 #define STORE_BLOCK_HEIGHT 96
+#define VOICES_BLOCK_WIDTH 20
+#define VOICES_BLOCK_HEIGHT 16
 
 #include "OLED_1.5_Daisy_Seed/DEV_Config.h"
 #include "OLED_1.5_Daisy_Seed/OLED_Driver.h"
@@ -118,7 +120,7 @@ extern ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
 extern ImageData settings_block_data[SETTINGS_BLOCKS_NUM];
 extern ImageData scope_block_data;
 extern ImageData store_block_data;
-
+extern ImageData voices_block_data;
 void SetPage(MenuPage newPage);
 void UpdatePage();
 void DrawMainPage();
