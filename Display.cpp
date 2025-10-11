@@ -398,7 +398,7 @@ void DrawModMatrixBlock(uint8_t blockIndex)
     Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModTargetLabel(), 96, 128, 1, Font12, WHITE, BLACK);
     if (blockIndex == selModBlockIndex)
     {
-        uint8_t arrow_y = 7;
+        uint8_t arrow_y = 8;
         Paint_DrawLine(8, arrow_y, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
         Paint_DrawLine(20, arrow_y - 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
         Paint_DrawLine(20, arrow_y + 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
@@ -475,7 +475,7 @@ void DrawSettingsBlock(uint8_t blockIndex)
 
     if (blockIndex == selSettingsBlockIndex)
     {
-        uint8_t arrow_y = 7;
+        uint8_t arrow_y = 8;
         Paint_DrawLine(8, arrow_y, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
         Paint_DrawLine(20, arrow_y - 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
         Paint_DrawLine(20, arrow_y + 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
