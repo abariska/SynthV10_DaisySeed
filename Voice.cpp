@@ -16,6 +16,7 @@ using M = ModSource;
 Adsr adsrMod;
 MoogLadder flt;
 Osc lfo;
+Overdrive fltDrive;
 // Random rnd[OSC_NUM * VOICE_NUM];
 ModMatrix modMatrix[MOD_MATRIX_NUM];
 Voice voice[VOICE_NUM];
@@ -56,6 +57,7 @@ void SynthInit(float samplerate, int blocksize)
     adsrMod.Init(samplerate, blocksize);
     lfo.Init(samplerate);
     EffectsInit(samplerate);
+    fltDrive.Init();
 }
 
 void ModSourcesProcess()
@@ -189,6 +191,7 @@ void UpdateSynthParams()
 
     flt.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
     flt.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
+    fltDrive.SetDrive(paramManager.GetValue(P::FILTER_DRIVE));
 }
 
 void VoiceProcess(float &voice_sig)
@@ -218,11 +221,10 @@ void VoiceProcess(float &voice_sig)
             voice[v].active = false;
         }
     }
-    voice_sig = voice_sig * (1.0f + paramManager.GetValue(P::FILTER_DRIVE) * 100.0f);
-    voice_sig = daisysp::fclamp(voice_sig, -1.0f, 1.0f);
+    float drive = fltDrive.Process(voice_sig);
+    voice_sig = drive + (voice_sig * (1.0f - paramManager.GetValue(P::FILTER_DRIVE)));
     voice_sig = flt.Process(voice_sig);
-    voice_sig = voice_sig;
-    
+    voice_sig = daisysp::fclamp(voice_sig, -1.0f, 1.0f);
 }
 
 void InitPitchTables()

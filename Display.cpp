@@ -240,7 +240,7 @@ void DrawScope()
         for (int i = 0; i < SCOPE_BLOCK_WIDTH - 1; i++)
         {
             int data_index = (i * 128) / SCOPE_BLOCK_WIDTH;  // Інтерполяція
-            int y = center_y - (int)(scope_data[data_index] * 40);
+            int y = center_y - (int)(scope_data[data_index] * 30);
             
             // Обмежуємо координати
             if (y < 0) y = 0;
@@ -393,9 +393,9 @@ void DrawModMatrixBlock(uint8_t blockIndex)
     Paint_NewImage(mod_matrix_block_data[blockIndex].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModSourceLabel(), 32, 64, 0, Font12, WHITE, BLACK);
-    Paint_NumCentered(currentPreset.modMtx[blockIndex].GetModAmount() * 100, 64, 96, 0, 0, Font12, WHITE, BLACK);
-    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModTargetLabel(), 96, 128, 0, Font12, WHITE, BLACK);
+    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModSourceLabel(), 32, 64, 1, Font12, WHITE, BLACK);
+    Paint_NumCentered(currentPreset.modMtx[blockIndex].GetModAmount() * 100, 64, 96, 1, 0, Font12, WHITE, BLACK);
+    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModTargetLabel(), 96, 128, 1, Font12, WHITE, BLACK);
     if (blockIndex == selModBlockIndex)
     {
         uint8_t arrow_y = 7;
@@ -463,14 +463,14 @@ void DrawSettingsBlock(uint8_t blockIndex)
     Paint_NewImage(settings_block_data[blockIndex].data, SETTINGS_BLOCK_WIDTH, SETTINGS_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_TextCentered(paramManager.GetLabel(SETTINGS_PARAMS[blockIndex]), 32, 96, 0, Font12, WHITE, BLACK);
-    if (paramManager.GetType(SETTINGS_PARAMS[blockIndex]) == ParamType::DISCRETE)
+    Paint_TextCentered(paramManager.GetLabel(SETTINGS_PARAMS[blockIndex]), 32, 96, 1, Font12, WHITE, BLACK);
+    if (paramManager.GetUnit(SETTINGS_PARAMS[blockIndex]) == ParamUnit::BOOL)
     {
-        Paint_TextCentered(paramManager.GetBool(SETTINGS_PARAMS[blockIndex]) ? "On" : "Off", 96, 128, 0, Font12, WHITE, BLACK);
+        Paint_TextCentered(paramManager.GetBool(SETTINGS_PARAMS[blockIndex]) ? "On" : "Off", 96, 128, 1, Font12, WHITE, BLACK);
     }
     else
     {
-        Paint_NumCentered((paramManager.GetValue(SETTINGS_PARAMS[blockIndex]) * 100), 96, 128, 0, 0, Font12, WHITE, BLACK);
+        Paint_NumCentered((paramManager.GetValue(SETTINGS_PARAMS[blockIndex]) * 100), 96, 128, 1, 0, Font12, WHITE, BLACK);
     }
 
     if (blockIndex == selSettingsBlockIndex)

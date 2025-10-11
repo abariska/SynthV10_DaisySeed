@@ -30,7 +30,7 @@ float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0
                                                                                0.01f, 0.01f, 0.5f, 2.0f, 0.5f, //Compressor
                                                                                0.5f, 1.0f, //Reverb
                                                                                0.5f, 0.0f, 0.5f, 0.0f, //FX slots
-                                                                               0.0f, 0.0f, 0.1f}; //Global
+                                                                               0.0f, 0.0f, 0.1f, 0.8f}; //Global
 
 Preset GetDefaultPreset(int8_t presetNumber)
 {
@@ -73,13 +73,13 @@ void InitQSPI()
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
     uint32_t init_flag = *((uint32_t *)(0x90000000));
 
-    if (init_flag != 0xDEADBEE5)
+    if (init_flag != 0xDEADBEE4)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
         uint8_t page[PAGE_SIZE];
         memset(page, 0xFF, sizeof(page));
-        uint32_t marker = 0xDEADBEE5;
+        uint32_t marker = 0xDEADBEE4;
         memcpy(page, &marker, sizeof(marker));
 
         hw.qspi.Write(0, sizeof(page), page);
@@ -483,14 +483,15 @@ void ParameterManager::Init()
     ADD_PARAM(P::EFFECT_COMPRESSOR_RATIO, 1.0f, 40.0f, "RatC", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_COMPRESSOR_MAKEUP, 0.0f, 80.0f, "MkC", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_REVERB_FEEDBACK, 0.0f, 100.0f, "FbkR", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_REVERB_LPFREQ, 10.0f, 20000.0f, "CutxR", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_REVERB_LPFREQ, 10.0f, 20000.0f, "CutR", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_SLOT_1_DRYWET, 0.0f, 100.0f, "DrW1", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_SLOT_1_ACTIVE, 0, 2, "Actv1", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::EFFECT_SLOT_2_DRYWET, 0.0f, 100.0f, "DrW2", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_SLOT_2_ACTIVE, 0, 2, "Actv2", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::GLOBAL_MONO, 0, 2, "Mono", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::GLOBAL_LEGATO, 0, 2, "Legato", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 100.0f, "Prtmnto", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 100.0f, "Prtmnto", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::GLOBAL_MASTER_VOLUME, 0.0f, 100.0f, "Master", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
 }
 
 Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
