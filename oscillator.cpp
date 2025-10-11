@@ -43,7 +43,7 @@ void Osc::Init(float sample_rate)
     phaseOsc = 0.0f;
     phaseOffset = 0.0f;
     blepGain = 1.0f;
-
+    currentAmp = 0.0f;
     UpdateIncrement();
 }
 
@@ -52,6 +52,7 @@ void Osc::PhaseProcess()
     currentFreq += (targetFreq != currentFreq) * (targetFreq - currentFreq) * slewRate;
     UpdateIncrement();
 
+    currentAmp += (amp - currentAmp) * 0.1f;
     phaseOsc += phaseInc;
     phaseOsc -= (phaseOsc >= 1.0f) ? 1.0f : 0.0f;
 }
@@ -89,7 +90,7 @@ float Osc::Process()
         break;
     }
     prev_phase = phaseOsc;
-    return out * amp * gain;
+    return out * currentAmp * gain;
 }
 
 void Osc::UpdateIncrement()

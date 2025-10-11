@@ -368,6 +368,10 @@ void ProcessButtons()
             {
                 SetPage(MenuPage::MOD_MATRIX_PAGE);
             }
+            if (sx1509_buttons.isFallingEdge(ENC_DIAL_SW))
+            {
+                SetPage(MenuPage::SETTINGS_PAGE);
+            }
             if (sx1509_buttons.isFallingEdge(BUTTON_STORE))
             {
                 isStoreMode = true;
@@ -536,7 +540,7 @@ void DrawVoicesBlock()
     {
         x2 = x1 + 2;
         Paint_DrawLine(x1, 16, x2, 16, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        if (voiceState[i].active)
+        if (voice[i].active)
         {
             Paint_DrawRectangle(x1, 2, x2, 12, 0x01, DOT_PIXEL_1X1, DRAW_FILL_FULL);
         }

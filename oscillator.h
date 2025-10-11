@@ -57,6 +57,7 @@ private:
     float prev_phase;
     float current_phase;
     uint32_t noiseState;
+    float currentAmp;
 };
 
 #endif

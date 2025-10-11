@@ -17,9 +17,8 @@ void MidiInit()
     System::Delay(10);
 
     MidiUartHandler::Config midi_uart_cfg;
-    midi_uart_cfg.transport_config.periph = UartHandler::Config::Peripheral::USART_1;
-    midi_uart_cfg.transport_config.rx = {DSY_GPIOB, 15}; // D30 = PB15 = USART1_RX
-    midi_uart_cfg.transport_config.tx = {DSY_GPIOB, 14}; // D29 = PB14 = USART1_TX (опціонально)
+    midi_uart_cfg.transport_config.periph = UartHandler::Config::Peripheral::UART_5;
+    midi_uart_cfg.transport_config.rx = {DSY_GPIOB, 5};
     midiUart.Init(midi_uart_cfg);
 
     

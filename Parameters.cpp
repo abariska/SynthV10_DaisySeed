@@ -30,7 +30,7 @@ float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0
                                                                                0.01f, 0.01f, 0.5f, 2.0f, 0.5f, //Compressor
                                                                                0.5f, 1.0f, //Reverb
                                                                                0.5f, 0.0f, 0.5f, 0.0f, //FX slots
-                                                                               1.0f, 0.0f, 0.1f}; //Global
+                                                                               0.0f, 0.0f, 0.1f}; //Global
 
 Preset GetDefaultPreset(int8_t presetNumber)
 {
@@ -73,13 +73,13 @@ void InitQSPI()
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
     uint32_t init_flag = *((uint32_t *)(0x90000000));
 
-    if (init_flag != 0xDEADBEEF)
+    if (init_flag != 0xDEADBEE5)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
         uint8_t page[PAGE_SIZE];
         memset(page, 0xFF, sizeof(page));
-        uint32_t marker = 0xDEADBEEF;
+        uint32_t marker = 0xDEADBEE5;
         memcpy(page, &marker, sizeof(marker));
 
         hw.qspi.Write(0, sizeof(page), page);

@@ -24,8 +24,8 @@
 using namespace daisy;
 using namespace daisysp;
 
-extern std::array<Osc, OSC_NUM * VOICE_NUM> osc;
-extern Adsr adsrMain[VOICE_NUM];
+// extern std::array<Osc, OSC_NUM> osc;
+// extern Adsr adsrMain[VOICE_NUM];
 
 extern MoogLadder flt;
 extern Osc lfo;
@@ -36,8 +36,16 @@ extern float pitchTable[PITCH_TABLE_SIZE];
 extern float detuneTable[DETUNE_TABLE_SIZE];
 extern float pitchBendTable[PITCH_BEND_TABLE_SIZE];
 
-struct VoiceState
+struct Voice
 {
+    Osc     osc[OSC_NUM];
+    Adsr    adsr;
+    Random  rnd[OSC_NUM];
+    float   phaseOffsets[OSC_NUM];
+    float   pitch_correction[OSC_NUM];
+    float   detune_correction[OSC_NUM];
+    float   final_freq[OSC_NUM];
+    
     bool     active     = false;   // голос зайнятий
     bool     gate       = false;   // флаг для ADSR
     int16_t  note       = -1;      // MIDI-номер ноти
@@ -46,7 +54,7 @@ struct VoiceState
     uint32_t timestamp  = 0;       // мітка часу (System::GetNow())
 };
 
-extern VoiceState voiceState[VOICE_NUM];
+extern Voice voice[VOICE_NUM];
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity);
 void HandleNoteOff(uint8_t note_in);

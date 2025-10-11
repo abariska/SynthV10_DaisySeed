@@ -11,14 +11,14 @@ using P = ParamUnitName;
 using namespace daisy;
 using M = ModSource;
 
-std::array<Osc, OSC_NUM * VOICE_NUM> osc;
-Adsr adsrMain[VOICE_NUM];
+// std::array<Osc, OSC_NUM * VOICE_NUM> osc;
+// Adsr adsrMain[VOICE_NUM];
 Adsr adsrMod;
 MoogLadder flt;
 Osc lfo;
-Random rnd[OSC_NUM * VOICE_NUM];
+// Random rnd[OSC_NUM * VOICE_NUM];
 ModMatrix modMatrix[MOD_MATRIX_NUM];
-VoiceState voiceState[VOICE_NUM];
+Voice voice[VOICE_NUM];
 
 float midiNoteToFreqTable[128];
 float pitchTable[PITCH_TABLE_SIZE];
@@ -28,10 +28,10 @@ float freqModTable[FREQ_MOD_TABLE_SIZE];
 
 uint8_t noteNum = 60;
 float frequency = 0;
-float phaseOffsets[OSC_NUM * VOICE_NUM];
-float pitch_correction[OSC_NUM * VOICE_NUM];
-float detune_correction[OSC_NUM * VOICE_NUM];
-float final_freq[OSC_NUM * VOICE_NUM];
+// float phaseOffsets[OSC_NUM * VOICE_NUM];
+// float pitch_correction[OSC_NUM * VOICE_NUM];
+// float detune_correction[OSC_NUM * VOICE_NUM];
+// float final_freq[OSC_NUM * VOICE_NUM];
 float voice_velocity[VOICE_NUM] = {1.0f};
 bool is_any_voice_active = false;
 int voiceId = 0;
@@ -42,22 +42,18 @@ bool gate = false;
 void SynthInit(float samplerate, int blocksize)
 {
     InitPitchTables();
-    for (size_t i = 0; i < OSC_NUM * VOICE_NUM; i++)
+    for (size_t i = 0; i < VOICE_NUM; i++)
     {
-        osc[i].Init(samplerate);
+        for (size_t j = 0; j < OSC_NUM; j++)
+        {
+            voice[i].osc[j].Init(samplerate);
+            voice[i].rnd[j].Init();
+        }
+        voice[i].adsr.Init(samplerate, blocksize);
+        
     }
     flt.Init(samplerate);
-    for (size_t v = 0; v < VOICE_NUM; ++v)
-    {
-        adsrMain[v].Init(samplerate, blocksize);
-    }
-
     adsrMod.Init(samplerate, blocksize);
-
-    for (size_t i = 0; i < OSC_NUM * VOICE_NUM; i++)
-    {
-        rnd[i].Init();
-    }
     lfo.Init(samplerate);
     EffectsInit(samplerate);
 }
@@ -90,7 +86,7 @@ int FindOldestVoice()
     int oldestVoice = 0;
     for (int v = 0; v < VOICE_NUM; ++v)
     {
-        if (voiceState[v].active && voiceState[v].timestamp < voiceState[oldestVoice].timestamp)
+        if (voice[v].active && voice[v].timestamp < voice[oldestVoice].timestamp)
         {
             oldestVoice = v;
         }
@@ -102,50 +98,35 @@ int AllocVoice()
 {
     if (!paramManager.GetBool(P::GLOBAL_MONO))
     {
-        voiceId = (voiceId + 1) % VOICE_NUM;
-        bool found = false;
+        // check if there is an inactive voice
         for(int v=0; v<VOICE_NUM; ++v)
-        {
-            if(!voiceState[v].active)
-            {
-                found = true;
-            }
-        }
-        if(!found || paramManager.GetBool(P::GLOBAL_MONO))
-        {
-            int victim = FindOldestVoice();
-            voiceState[victim].gate = false;
-            voiceState[victim].active = false; // залишаємо огинаючій відпасти
-            return victim;
-        }
-        else
-        {
-            return voiceId;
-        }
+            if(!voice[v].active) return v;
+
+        // if there is no inactive voice, find the oldest voice and kill it
+        int victim = FindOldestVoice();
+        voice[victim].gate = false;
+        voice[victim].active = false;
+        return victim;
     }
     else
     {
-        int victim = FindOldestVoice();
-            voiceState[victim].gate = false;
-            voiceState[victim].active = false; // залишаємо огинаючій відпасти
-            return victim;
+        return 0;
     }
-
 }
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 {
     int v = AllocVoice();
-    voiceState[v].active = true;
-    voiceState[v].note = note_in;
-    voiceState[v].freq = midiNoteToFreqTable[note_in];
-    voiceState[v].vel = velocity / 127.0f;
-    voiceState[v].gate = true;
-    voiceState[v].timestamp = System::GetNow();
+    voice[v].active = true;
+    voice[v].note = note_in;
+    voice[v].freq = midiNoteToFreqTable[note_in];
+    voice[v].vel = velocity / 127.0f;
+    voice[v].gate = true;
+    voice[v].timestamp = System::GetNow();
     
-    if (!paramManager.GetBool(P::GLOBAL_LEGATO) && !paramManager.GetBool(P::GLOBAL_MONO))
+    if (!paramManager.GetBool(P::GLOBAL_LEGATO))
     {
-        adsrMain[v].Retrigger(false);
+        voice[v].adsr.Retrigger(false);
         adsrMod.Retrigger(false);
     }
     gate = true;
@@ -155,10 +136,10 @@ void HandleNoteOff(uint8_t note_in)
 {
     for (int v = 0; v < VOICE_NUM; ++v)
     {
-        if (voiceState[v].active && voiceState[v].note == note_in)
+        if (voice[v].active && voice[v].note == note_in)
         {
-            voiceState[v].gate = false;
-            voiceState[v].active = false;
+            voice[v].active = false;
+            voice[v].gate = false;
             break;
         }
     }
@@ -166,7 +147,7 @@ void HandleNoteOff(uint8_t note_in)
     is_any_voice_active = false;
     for (int v = 0; v < VOICE_NUM; ++v)
     {
-        if (voiceState[v].active && voiceState[v].gate)
+        if (voice[v].active && voice[v].gate)
         {
             is_any_voice_active = true;
             break;
@@ -179,29 +160,31 @@ void UpdateSynthParams()
 {
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {
-        const float voiceFreq = voiceState[v].freq;
-        const float voiceVel = voiceState[v].vel;
+        // // if the voice is not active, skip it
+        // if (!voiceState[v].active) continue;
+
+        const float voiceFreq = voice[v].freq;
+        const float voiceVel = voice[v].vel;
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
-            size_t idx = v * OSC_NUM + oscId;
             float pitch = GetPitchTableValue(paramManager.GetValue(OSC_PITCH[oscId]));
             float detune = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[oscId]));
-            float freq = voiceFreq * pitch * detune * pitch_bend_multiplier;
-            paramManager.SetValue(OSC_FREQ[oscId], freq);
+            voice[v].final_freq[oscId] = voiceFreq * pitch * detune * pitch_bend_multiplier;
+            paramManager.SetValue(OSC_FREQ[oscId], voice[v].final_freq[oscId]);
             float amp = paramManager.GetValue(OSC_AMP[oscId]) * voiceVel;
             float pw = paramManager.GetValue(OSC_PWM[oscId]);
             int waveform = static_cast<int>(paramManager.GetValue(OSC_WAVEFORM[oscId]));
 
-            osc[idx].SetFreq(paramManager.GetValue(OSC_FREQ[oscId]));
-            osc[idx].SetAmp(amp);
-            osc[idx].SetWaveform(waveform);
-            osc[idx].SetPw(pw);
+            voice[v].osc[oscId].SetFreq(paramManager.GetValue(OSC_FREQ[oscId]));    
+            voice[v].osc[oscId].SetAmp(amp);
+            voice[v].osc[oscId].SetWaveform(waveform);
+            voice[v].osc[oscId].SetPw(pw);
         }
-        adsrMain[v].SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
-        adsrMain[v].SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
-        adsrMain[v].SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
-        adsrMain[v].SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
+        voice[v].adsr.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
+        voice[v].adsr.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
+        voice[v].adsr.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
+        voice[v].adsr.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
     }
 
     flt.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
@@ -217,21 +200,22 @@ void VoiceProcess(float &voice_sig)
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
-            size_t idx = v * OSC_NUM + oscId;
-            osc[idx].PhaseProcess();
+            voice[v].osc[oscId].PhaseProcess();
 
             if (paramManager.GetValue(OSC_ACTIVE[oscId]))
             {
-                voiceMix += osc[idx].Process();
+                voiceMix += voice[v].osc[oscId].Process();
             }
         }
 
-        float env = adsrMain[v].Process(voiceState[v].gate);
+        float env = voice[v].adsr.Process(voice[v].gate);
         voice_sig += voiceMix * env / VOICE_NUM;
 
-        if (!(voiceState[v].active && voiceState[v].gate) && env <= 0.00001f)
+        // if the voice is not active and the envelope is below 0.00001f, kill the voice
+        if (!(voice[v].active && voice[v].gate) && env <= 0.00001f) 
         {
-            voiceState[v].gate = false;
+            voice[v].gate = false;
+            voice[v].active = false;
         }
     }
     voice_sig = voice_sig * (1.0f + paramManager.GetValue(P::FILTER_DRIVE) * 100.0f);
