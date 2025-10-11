@@ -78,10 +78,10 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         ProcessEffects(0, mix, mix, outL, outR);
         ProcessEffects(1, outL, outR, sig_after_fxL, sig_after_fxR);
 
-        out[i] = sig_after_fxL * 0.5f + in[i];
-        out[i + 1] = sig_after_fxR * 0.5f + in[i + 1];
+        out[i] = sig_after_fxL * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
+        out[i + 1] = sig_after_fxR * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
 
-        scope_out = out[i] + out[i + 1] * 0.5f;
+        scope_out = out[i] + out[i + 1];
     }
        if (!scope_triggered && 
         scope_prev_sample <= scope_trigger_level && 
@@ -148,15 +148,15 @@ int main(void)
 
     while (1)
     {
+        ProcessEncoders();
         switch (process_type)
         {
             case PROCESS_CONTROLS:
                 ProcessButtons();
-                ProcessEncoders();
+                UpdateEncodersParams();
                 break;
             case UPDATE_PARAMS: 
                 UpdateModSourcesParams();
-                UpdateEncodersParams();
                 UpdateSynthParams();
                 break;
             case PROCESS_DISPLAY:
