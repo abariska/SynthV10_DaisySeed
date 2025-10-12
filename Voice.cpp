@@ -193,6 +193,22 @@ void UpdateSynthParams()
     flt.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
     flt.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
     fltDrive.SetDrive(paramManager.GetValue(P::FILTER_DRIVE));
+
+    fx.drive.SetDrive(paramManager.GetValue(P::EFFECT_OVERDRIVE_DRIVE));
+
+    fx.chorus.SetLfoFreq(paramManager.GetValue(P::EFFECT_CHORUS_FREQ));
+    fx.chorus.SetLfoDepth(paramManager.GetValue(P::EFFECT_CHORUS_DEPTH));
+    fx.chorus.SetFeedback(paramManager.GetValue(P::EFFECT_CHORUS_FBK));
+    fx.chorus.SetDelay(paramManager.GetValue(P::EFFECT_CHORUS_DELAY));
+
+    fx.compressor.SetAttack(paramManager.GetValue(P::EFFECT_COMPRESSOR_ATTACK));
+    fx.compressor.SetRelease(paramManager.GetValue(P::EFFECT_COMPRESSOR_RELEASE));
+    fx.compressor.SetThreshold(paramManager.GetValue(P::EFFECT_COMPRESSOR_THRESHOLD));
+    fx.compressor.SetRatio(paramManager.GetValue(P::EFFECT_COMPRESSOR_RATIO));
+    fx.compressor.SetMakeup(paramManager.GetValue(P::EFFECT_COMPRESSOR_MAKEUP));
+
+    fx.reverb.SetFeedback(paramManager.GetValue(P::EFFECT_REVERB_FEEDBACK));
+    fx.reverb.SetLpFreq(paramManager.GetValue(P::EFFECT_REVERB_LPFREQ));
 }
 
 void VoiceProcess(float &voice_sig)

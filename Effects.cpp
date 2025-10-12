@@ -27,8 +27,6 @@ void EffectsInit(float samplerate)
 
 void ProcessEffectsReverb(float inL, float inR, float &outL, float &outR)
 {
-    fx.reverb.SetFeedback(paramManager.GetValue(P::EFFECT_REVERB_FEEDBACK));
-    fx.reverb.SetLpFreq(paramManager.GetValue(P::EFFECT_REVERB_LPFREQ));
     fx.reverb.Process(inL, inR, &outL, &outR);
 }
 
@@ -46,27 +44,16 @@ void ProcessEffects(uint8_t slot, float inL, float inR, float &outL, float &outR
         switch (currentPreset.effectSlots[slot].selectedEffect)
         {
         case EFFECT_OVERDRIVE:
-            fx.drive.SetDrive(paramManager.GetValue(P::EFFECT_OVERDRIVE_DRIVE));
             outL = (fx.drive.Process(inL) + driveGainCompensation) * dryWet + (inL * (1 - dryWet));
             outR = outL;
             break;
-        case EFFECT_CHORUS:
-            fx.chorus.SetLfoFreq(paramManager.GetValue(P::EFFECT_CHORUS_FREQ));
-            fx.chorus.SetLfoDepth(paramManager.GetValue(P::EFFECT_CHORUS_DEPTH));
-            fx.chorus.SetFeedback(paramManager.GetValue(P::EFFECT_CHORUS_FBK));
-            fx.chorus.SetDelay(paramManager.GetValue(P::EFFECT_CHORUS_DELAY));
-            fx.chorus.Process(inL);
-            outL = fx.chorus.GetLeft();
-            outR = fx.chorus.GetRight();
+        case EFFECT_CHORUS:            
+            outL = fx.chorus.Process(inL);
+            outR = fx.chorus.Process(inR);
             outL = inL + (outL * dryWet);
             outR = inR + (outR * dryWet);
             break;
         case EFFECT_COMPRESSOR:
-            fx.compressor.SetAttack(paramManager.GetValue(P::EFFECT_COMPRESSOR_ATTACK));
-            fx.compressor.SetRelease(paramManager.GetValue(P::EFFECT_COMPRESSOR_RELEASE));
-            fx.compressor.SetThreshold(paramManager.GetValue(P::EFFECT_COMPRESSOR_THRESHOLD));
-            fx.compressor.SetRatio(paramManager.GetValue(P::EFFECT_COMPRESSOR_RATIO));
-            fx.compressor.SetMakeup(paramManager.GetValue(P::EFFECT_COMPRESSOR_MAKEUP));
             outL = fx.compressor.Process(inL) * dryWet + (inL * (1 - dryWet));
             outR = outL;
             break;
