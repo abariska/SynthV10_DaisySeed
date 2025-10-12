@@ -1,6 +1,7 @@
 #include "sx1509_expander.h"
 #include "parameters.h"
 #include "menu.h"
+#include "log_uart.h"
 
 SX1509 sx1509_buttons;
 SX1509 sx1509_encoders;
@@ -53,10 +54,9 @@ void UpdateLeds()
 {
     sx1509_leds.WritePin(LED_OSC_1, paramManager.GetBool(P::OSC_ACTIVE_1));
     sx1509_leds.WritePin(LED_OSC_2, paramManager.GetBool(P::OSC_ACTIVE_2));
-    sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(P::OSC_ACTIVE_3));
-    sx1509_leds.WritePin(LED_STORE, isStoreMode);       
-    
-    // sx1509_leds.WritePin(LED_MTX, params.mtx.active);
+    sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(P::OSC_ACTIVE_3)); 
+    sx1509_leds.WritePin(LED_STORE, isStoreMode);    
+
 }
 void UpdatePWMLeds()
 {
@@ -75,7 +75,6 @@ void UpdateStoreLed()
 
 void InitSX1509Extenders()
 {
-
     InitSX1509Buttons();
     InitSX1509Encoders();
     InitSX1509Leds();
@@ -99,7 +98,6 @@ void InitSX1509Extenders()
         sx1509_leds.SetPinMode(i, SX_PIN_OUTPUT, 0);
     }
     
-
     for (size_t i = 0; i < 8; i++)
     {
         sx1509_leds.WritePin(i, 1);

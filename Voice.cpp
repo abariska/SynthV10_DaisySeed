@@ -55,7 +55,7 @@ void SynthInit(float samplerate, int blocksize)
     }
     flt.Init(samplerate);
     adsrMod.Init(samplerate, blocksize);
-    lfo.Init(samplerate);
+    lfo.Init(samplerate, true);
     EffectsInit(samplerate);
     fltDrive.Init();
 }
@@ -63,6 +63,7 @@ void SynthInit(float samplerate, int blocksize)
 void ModSourcesProcess()
 {
     lfo.PhaseProcess();
+
     modulators[static_cast<int>(M::LFO)].value = lfo.Process() / 2.0f + 0.5f;
     modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(gate);
 

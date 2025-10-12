@@ -10,14 +10,14 @@ UartHandler uart_serial;
 void UartSerialInit()
 {
     UartHandler::Config cfg;
-    cfg.periph = UartHandler::Config::Peripheral::LPUART_1; // USART1
-    cfg.pin_config.tx = Pin(PORTB, 6);                      // D13 -> USART1_TX
-    cfg.pin_config.rx = Pin(PORTB, 7);                      // D14 -> USART1_RX
+    cfg.periph = UartHandler::Config::Peripheral::USART_3; // USART1
+    cfg.pin_config.tx = Pin(PORTC, 10);                      // D13 -> USART1_TX
+    cfg.pin_config.rx = Pin(PORTC, 11);                      // D14 -> USART1_RX
     cfg.baudrate = 115200;
     cfg.wordlength = UartHandler::Config::WordLength::BITS_8;
     cfg.stopbits = UartHandler::Config::StopBits::BITS_1;
     cfg.parity = UartHandler::Config::Parity::NONE;
-    cfg.mode = UartHandler::Config::Mode::TX_RX;
+    cfg.mode = UartHandler::Config::Mode::TX;
     uart_serial.Init(cfg);
 }
 

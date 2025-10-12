@@ -202,10 +202,9 @@ void ProcessButtons()
             {
                 SavePreset(currentPreset.number, currentPreset);
                 page_need_update = true;
-                UpdatePage();
                 isStoreMode = false;
                 old_preset_number = currentPreset.number;
-                sx1509_leds.WritePin(LED_STORE, false);
+                UpdatePage();
             }
             return;
         }
@@ -432,6 +431,7 @@ void ProcessEncoders()
             }
             break;
         case MOD_MATRIX_PAGE:
+        
             if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
             {
                 isModMatrixNeedUpdate = true;

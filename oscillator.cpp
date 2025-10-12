@@ -29,7 +29,7 @@ static constexpr float kWaveGain[] = {
     0.8f  // WAVE_NOISE (рівномірний)
 };
 
-void Osc::Init(float sample_rate)
+void Osc::Init(float sample_rate , bool is_lfo)
 {
     sampleRate = sample_rate;
     targetFreq = 440.0f;
@@ -45,6 +45,7 @@ void Osc::Init(float sample_rate)
     blepGain = 1.0f;
     currentAmp = 0.0f;
     UpdateIncrement();
+    use_gain = !is_lfo;
 }
 
 void Osc::PhaseProcess()
@@ -59,9 +60,7 @@ void Osc::PhaseProcess()
 
 float Osc::Process()
 {
-
     float out = 0.0f;
-
     float gain = kWaveGain[mode] * 0.5f;
 
     switch (mode)
@@ -90,7 +89,9 @@ float Osc::Process()
         break;
     }
     prev_phase = phaseOsc;
-    return out * currentAmp * gain;
+
+    gain = use_gain ? gain * currentAmp : 1.0f;
+    return out * gain;
 }
 
 void Osc::UpdateIncrement()

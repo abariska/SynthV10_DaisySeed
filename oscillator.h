@@ -23,7 +23,7 @@ public:
         WAVE_COUNT,
     };
 
-    void Init(float sample_rate);
+    void Init(float sample_rate, bool is_lfo = false);
 
     void SetPhaseOffset(float offset) { phaseOffset = offset; }
     void SetFreq(float freq) { targetFreq = freq; }
@@ -58,6 +58,7 @@ private:
     float current_phase;
     uint32_t noiseState;
     float currentAmp;
+    bool use_gain;
 };
 
 #endif
