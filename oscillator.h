@@ -31,12 +31,13 @@ public:
     void PhaseProcess();
     float Process();
     float GetCurrentFreq() const { return currentFreq; }
+    float GetPhase() const { return phaseOsc; }
 
     void SetWaveform(int wf) { mode = wf; }
     void SetAmp(float a) { amp = a; }
     void SetPw(float pw_) { pw = pw_; }
-    void SyncToMaster(float masterPhase) { phaseOsc = masterPhase; }
-    void SyncToZero() { phaseOsc = 0.0f; }
+    void SyncPhase(float phase) { phaseOsc = phase; }
+    void SyncPhaseToZero() { phaseOsc = 0.0f; }
     void UpdateIncrement();
 
 private:

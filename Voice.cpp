@@ -37,7 +37,7 @@ float voice_velocity[VOICE_NUM] = {1.0f};
 bool is_any_voice_active = false;
 int voiceId = 0;
 float filter_drive = 0.0f;
-
+bool isOscSyncNeeded = false;
 bool gate = false;
 
 void SynthInit(float samplerate, int blocksize)
@@ -133,6 +133,7 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
         adsrMod.Retrigger(false);
     }
     gate = true;
+    isOscSyncNeeded = true;
 }
 
 void HandleNoteOff(uint8_t note_in)
@@ -220,6 +221,10 @@ void VoiceProcess(float &voice_sig)
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
+            if (isOscSyncNeeded)
+            {
+                voice[v].osc[oscId].SyncPhase(voice[v].osc[0].GetPhase());
+            }
             voice[v].osc[oscId].PhaseProcess();
 
             if (paramManager.GetValue(OSC_ACTIVE[oscId]))
@@ -227,7 +232,7 @@ void VoiceProcess(float &voice_sig)
                 voiceMix += voice[v].osc[oscId].Process();
             }
         }
-
+        isOscSyncNeeded = false;
         float env = voice[v].adsr.Process(voice[v].gate);
         voice_sig += voiceMix * env / VOICE_NUM;
 
@@ -241,7 +246,7 @@ void VoiceProcess(float &voice_sig)
     float drive = fltDrive.Process(voice_sig);
     voice_sig = drive + (voice_sig * (1.0f - paramManager.GetValue(P::FILTER_DRIVE)));
     voice_sig = flt.Process(voice_sig);
-    voice_sig = daisysp::fclamp(voice_sig, -1.0f, 1.0f);
+    voice_sig = clamp(voice_sig, -1.0f, 1.0f);
 }
 
 void InitPitchTables()
