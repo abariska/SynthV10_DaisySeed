@@ -4,3 +4,6 @@
 [submodule "SX1509_Daisy_Seed"]
 	path = SX1509_Daisy_Seed
 	url = https://github.com/abariska/SX1509_Daisy_Seed.git
+[submodule "u8g2"]
+	path = u8g2
+	url = https://github.com/olikraus/u8g2.git
