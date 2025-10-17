@@ -38,12 +38,11 @@
 #define VOICES_BLOCK_WIDTH 20
 #define VOICES_BLOCK_HEIGHT 16
 
-#include "OLED_1.5_Daisy_Seed/DEV_Config.h"
-#include "OLED_1.5_Daisy_Seed/OLED_Driver.h"
-#include "OLED_1.5_Daisy_Seed/fonts.h"
+
 #include "imageData.h"
-#include "OLED_1.5_Daisy_Seed/GUI_Paint.h"
+
 #include <cstdint>
+#include "u8g2/csrc/u8g2.h"
 
 enum MenuPage
 {
@@ -106,21 +105,6 @@ const uint8_t BLOCK_STORE_X_END = 112;
 const uint8_t BLOCK_STORE_Y_START = 16;
 const uint8_t BLOCK_STORE_Y_END = 112;
 
-const uint8_t BLOCK_LOAD_X_START = 0;
-extern ImageData intro_page_data;
-extern ImageData bg_black_data;
-extern ImageData param_block_data[NUM_PARAM_BLOCKS];
-extern ImageData wave_buffer_data;
-extern ImageData effect_block_data[NUM_FX_SLOTS];
-extern ImageData osc_on_block_data;
-extern ImageData cpu_load_block_data;
-extern ImageData preset_name_block_data;
-extern ImageData preset_num_block_data;
-extern ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
-extern ImageData settings_block_data[SETTINGS_BLOCKS_NUM];
-extern ImageData scope_block_data;
-extern ImageData store_block_data;
-extern ImageData voices_block_data;
 void SetPage(MenuPage newPage);
 void UpdatePage();
 void DrawMainPage();
@@ -138,5 +122,6 @@ void DrawWaveformImage(int waveform);
 void DrawSettingsPage();
 void DrawSettingsBlock(uint8_t blockIndex);
 void DrawStoreBlock();
-
+void ssd1327_Init();
+void ssd1327_Display();
 #endif

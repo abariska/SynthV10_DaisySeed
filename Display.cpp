@@ -1,130 +1,125 @@
 
 #include "display.h"
 #include "menu.h"
-#include "OLED_1.5_Daisy_Seed/fonts.h"
 #include "effects.h"
 #include "parameters.h"
 #include "voice.h"
+
+#define font8 u8g2_font_5x8_tf;
+#define font10 u8g2_font_6x10_tf;
+#define font12 u8g2_font_6x12_tf;
+#define font14 u8g2_font_7x14_tf;
+#define font15 u8g2_font_9x15_tf;
+#define font20 u8g2_font_10x20_tf;
 
 extern Preset currentPreset;
 extern float scope_data[128];
 extern int scope_data_index;
 extern bool scope_data_ready;
 
-const UWORD INTRO_PAGE_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
-const UWORD BG_BLACK_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
-const UWORD PARAM_BLOCK_SIZE = (((PARAM_BLOCK_WIDTH % 2 == 0) ? (PARAM_BLOCK_WIDTH / 2) : (PARAM_BLOCK_WIDTH / 2 + 1)) * PARAM_BLOCK_HEIGHT);
-const UWORD WAVE_BUFFER_SIZE = (((WAVE_BUFFER_WIDTH % 2 == 0) ? (WAVE_BUFFER_WIDTH / 2) : (WAVE_BUFFER_WIDTH / 2 + 1)) * WAVE_BUFFER_HEIGHT);
-const UWORD OSC_ON_BLOCK_SIZE = (((OSC_ON_BLOCK_WIDTH % 2 == 0) ? (OSC_ON_BLOCK_WIDTH / 2) : (OSC_ON_BLOCK_WIDTH / 2 + 1)) * OSC_ON_BLOCK_HEIGHT);
-const UWORD EFFECT_BLOCK_SIZE = (((EFFECT_BLOCK_WIDTH % 2 == 0) ? (EFFECT_BLOCK_WIDTH / 2) : (EFFECT_BLOCK_WIDTH / 2 + 1)) * EFFECT_BLOCK_HEIGHT);
-const UWORD CPU_LOAD_BLOCK_SIZE = (((CPU_LOAD_BLOCK_WIDTH % 2 == 0) ? (CPU_LOAD_BLOCK_WIDTH / 2) : (CPU_LOAD_BLOCK_WIDTH / 2 + 1)) * CPU_LOAD_BLOCK_HEIGHT);
-const UWORD PRESET_NAME_BLOCK_SIZE = (((PRESET_NAME_BLOCK_WIDTH % 2 == 0) ? (PRESET_NAME_BLOCK_WIDTH / 2) : (PRESET_NAME_BLOCK_WIDTH / 2 + 1)) * PRESET_NAME_BLOCK_HEIGHT);
-const UWORD PRESET_NUM_BLOCK_SIZE = (((PRESET_NUM_BLOCK_WIDTH % 2 == 0) ? (PRESET_NUM_BLOCK_WIDTH / 2) : (PRESET_NUM_BLOCK_WIDTH / 2 + 1)) * PRESET_NUM_BLOCK_HEIGHT);
-const UWORD MOD_MATRIX_BLOCK_SIZE = (((MOD_MATRIX_BLOCK_WIDTH % 2 == 0) ? (MOD_MATRIX_BLOCK_WIDTH / 2) : (MOD_MATRIX_BLOCK_WIDTH / 2 + 1)) * MOD_MATRIX_BLOCK_HEIGHT);
-const UWORD SCOPE_BLOCK_SIZE = (((SCOPE_BLOCK_WIDTH % 2 == 0) ? (SCOPE_BLOCK_WIDTH / 2) : (SCOPE_BLOCK_WIDTH / 2 + 1)) * SCOPE_BLOCK_HEIGHT);
-const UWORD SETTINGS_BLOCK_SIZE = (((SETTINGS_BLOCK_WIDTH % 2 == 0) ? (SETTINGS_BLOCK_WIDTH / 2) : (SETTINGS_BLOCK_WIDTH / 2 + 1)) * SETTINGS_BLOCK_HEIGHT);
-const UWORD STORE_BLOCK_SIZE = (((STORE_BLOCK_WIDTH % 2 == 0) ? (STORE_BLOCK_WIDTH / 2) : (STORE_BLOCK_WIDTH / 2 + 1)) * STORE_BLOCK_HEIGHT);
-const UWORD VOICES_BLOCK_SIZE = (((VOICES_BLOCK_WIDTH % 2 == 0) ? (VOICES_BLOCK_WIDTH / 2) : (VOICES_BLOCK_WIDTH / 2 + 1)) * VOICES_BLOCK_HEIGHT);
 
-UBYTE DSY_SDRAM_BSS intro_page[INTRO_PAGE_SIZE];
-UBYTE DSY_SDRAM_BSS bg_black[BG_BLACK_SIZE];
-UBYTE DSY_SDRAM_BSS param_block[NUM_PARAM_BLOCKS][PARAM_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS wave_buffer[WAVE_BUFFER_SIZE];
-UBYTE DSY_SDRAM_BSS osc_on_block[OSC_ON_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS effect_block[NUM_FX_SLOTS][EFFECT_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS cpu_load_block[CPU_LOAD_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS preset_name_block[PRESET_NAME_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS preset_num_block[PRESET_NUM_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS mod_matrix_block[MOD_MATRIX_BLOCKS_NUM][MOD_MATRIX_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS scope_block[SCOPE_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS settings_block[SETTINGS_BLOCKS_NUM][SETTINGS_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS store_block[STORE_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS voices_block[VOICES_BLOCK_SIZE];
-ImageData intro_page_data;
-ImageData bg_black_data;
-ImageData param_block_data[NUM_PARAM_BLOCKS];
-ImageData wave_buffer_data;
-ImageData osc_on_block_data;
-ImageData effect_block_data[NUM_FX_SLOTS];
-ImageData cpu_load_block_data;
-ImageData preset_name_block_data;
-ImageData preset_num_block_data;
-ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
-ImageData scope_block_data;
-ImageData settings_block_data[SETTINGS_BLOCKS_NUM];
-ImageData store_block_data;
-ImageData voices_block_data;
 MenuPage currentPage = MAIN_PAGE;
 
 bool scope_draw = false;
 
-void InitImages()
-{
+SpiHandle spi_display;
+SpiHandle::Config spi_config;
+GPIO pin_dc;
+GPIO pin_reset;
+GPIO pin_cs;
+u8g2_t myDisplay;
+/*------------------------------------------------------------------------------------------------------*/
 
-    memset(intro_page, 0, INTRO_PAGE_SIZE);
-    memset(bg_black, 0, BG_BLACK_SIZE);
-    for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++)
-    {
-        memset(param_block[i], 0, PARAM_BLOCK_SIZE);
-    }
-    memset(wave_buffer, 0, WAVE_BUFFER_SIZE);
-    memset(osc_on_block, 0, OSC_ON_BLOCK_SIZE);
-    for (size_t i = 0; i < NUM_FX_SLOTS; i++)
-    {
-        memset(effect_block[i], 0, EFFECT_BLOCK_SIZE);
-    }
-    memset(effect_block, 0, EFFECT_BLOCK_SIZE);
-    memset(cpu_load_block, 0, CPU_LOAD_BLOCK_SIZE);
-    memset(preset_name_block, 0, PRESET_NAME_BLOCK_SIZE);
-    memset(preset_num_block, 0, PRESET_NUM_BLOCK_SIZE);
-    for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
-    {
-        memset(mod_matrix_block[i], 0, MOD_MATRIX_BLOCK_SIZE);
-    }
-    memset(mod_matrix_block, 0, MOD_MATRIX_BLOCK_SIZE);
-    memset(scope_block, 0, SCOPE_BLOCK_SIZE);
-    memset(settings_block, 0, SETTINGS_BLOCK_SIZE);
-    memset(store_block, 0, STORE_BLOCK_SIZE);
-    memset(voices_block, 0, VOICES_BLOCK_SIZE);
-    intro_page_data = {intro_page, INTRO_PAGE_SIZE};
-    bg_black_data = {bg_black, BG_BLACK_SIZE};
-    for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++)
-    {
-        param_block_data[i] = {param_block[i], PARAM_BLOCK_SIZE};
-    }
-    wave_buffer_data = {wave_buffer, WAVE_BUFFER_SIZE};
-    osc_on_block_data = {osc_on_block, OSC_ON_BLOCK_SIZE};
-    for (size_t i = 0; i < NUM_FX_SLOTS; i++)
-    {
-        effect_block_data[i] = {effect_block[i], EFFECT_BLOCK_SIZE};
-    }
-    cpu_load_block_data = {cpu_load_block, CPU_LOAD_BLOCK_SIZE};
-    preset_name_block_data = {preset_name_block, PRESET_NAME_BLOCK_SIZE};
-    preset_num_block_data = {preset_num_block, PRESET_NUM_BLOCK_SIZE};
-    for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
-    {
-        mod_matrix_block_data[i] = {mod_matrix_block[i], MOD_MATRIX_BLOCK_SIZE};
-    }
-    scope_block_data = {scope_block, SCOPE_BLOCK_SIZE};
-    for (size_t i = 0; i < SETTINGS_BLOCKS_NUM; i++)
-    {
-        settings_block_data[i] = {settings_block[i], SETTINGS_BLOCK_SIZE};
-    }
-    store_block_data = {store_block, STORE_BLOCK_SIZE};
-    voices_block_data = {voices_block, VOICES_BLOCK_SIZE};
-    System::Delay(10);
+void SPI_Config()
+{
+    
+    // SPI peripheral config
+    spi_config.periph = SpiHandle::Config::Peripheral::SPI_1;
+    spi_config.mode   = SpiHandle::Config::Mode::MASTER;
+    spi_config.direction
+        = SpiHandle::Config::Direction::TWO_LINES_TX_ONLY;
+    spi_config.datasize       = 8;
+    spi_config.clock_polarity = SpiHandle::Config::ClockPolarity::LOW;
+    spi_config.clock_phase    = SpiHandle::Config::ClockPhase::ONE_EDGE;
+    spi_config.nss            = SpiHandle::Config::NSS::HARD_OUTPUT;
+    spi_config.baud_prescaler = SpiHandle::Config::BaudPrescaler::PS_2;
+    // SPI pin config
+    spi_config.pin_config.sclk = Pin(PORTG, 11);
+    spi_config.pin_config.mosi = Pin(PORTA, 7);
+    spi_config.pin_config.nss  = Pin(PORTG, 10);
+    spi_display.Init(spi_config);
 }
 
-void DrawIntroPage()
+void SPI_Init()
 {
-    Paint_NewImage(intro_page_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    SPI_Config();
+    // SSD1327 control pin config
+    pin_dc.Init(Pin(PORTC, 1), GPIO::Mode::OUTPUT);
+    pin_reset.Init(Pin(PORTB, 1), GPIO::Mode::OUTPUT);
+    pin_cs.Init(Pin(PORTG, 10), GPIO::Mode::OUTPUT);
+}
 
-    Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, Font16, WHITE, BLACK);
-    Paint_TextCentered("by abariska", 64, FULL_PAGE_WIDTH, 112, Font8, WHITE, BLACK);
+uint8_t u8x8_gpio_and_delay(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
+{
+	  switch(msg)
+	  {
+	  case U8X8_MSG_DELAY_MILLI:
+		  System::Delay(arg_int);
+		  break;
+	  case U8X8_MSG_GPIO_CS:
+		  pin_cs.Write(arg_int);
+		  break;
+	  case U8X8_MSG_GPIO_DC:
+		  pin_dc.Write(arg_int);
+		  break;
+	  case U8X8_MSG_GPIO_RESET:
+		  pin_reset.Write(arg_int);
+		  break;
+	  }
+	  return 1;
+}
 
-    OLED_Transmit_DMA(&intro_page_data);
-    System::Delay(1000);
+uint8_t u8x8_spi(u8x8_t *u8x8, uint8_t msg, uint8_t arg_int, void *arg_ptr)
+{
+	  switch(msg)
+	  {
+	  case U8X8_MSG_BYTE_SET_DC:
+		  pin_dc.Write(arg_int);
+		  break;
+	  case U8X8_MSG_BYTE_SEND:
+		  spi_display.DmaTransmit((uint8_t *)arg_ptr, arg_int, NULL, NULL, NULL);
+		  break;
+	  case U8X8_MSG_BYTE_START_TRANSFER:
+		  pin_cs.Write(0);
+		  break;
+	  case U8X8_MSG_BYTE_END_TRANSFER:
+		  pin_cs.Write(1);
+		  break;
+	  }
+	  return 1;
+}
+
+void ssd1327_Init()
+{
+    SPI_Init();
+    u8g2_Setup_ssd1327_ws_128x128_1(&myDisplay, U8G2_R0, u8x8_spi, u8x8_gpio_and_delay);
+    u8g2_InitDisplay(&myDisplay);
+    u8g2_SetPowerSave(&myDisplay, 0);
+}
+
+void Paint_TextCentered(const char* text, uint8_t x1, uint8_t x2, uint8_t y, const uint8_t *font, uint16_t text_color, uint16_t background_color) {
+    
+    u8g2_SetFont(&myDisplay, font);
+    u8g2_SetDrawColor(&myDisplay, text_color);
+    u8g2_DrawButtonUTF8(&myDisplay, x1, y, U8G2_BTN_BW0, x2 - x1, 0, 0, text);
+}
+
+void Paint_NumCentered(int param, uint8_t x1, uint8_t x2, uint8_t y, uint8_t Digit, const uint8_t *font, uint16_t text_color, uint16_t background_color){
+    
+    u8g2_SetFont(&myDisplay, font);
+    u8g2_SetDrawColor(&myDisplay, text_color);
+    u8g2_DrawButtonUTF8(&myDisplay, x1, y, U8G2_BTN_BW0, x2 - x1, 0, 0, std::to_string(param).c_str());
+    
 }
 
 void SetPage(MenuPage newPage)
@@ -217,13 +212,7 @@ void DrawScope()
         {
             return;
         }
-        Paint_NewImage(scope_block_data.data, SCOPE_BLOCK_WIDTH, SCOPE_BLOCK_HEIGHT, 0, BLACK);
-        Paint_Clear(BLACK);
-        // uint8_t voice_num = 0;
-        // for (size_t i = 0; i < VOICE_NUM; i++)
-        // {
-        //     voice_num += voiceState[i].active ? 1 : 0;
-        // }
+        u8g2_ClearDisplay(&myDisplay);
         float max_val = 0.0f;
         for (int i = 0; i < 128; i++)
         {
@@ -231,7 +220,6 @@ void DrawScope()
             if (abs_val > max_val) max_val = abs_val;
         }
         
-        // Запобігаємо діленню на нуль
         if (max_val < 0.001f) max_val = 0.001f;
         
         // float scale = (SCOPE_BLOCK_HEIGHT * 0.5f) / max_val;  // 80% висоти екрану
@@ -246,20 +234,14 @@ void DrawScope()
             if (y < 0) y = 0;
             if (y >= SCOPE_BLOCK_HEIGHT) y = SCOPE_BLOCK_HEIGHT - 1;
             
-            Paint_DrawPoint(i, y, WHITE, DOT_PIXEL_1X1, DOT_STYLE_DFT);
+            u8g2_DrawPixel(&myDisplay, i, y);
         }
         
         scope_data_ready = false;
 
-        OLED_Part_Transmit_DMA(&scope_block_data,
-                            BLOCK_SCOPE_X_START,
-                            BLOCK_SCOPE_Y_START,
-                            BLOCK_SCOPE_X_END,
-                            BLOCK_SCOPE_Y_END);
-            time_end = time1;
+        u8g2_SendBuffer(&myDisplay);
+        time_end = time1;
     }
-    
-
 }
 
 void DrawMainPage()
@@ -267,19 +249,21 @@ void DrawMainPage()
     char prog_num[PROGRAM_NUMBER_LENGTH];
     // char prog_name[PROGRAM_NAME_LENGTH];
 
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    u8g2_ClearDisplay(&myDisplay);
 
-    Paint_DrawLine(5, 18, 123, 18, 0x03, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(5, 20, 123, 20, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    u8g2_SetDrawColor(&myDisplay, 1);
+    u8g2_DrawLine(&myDisplay, 5, 18, 123, 18);
+    u8g2_DrawLine(&myDisplay, 5, 20, 123, 20);
 
     sprintf(prog_num, "%03d", currentPreset.number);
-    Paint_TextCentered(prog_num, 0, 127, 0, Font16, WHITE, BLACK);
+    u8g2_SetFont(&myDisplay, u8g2_font_ncenB14_tr);
+    u8g2_SetDrawColor(&myDisplay, 0);
+    u8g2_DrawButtonUTF8(&myDisplay, 0, 127, 0, U8G2_BTN_BW0, 0, 0, prog_num); 
 
     // sprintf(prog_name, "%s", currentPreset.name);
     // Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
 
-    OLED_Transmit_DMA(&bg_black_data);
+    u8g2_SendBuffer(&myDisplay);
     DrawMainBlocks();
     DrawScope();
 }
@@ -289,12 +273,14 @@ void DrawParamPage(MenuPage page)
 
     AssignParamsForPage(page);
 
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    u8g2_ClearDisplay(&myDisplay);
+    u8g2_SetDrawColor(&myDisplay, 1);
+    u8g2_DrawLine(&myDisplay, 4, 22, 123, 22);
+    u8g2_DrawLine(&myDisplay, 4, 22, 123, 22);
 
-    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-
-    Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
+    u8g2_SetFont(&myDisplay, u8g2_font_6x12_tf);
+    u8g2_SetDrawColor(&myDisplay, 0);
+    u8g2_DrawButtonUTF8(&myDisplay, 0, 127, 4, U8G2_BTN_BW0, 0, 0, page_name);
 
     // // Індикатор активного ряду
     // uint8_t rowIndicator = (currentActiveRow == ROW_1) ? 1 : 2;
@@ -307,21 +293,25 @@ void DrawParamPage(MenuPage page)
     //     Paint_DrawRectangle(0, 75, 127, 127, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
     //     break;
     // }
-    OLED_Transmit_DMA(&bg_black_data);
+    u8g2_SendBuffer(&myDisplay);
 
     DrawParamBlocks();
 }
 
 void DrawEffectBlock(uint8_t slot)
 {
-    Paint_NewImage(effect_block_data[slot].data, EFFECT_BLOCK_WIDTH, EFFECT_BLOCK_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    u8g2_ClearDisplay(&myDisplay);
+    u8g2_SetDrawColor(&myDisplay, 1);
 
     EffectName selected = currentPreset.effectSlots[slot].selectedEffect;
     if (selected != EFFECT_NONE)
     {
-        Paint_TextCentered(effectLabels[selected], 0, EFFECT_BLOCK_WIDTH, 0, Font12, WHITE, BLACK);
-        Paint_TextCentered(currentPreset.effectSlots[slot].isActive ? "On" : "Off", 0, EFFECT_BLOCK_WIDTH, 16, Font12, WHITE, BLACK);
+        u8g2_SetFont(&myDisplay, u8g2_font_6x12_tf);
+        u8g2_SetDrawColor(&myDisplay, 0);
+        u8g2_DrawButtonUTF8(&myDisplay, 0, 127, 4, U8G2_BTN_BW0, 0, 0, effectLabels[selected]);
+        u8g2_SetFont(&myDisplay, u8g2_font_6x12_tf);
+        u8g2_SetDrawColor(&myDisplay, 0);
+        u8g2_DrawButtonUTF8(&myDisplay, 0, 127, 4, U8G2_BTN_BW0, 0, 0, currentPreset.effectSlots[slot].isActive ? "On" : "Off");
     }
     else
     {

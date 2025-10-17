@@ -13,6 +13,7 @@ CPP_SOURCES = main.cpp \
 			  sx1509_expander.cpp \
 			  log_uart.cpp \
 			  reverb.cpp \
+			  ssd1327.cpp \
 	$(OLED_DIR)/DEV_Config.cpp $(OLED_DIR)/OLED_Driver.cpp $(OLED_DIR)/GUI_Paint.cpp $(OLED_DIR)/font8.cpp \
 	$(OLED_DIR)/font12.cpp $(OLED_DIR)/font16.cpp $(SX1509_DIR)/SX1509.cpp
 

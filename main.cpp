@@ -126,7 +126,7 @@ int main(void)
     samplerate = hw.AudioSampleRate();
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
 
-    OLED_1in5_Init();
+    // OLED_1in5_Init();
     InitImages();
     DrawIntroPage();
     InitQSPI();
