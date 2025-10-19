@@ -18,7 +18,7 @@ void MidiInit()
 
     MidiUartHandler::Config midi_uart_cfg;
     midi_uart_cfg.transport_config.periph = UartHandler::Config::Peripheral::UART_5;
-    midi_uart_cfg.transport_config.rx = {DSY_GPIOB, 5};
+    midi_uart_cfg.transport_config.rx = Pin(PORTB, 5); 
     midiUart.Init(midi_uart_cfg);
 
     
