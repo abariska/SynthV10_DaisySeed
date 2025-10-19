@@ -2,13 +2,13 @@
 #define VOICE_H
 
 #include <array>
-#include <cstdint>
+#include <stdint.h>
 #include <cmath>
+#include "oscillator.h"
+#include "parameters.h"
 #include "daisy.h"
 #include "daisysp.h"
 #include "daisysp-lgpl.h"
-#include "parameters.h"
-#include "oscillator.h"
 
 #define SEMITONE_RATIO 1.0594630943592953f
 #define CENT_RATIO 1.0005777895065549f
@@ -52,7 +52,7 @@ struct Voice
     int16_t  note       = -1;      // MIDI-номер ноти
     float    freq       = 0.0f;    // поточна частота
     float    vel        = 1.0f;    // 0…1
-    uint32_t timestamp  = 0;       // мітка часу (System::GetNow())
+    std::uint32_t timestamp  = 0;       // мітка часу (System::GetNow())
 };
 
 extern Voice voice[VOICE_NUM];

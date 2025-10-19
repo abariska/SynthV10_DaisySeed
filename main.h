@@ -4,7 +4,6 @@
 #include "daisy.h"
 #include "daisy_seed.h"
 #include "daisysp.h"
-#include "daisysp-lgpl.h"
 #include "parameters.h"
 #include "sx1509_expander.h"
 #include "voice.h"

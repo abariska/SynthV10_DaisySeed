@@ -33,8 +33,8 @@ LDFLAGS += -Wl,--gc-sections
 C_INCLUDES += -I$(OLED_DIR)
 
 # Library Locations
-LIBDAISY_DIR = ../DaisyExamples/libDaisy
-DAISYSP_DIR = ../DaisyExamples/DaisySP
+LIBDAISY_DIR = ../lib/libDaisy
+DAISYSP_DIR = ../lib/DaisySP
 OLED_DIR = OLED_1.5_Daisy_Seed
 SX1509_DIR = SX1509_Daisy_Seed
 

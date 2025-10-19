@@ -10,12 +10,11 @@
                 "_UNICODE"
             ],
             "includePath": [
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/../DaisyExamples/libDaisy/**",
-                "${workspaceFolder}/../DaisyExamples/DaisySP/**",
-                "${workspaceFolder}/../lib/OLED_1.5_Daisy_Seed/**",
-                "${workspaceFolder}/../lib/SX1509_Daisy_Seed/**",
-                "${workspaceFolder}"
+                "${workspaceFolder}",
+                "${workspaceFolder}/../lib/libDaisy/**",
+                "${workspaceFolder}/../lib/DaisySP/**",
+                "${workspaceFolder}/OLED_1.5_Daisy_Seed/**",
+                "${workspaceFolder}/SX1509_Daisy_Seed/**"
             ],
             "name": "macOS"
         }

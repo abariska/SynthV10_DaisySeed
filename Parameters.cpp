@@ -6,6 +6,9 @@
 #include "log_uart.h"
 #include "per/qspi.h"
 #include "sys/dma.h"
+#include <stdint.h> 
+#include <cstdint>
+
 
 // #define DTCM __attribute__((section(".dtcm_bss")))
 ParamSlot paramSlots[NUM_PARAM_BLOCKS];
