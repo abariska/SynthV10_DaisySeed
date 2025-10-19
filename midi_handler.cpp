@@ -1,21 +1,65 @@
 #include "midi_handler.h"
 #include "voice.h"
 #include "log_uart.h"
+#include "daisy.h"
+#include "usbh_midi.h"
 
 MidiUartHandler midiUart;
 MidiUsbHandler midiUsb;
+USBHostHandle usbHost;
+
+bool is_midi_host_usb = true;
 bool midi_note_led = false;
 float mod_wheel_value = 0.0f;
 float pitch_bend_multiplier = 1.0f;
 float aftertouch_value = 0.0f;
+
+void USBH_ClassActive(void* data)
+{
+    if(usbHost.IsActiveClass(USBH_MIDI_CLASS))
+    {
+        UartPrint("MIDI device class active");
+        MidiUsbHandler::Config midi_config;
+        midi_config.transport_config.periph = MidiUsbTransport::Config::Periph::HOST;
+        midiUsb.Init(midi_config);
+        midiUsb.StartReceive();
+    }
+}
+void USBH_Connect(void* data)
+{
+    UartPrint("device connected");
+}
+
+void USBH_Disconnect(void* data)
+{
+    UartPrint("device disconnected");
+}
+
+void USBH_Error(void* data)
+{
+    UartPrint("USB device error");
+}
+
 void MidiInit()
 {
-    MidiUsbHandler::Config midi_usb_cfg;
-    midi_usb_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
-    midiUsb.Init(midi_usb_cfg);
+    if (!is_midi_host_usb) {
+        MidiUsbHandler::Config midi_usb_cfg;
+        midi_usb_cfg.transport_config.periph = MidiUsbTransport::Config::INTERNAL;
+        midiUsb.Init(midi_usb_cfg);
 
-    System::Delay(10);
-
+        System::Delay(10);
+    }
+    else {
+        USBHostHandle::Config usbhConfig;
+        usbhConfig.connect_callback = USBH_Connect,
+        usbhConfig.disconnect_callback = USBH_Disconnect,
+        usbhConfig.class_active_callback = USBH_ClassActive,
+        usbhConfig.error_callback = USBH_Error,
+        usbHost.Init(usbhConfig);
+    
+        usbHost.RegisterClass(USBH_MIDI_CLASS);
+    
+    }
     MidiUartHandler::Config midi_uart_cfg;
     midi_uart_cfg.transport_config.periph = UartHandler::Config::Peripheral::UART_5;
     midi_uart_cfg.transport_config.rx = Pin(PORTB, 5); 
@@ -64,6 +108,42 @@ void HandleMidiMessage(MidiEvent m)
     default:
         break;
     }
+}
+
+void UartMidiProcess()
+{
+    MidiEvent m;
+    while (midiUart.HasEvents())
+    {
+        m = midiUart.PopEvent();
+        HandleMidiMessage(m);
+    }
+}
+
+void UsbMidiProcess()
+{
+    if (is_midi_host_usb) {
+        usbHost.Process();
+
+            midiUsb.Listen();
+            while (midiUsb.HasEvents())
+            {
+                MidiEvent msg = midiUsb.PopEvent();
+                HandleMidiMessage(msg);
+            }
+    } else {
+        midiUsb.Listen();
+        while (midiUsb.HasEvents())
+        {
+            MidiEvent msg = midiUsb.PopEvent();
+            HandleMidiMessage(msg);
+        }
+    }
+}
+
+void SetMidiHostUsb(bool value)
+{
+    is_midi_host_usb = value;
 }
 
 void HandlePitchBend(int16_t pb)

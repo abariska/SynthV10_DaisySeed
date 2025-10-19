@@ -2,12 +2,11 @@
 #define EFFECTS_H
 
 // TODO implement logic of selesting effects
-
-#include "daisy.h"
-#include "daisy_seed.h"
-#include "daisysp.h"      // Для Overdrive, Chorus, Compressor
-#include "daisysp-lgpl.h" // Для Overdrive, Chorus, Compressor
 #include "reverb.h"
+#include "daisy.h"
+#include "daisysp.h"
+#include "daisysp-lgpl.h"
+
     
 using namespace daisysp;
 

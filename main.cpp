@@ -43,21 +43,6 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 {
     cpu_load.OnBlockStart();
     static float scope_out = 0.0f;
-    
-    midiUart.Listen();
-    midiUsb.Listen();
-    
-    while (midiUsb.HasEvents())
-    {
-        auto msg = midiUsb.PopEvent();
-        HandleMidiMessage(msg);
-    }
-
-    while (midiUart.HasEvents())
-    {
-        auto msg = midiUart.PopEvent();
-        HandleMidiMessage(msg);
-    }
 
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
@@ -148,11 +133,14 @@ int main(void)
 
     while (1)
     {
-        ProcessEncoders();
+        UartMidiProcess();
+        UsbMidiProcess();
+        
         switch (process_type)
         {
             case PROCESS_CONTROLS:
                 ProcessButtons();
+                ProcessEncoders();
                 UpdateEncodersParams();
                 break;
             case UPDATE_PARAMS: 

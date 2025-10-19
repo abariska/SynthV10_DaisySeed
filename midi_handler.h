@@ -17,9 +17,14 @@ extern float pitch_bend_multiplier;
 extern float aftertouch_value;
 extern float GetPitchBendTableValue(int index);
 
+extern bool is_midi_host_usb;
+void SetMidiHostUsb(bool value);
+
 void HandleMidiMessage(MidiEvent m);
 void HandleAftertouch(uint8_t value);
 void HandleControlChange(uint8_t control, uint8_t value);
 void MidiInit();
+void UartMidiProcess();
+void UsbMidiProcess();
 
 #endif

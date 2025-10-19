@@ -1,8 +1,9 @@
 #ifndef SX1509_EXTENDER_H
 #define SX1509_EXTENDER_H
 
-#include "SX1509_Daisy_Seed/SX1509.h"
+#include <stdint.h>
 #include "daisy_seed.h"
+#include "SX1509_Daisy_Seed/SX1509.h"
 
 // sx1509 buttons
 #define BUTTON_OSC_1 0
