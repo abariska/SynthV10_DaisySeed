@@ -502,8 +502,7 @@ void CpuUsageDisplay()
     // UartPrintf("CPU load: ", cpu_avg_load);
     if (currentPage == MAIN_PAGE)
     {
-        Paint_NewImage(cpu_load_block_data.data, 12, 12, 0, BLACK);
-        Paint_Clear(BLACK);
+        Paint_SelectImage(cpu_load_block_data.data);
         float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
         Paint_NumCentered(cpu_avg_load, 0, 12, 0, 0, Font8, WHITE, BLACK);
         OLED_Part_Transmit_DMA(&cpu_load_block_data, 116, 0, 128, 12);
@@ -520,8 +519,7 @@ void CpuUsageDisplay()
 
 void DrawVoicesBlock()
 {
-    Paint_NewImage(voices_block_data.data, 20, 20, 0, BLACK);
-    Paint_Clear(BLACK);
+    Paint_SelectImage(voices_block_data.data);
     
     int x1 = 1, x2 = 1;
     for (size_t i = 0; i < VOICE_NUM; i++)

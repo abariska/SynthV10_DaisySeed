@@ -43,8 +43,7 @@ uint8_t GetActiveParamIndex(uint8_t encoderIndex)
 void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t textColor, uint16_t bgColor)
 {
 
-    Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor);
-    Paint_Clear(bgColor);
+    Paint_SelectImage(param_block_data[blockIndex].data);
 
     ParamUnit param_unit = paramManager.GetParam(target_param).GetUnit();
 

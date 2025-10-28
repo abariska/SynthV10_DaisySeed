@@ -12,10 +12,8 @@ using P = ParamUnitName;
 using namespace daisy;
 using M = ModSource;
 
-// std::array<Osc, OSC_NUM * VOICE_NUM> osc;
-// Adsr adsrMain[VOICE_NUM];
 Adsr adsrMod;
-MoogLadder flt;
+MoogLadder flt[VOICE_NUM];
 Osc lfo;
 Overdrive fltDrive;
 // Random rnd[OSC_NUM * VOICE_NUM];
@@ -54,7 +52,10 @@ void SynthInit(float samplerate, int blocksize)
         voice[i].adsr.Init(samplerate, blocksize);
         
     }
-    flt.Init(samplerate);
+    for (size_t i = 0; i < VOICE_NUM; i++)
+    {
+        flt[i].Init(samplerate);
+    }
     adsrMod.Init(samplerate, blocksize);
     lfo.Init(samplerate, true);
     EffectsInit(samplerate);
@@ -190,11 +191,10 @@ void UpdateSynthParams()
         voice[v].adsr.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
         voice[v].adsr.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
         voice[v].adsr.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
-    }
 
-    flt.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
-    flt.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
-    fltDrive.SetDrive(paramManager.GetValue(P::FILTER_DRIVE));
+        flt[v].SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
+        flt[v].SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
+    }
 
     fx.drive.SetDrive(paramManager.GetValue(P::EFFECT_OVERDRIVE_DRIVE));
 
@@ -243,10 +243,11 @@ void VoiceProcess(float &voice_sig)
             voice[v].gate = false;
             voice[v].active = false;
         }
+        float drive = fltDrive.Process(voice_sig);
+        voice_sig = drive + (voice_sig * (1.0f - paramManager.GetValue(P::FILTER_DRIVE)));
+        voice_sig = flt[v].Process(voice_sig);
     }
-    float drive = fltDrive.Process(voice_sig);
-    voice_sig = drive + (voice_sig * (1.0f - paramManager.GetValue(P::FILTER_DRIVE)));
-    voice_sig = flt.Process(voice_sig);
+    
     voice_sig = clamp(voice_sig, -1.0f, 1.0f);
 }
 

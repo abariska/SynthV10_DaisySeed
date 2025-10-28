@@ -11,14 +11,11 @@ extern float scope_data[128];
 extern int scope_data_index;
 extern bool scope_data_ready;
 
-const UWORD INTRO_PAGE_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
 const UWORD BG_BLACK_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
 const UWORD PARAM_BLOCK_SIZE = (((PARAM_BLOCK_WIDTH % 2 == 0) ? (PARAM_BLOCK_WIDTH / 2) : (PARAM_BLOCK_WIDTH / 2 + 1)) * PARAM_BLOCK_HEIGHT);
 const UWORD WAVE_BUFFER_SIZE = (((WAVE_BUFFER_WIDTH % 2 == 0) ? (WAVE_BUFFER_WIDTH / 2) : (WAVE_BUFFER_WIDTH / 2 + 1)) * WAVE_BUFFER_HEIGHT);
-const UWORD OSC_ON_BLOCK_SIZE = (((OSC_ON_BLOCK_WIDTH % 2 == 0) ? (OSC_ON_BLOCK_WIDTH / 2) : (OSC_ON_BLOCK_WIDTH / 2 + 1)) * OSC_ON_BLOCK_HEIGHT);
 const UWORD EFFECT_BLOCK_SIZE = (((EFFECT_BLOCK_WIDTH % 2 == 0) ? (EFFECT_BLOCK_WIDTH / 2) : (EFFECT_BLOCK_WIDTH / 2 + 1)) * EFFECT_BLOCK_HEIGHT);
 const UWORD CPU_LOAD_BLOCK_SIZE = (((CPU_LOAD_BLOCK_WIDTH % 2 == 0) ? (CPU_LOAD_BLOCK_WIDTH / 2) : (CPU_LOAD_BLOCK_WIDTH / 2 + 1)) * CPU_LOAD_BLOCK_HEIGHT);
-const UWORD PRESET_NAME_BLOCK_SIZE = (((PRESET_NAME_BLOCK_WIDTH % 2 == 0) ? (PRESET_NAME_BLOCK_WIDTH / 2) : (PRESET_NAME_BLOCK_WIDTH / 2 + 1)) * PRESET_NAME_BLOCK_HEIGHT);
 const UWORD PRESET_NUM_BLOCK_SIZE = (((PRESET_NUM_BLOCK_WIDTH % 2 == 0) ? (PRESET_NUM_BLOCK_WIDTH / 2) : (PRESET_NUM_BLOCK_WIDTH / 2 + 1)) * PRESET_NUM_BLOCK_HEIGHT);
 const UWORD MOD_MATRIX_BLOCK_SIZE = (((MOD_MATRIX_BLOCK_WIDTH % 2 == 0) ? (MOD_MATRIX_BLOCK_WIDTH / 2) : (MOD_MATRIX_BLOCK_WIDTH / 2 + 1)) * MOD_MATRIX_BLOCK_HEIGHT);
 const UWORD SCOPE_BLOCK_SIZE = (((SCOPE_BLOCK_WIDTH % 2 == 0) ? (SCOPE_BLOCK_WIDTH / 2) : (SCOPE_BLOCK_WIDTH / 2 + 1)) * SCOPE_BLOCK_HEIGHT);
@@ -26,28 +23,22 @@ const UWORD SETTINGS_BLOCK_SIZE = (((SETTINGS_BLOCK_WIDTH % 2 == 0) ? (SETTINGS_
 const UWORD STORE_BLOCK_SIZE = (((STORE_BLOCK_WIDTH % 2 == 0) ? (STORE_BLOCK_WIDTH / 2) : (STORE_BLOCK_WIDTH / 2 + 1)) * STORE_BLOCK_HEIGHT);
 const UWORD VOICES_BLOCK_SIZE = (((VOICES_BLOCK_WIDTH % 2 == 0) ? (VOICES_BLOCK_WIDTH / 2) : (VOICES_BLOCK_WIDTH / 2 + 1)) * VOICES_BLOCK_HEIGHT);
 
-UBYTE DSY_SDRAM_BSS intro_page[INTRO_PAGE_SIZE];
 UBYTE DSY_SDRAM_BSS bg_black[BG_BLACK_SIZE];
 UBYTE DSY_SDRAM_BSS param_block[NUM_PARAM_BLOCKS][PARAM_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS wave_buffer[WAVE_BUFFER_SIZE];
-UBYTE DSY_SDRAM_BSS osc_on_block[OSC_ON_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS effect_block[NUM_FX_SLOTS][EFFECT_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS cpu_load_block[CPU_LOAD_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS preset_name_block[PRESET_NAME_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS preset_num_block[PRESET_NUM_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS mod_matrix_block[MOD_MATRIX_BLOCKS_NUM][MOD_MATRIX_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS scope_block[SCOPE_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS settings_block[SETTINGS_BLOCKS_NUM][SETTINGS_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS store_block[STORE_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS voices_block[VOICES_BLOCK_SIZE];
-ImageData intro_page_data;
 ImageData bg_black_data;
 ImageData param_block_data[NUM_PARAM_BLOCKS];
 ImageData wave_buffer_data;
-ImageData osc_on_block_data;
 ImageData effect_block_data[NUM_FX_SLOTS];
 ImageData cpu_load_block_data;
-ImageData preset_name_block_data;
 ImageData preset_num_block_data;
 ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
 ImageData scope_block_data;
@@ -60,46 +51,37 @@ bool scope_draw = false;
 
 void InitImages()
 {
-
-    memset(intro_page, 0, INTRO_PAGE_SIZE);
     memset(bg_black, 0, BG_BLACK_SIZE);
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++)
     {
         memset(param_block[i], 0, PARAM_BLOCK_SIZE);
     }
     memset(wave_buffer, 0, WAVE_BUFFER_SIZE);
-    memset(osc_on_block, 0, OSC_ON_BLOCK_SIZE);
     for (size_t i = 0; i < NUM_FX_SLOTS; i++)
     {
         memset(effect_block[i], 0, EFFECT_BLOCK_SIZE);
     }
-    memset(effect_block, 0, EFFECT_BLOCK_SIZE);
     memset(cpu_load_block, 0, CPU_LOAD_BLOCK_SIZE);
-    memset(preset_name_block, 0, PRESET_NAME_BLOCK_SIZE);
     memset(preset_num_block, 0, PRESET_NUM_BLOCK_SIZE);
     for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
     {
         memset(mod_matrix_block[i], 0, MOD_MATRIX_BLOCK_SIZE);
     }
-    memset(mod_matrix_block, 0, MOD_MATRIX_BLOCK_SIZE);
     memset(scope_block, 0, SCOPE_BLOCK_SIZE);
     memset(settings_block, 0, SETTINGS_BLOCK_SIZE);
     memset(store_block, 0, STORE_BLOCK_SIZE);
     memset(voices_block, 0, VOICES_BLOCK_SIZE);
-    intro_page_data = {intro_page, INTRO_PAGE_SIZE};
     bg_black_data = {bg_black, BG_BLACK_SIZE};
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++)
     {
         param_block_data[i] = {param_block[i], PARAM_BLOCK_SIZE};
     }
     wave_buffer_data = {wave_buffer, WAVE_BUFFER_SIZE};
-    osc_on_block_data = {osc_on_block, OSC_ON_BLOCK_SIZE};
     for (size_t i = 0; i < NUM_FX_SLOTS; i++)
     {
         effect_block_data[i] = {effect_block[i], EFFECT_BLOCK_SIZE};
     }
     cpu_load_block_data = {cpu_load_block, CPU_LOAD_BLOCK_SIZE};
-    preset_name_block_data = {preset_name_block, PRESET_NAME_BLOCK_SIZE};
     preset_num_block_data = {preset_num_block, PRESET_NUM_BLOCK_SIZE};
     for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
     {
@@ -112,18 +94,42 @@ void InitImages()
     }
     store_block_data = {store_block, STORE_BLOCK_SIZE};
     voices_block_data = {voices_block, VOICES_BLOCK_SIZE};
+
     System::Delay(10);
+
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
+    for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++)
+    {
+        Paint_NewImage(param_block_data[i].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, BLACK);
+    }
+    Paint_NewImage(wave_buffer_data.data, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, BLACK);
+    for (size_t i = 0; i < NUM_FX_SLOTS; i++)
+    {
+        Paint_NewImage(effect_block_data[i].data, EFFECT_BLOCK_WIDTH, EFFECT_BLOCK_HEIGHT, 0, BLACK);
+    }
+    Paint_NewImage(cpu_load_block_data.data, CPU_LOAD_BLOCK_WIDTH, CPU_LOAD_BLOCK_HEIGHT, 0, BLACK);
+    Paint_NewImage(preset_num_block_data.data, PRESET_NUM_BLOCK_WIDTH, PRESET_NUM_BLOCK_HEIGHT, 0, BLACK);
+    for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
+    {
+        Paint_NewImage(mod_matrix_block_data[i].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
+    }
+    Paint_NewImage(scope_block_data.data, SCOPE_BLOCK_WIDTH, SCOPE_BLOCK_HEIGHT, 0, BLACK);
+    for (size_t i = 0; i < SETTINGS_BLOCKS_NUM; i++)
+    {
+        Paint_NewImage(settings_block_data[i].data, SETTINGS_BLOCK_WIDTH, SETTINGS_BLOCK_HEIGHT, 0, BLACK);
+    }
+    Paint_NewImage(store_block_data.data, STORE_BLOCK_WIDTH, STORE_BLOCK_HEIGHT, 0, BLACK);
+    Paint_NewImage(voices_block_data.data, VOICES_BLOCK_WIDTH, VOICES_BLOCK_HEIGHT, 0, BLACK);
 }
 
 void DrawIntroPage()
 {
-    Paint_NewImage(intro_page_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    Paint_SelectImage(bg_black_data.data);
 
     Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, Font16, WHITE, BLACK);
     Paint_TextCentered("by abariska", 64, FULL_PAGE_WIDTH, 112, Font8, WHITE, BLACK);
 
-    OLED_Transmit_DMA(&intro_page_data);
+    OLED_Transmit_DMA(&bg_black_data);
     System::Delay(1000);
 }
 
@@ -217,8 +223,7 @@ void DrawScope()
         {
             return;
         }
-        Paint_NewImage(scope_block_data.data, SCOPE_BLOCK_WIDTH, SCOPE_BLOCK_HEIGHT, 0, BLACK);
-        Paint_Clear(BLACK);
+        Paint_SelectImage(scope_block_data.data);
         // uint8_t voice_num = 0;
         // for (size_t i = 0; i < VOICE_NUM; i++)
         // {
@@ -267,8 +272,7 @@ void DrawMainPage()
     char prog_num[PROGRAM_NUMBER_LENGTH];
     // char prog_name[PROGRAM_NAME_LENGTH];
 
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    Paint_SelectImage(bg_black_data.data);
 
     Paint_DrawLine(5, 18, 123, 18, 0x03, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     Paint_DrawLine(5, 20, 123, 20, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
@@ -289,11 +293,9 @@ void DrawParamPage(MenuPage page)
 
     AssignParamsForPage(page);
 
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    Paint_SelectImage(bg_black_data.data);
 
     Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-
     Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
 
     // // Індикатор активного ряду
@@ -314,8 +316,7 @@ void DrawParamPage(MenuPage page)
 
 void DrawEffectBlock(uint8_t slot)
 {
-    Paint_NewImage(effect_block_data[slot].data, EFFECT_BLOCK_WIDTH, EFFECT_BLOCK_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    Paint_SelectImage(effect_block_data[slot].data);
 
     EffectName selected = currentPreset.effectSlots[slot].selectedEffect;
     if (selected != EFFECT_NONE)
@@ -340,11 +341,9 @@ void DrawEffectBlock(uint8_t slot)
 void DrawEffectsPage()
 {
     AssignParamsForPage(FX_PAGE);
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_SetScale(16);
-    Paint_Clear(BLACK);
-    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_SelectImage(bg_black_data.data);
 
+    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
 
     Paint_TextCentered("Fx1", 0, 63, 40, Font12, WHITE, BLACK);
@@ -390,8 +389,7 @@ void SelectEffectPage(uint8_t slot)
 
 void DrawModMatrixBlock(uint8_t blockIndex)
 {
-    Paint_NewImage(mod_matrix_block_data[blockIndex].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    Paint_SelectImage(mod_matrix_block_data[blockIndex].data);
 
     Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModSourceLabel(), 32, 64, 1, Font12, WHITE, BLACK);
     Paint_NumCentered(currentPreset.modMtx[blockIndex].GetModAmount() * 100, 64, 96, 1, 0, Font12, WHITE, BLACK);
@@ -422,8 +420,8 @@ void DrawModMatrixBlocks()
 void DrawModMatrixPage()
 {
     AssignParamsForPage(MOD_MATRIX_PAGE);
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+
+    Paint_SelectImage(bg_black_data.data);
     
     Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
@@ -460,8 +458,7 @@ void DrawWaveformImage(int waveform)
 
 void DrawSettingsBlock(uint8_t blockIndex)
 {
-    Paint_NewImage(settings_block_data[blockIndex].data, SETTINGS_BLOCK_WIDTH, SETTINGS_BLOCK_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    Paint_SelectImage(settings_block_data[blockIndex].data);
 
     Paint_TextCentered(paramManager.GetLabel(SETTINGS_PARAMS[blockIndex]), 32, 96, 1, Font12, WHITE, BLACK);
     if (paramManager.GetUnit(SETTINGS_PARAMS[blockIndex]) == ParamUnit::BOOL)
@@ -492,8 +489,7 @@ void DrawSettingsBlock(uint8_t blockIndex)
 void DrawSettingsPage()
 {
     AssignParamsForPage(SETTINGS_PAGE);
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    Paint_SelectImage(bg_black_data.data);
 
     Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
@@ -512,8 +508,7 @@ void DrawSettingsPage()
 
 void DrawStoreBlock()
 {
-    Paint_NewImage(store_block_data.data, STORE_BLOCK_WIDTH, STORE_BLOCK_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    Paint_SelectImage(store_block_data.data);
     
     Paint_DrawRectangle(1, 2, 96, 96, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
     Paint_TextCentered("Store", 0, 96, 20, Font12, WHITE, BLACK);
@@ -532,8 +527,7 @@ void DrawStoreBlock()
 //     {
 //         static int i = 0;
 //         char text[12];
-//         Paint_NewImage(param_block_data[0].data, 32, 32, 0, BLACK);
-//         Paint_Clear(BLACK);  
+//         Paint_SelectImage(param_block_data[0].data);
 
 //         sprintf(text, "%d", i);
 //         Paint_TextCentered(text, 0, 32, 0, Font8, WHITE, BLACK);
@@ -542,8 +536,7 @@ void DrawStoreBlock()
 //         i++;
 //     }
 
-// Paint_NewImage(param_block_data2.data, 32, 46, 0, BLACK);
-// Paint_Clear(WHITE);
+// Paint_SelectImage(param_block_data2.data);
 
 // Paint_TextCentered("B", 0, 32, 0, Font12, WHITE, BLACK);
 // Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);

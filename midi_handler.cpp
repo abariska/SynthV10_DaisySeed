@@ -124,7 +124,6 @@ void UsbMidiProcess()
 {
     if (is_midi_host_usb) {
         usbHost.Process();
-
             midiUsb.Listen();
             while (midiUsb.HasEvents())
             {
