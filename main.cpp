@@ -111,7 +111,7 @@ int main(void)
     samplerate = hw.AudioSampleRate();
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
 
-    OLED_1in5_Init();
+    OLED_Init();
     InitImages();
     DrawIntroPage();
     InitQSPI();
@@ -506,7 +506,7 @@ void CpuUsageDisplay()
         Paint_Clear(BLACK);
         float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
         Paint_NumCentered(cpu_avg_load, 0, 12, 0, 0, Font8, WHITE, BLACK);
-        OLED_Part_Transmit_DMA(&cpu_load_block_data, 116, 0, 128, 12);
+        OLED_Transmit_DMA_Part(&cpu_load_block_data, 116, 0, 128, 12);
         // UartPrint("CPU load: ", cpu_avg_load);
     }
     
@@ -534,5 +534,5 @@ void DrawVoicesBlock()
         }
         x1 += 4;
     }
-    OLED_Part_Transmit_DMA(&voices_block_data, 0, 0, 20, 16);
+    OLED_Transmit_DMA_Part(&voices_block_data, 0, 0, 20, 16);
 }

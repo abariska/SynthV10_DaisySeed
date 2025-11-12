@@ -12,13 +12,11 @@ using P = ParamUnitName;
 using namespace daisy;
 using M = ModSource;
 
-// std::array<Osc, OSC_NUM * VOICE_NUM> osc;
-// Adsr adsrMain[VOICE_NUM];
 Adsr adsrMod;
 MoogLadder flt;
 Osc lfo;
 Overdrive fltDrive;
-// Random rnd[OSC_NUM * VOICE_NUM];
+Random rnd[OSC_NUM * VOICE_NUM];
 ModMatrix modMatrix[MOD_MATRIX_NUM];
 Voice voice[VOICE_NUM];
 
@@ -30,15 +28,12 @@ float freqModTable[FREQ_MOD_TABLE_SIZE];
 
 uint8_t noteNum = 60;
 float frequency = 0;
-// float phaseOffsets[OSC_NUM * VOICE_NUM];
-// float pitch_correction[OSC_NUM * VOICE_NUM];
-// float detune_correction[OSC_NUM * VOICE_NUM];
-// float final_freq[OSC_NUM * VOICE_NUM];
-float voice_velocity[VOICE_NUM] = {1.0f};
+float phaseOffsets[OSC_NUM * VOICE_NUM];
+float prev_freq[OSC_NUM * VOICE_NUM] = {0.0f};
+
 bool is_any_voice_active = false;
-int voiceId = 0;
-float filter_drive = 0.0f;
-bool isOscSyncNeeded = false;
+
+bool isOscSyncNeeded[OSC_NUM * VOICE_NUM] = {false};
 bool gate = false;
 
 void SynthInit(float samplerate, int blocksize)
@@ -134,7 +129,7 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
         adsrMod.Retrigger(false);
     }
     gate = true;
-    isOscSyncNeeded = true;
+    // isOscSyncNeeded[v] = true;
 }
 
 void HandleNoteOff(uint8_t note_in)
@@ -173,6 +168,7 @@ void UpdateSynthParams()
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
+            phaseOffsets[v * OSC_NUM + oscId] = rnd[v].GetFloat(0.0f, 0.000001f);
             float pitch = GetPitchTableValue(paramManager.GetValue(OSC_PITCH[oscId]));
             float detune = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[oscId]));
             voice[v].final_freq[oscId] = voiceFreq * pitch * detune * pitch_bend_multiplier;
@@ -185,6 +181,11 @@ void UpdateSynthParams()
             voice[v].osc[oscId].SetAmp(amp);
             voice[v].osc[oscId].SetWaveform(waveform);
             voice[v].osc[oscId].SetPw(pw);
+            if (voice[v].final_freq[oscId] != prev_freq[v * OSC_NUM + oscId])
+            {
+                isOscSyncNeeded[v * OSC_NUM + oscId] = true;
+                prev_freq[v * OSC_NUM + oscId] = voice[v].final_freq[oscId];
+            }
         }
         voice[v].adsr.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
         voice[v].adsr.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
@@ -216,16 +217,24 @@ void UpdateSynthParams()
 void VoiceProcess(float &voice_sig)
 {
     voice_sig = 0.0f;
+    
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {
         float voiceMix = 0.0f;
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
-            if (isOscSyncNeeded)
+            if (isOscSyncNeeded[v * OSC_NUM + oscId])
             {
-                voice[v].osc[oscId].SyncPhase(voice[v].osc[0].GetPhase());
+                float phase = voice[v].osc[0].GetPhase();
+                if (oscId != 0)
+                { 
+                    voice[v].osc[oscId].SyncPhase(phase);
+                }
+
+                isOscSyncNeeded[v * OSC_NUM + oscId] = false; 
             }
+
             voice[v].osc[oscId].PhaseProcess();
 
             if (paramManager.GetValue(OSC_ACTIVE[oscId]))
@@ -233,7 +242,7 @@ void VoiceProcess(float &voice_sig)
                 voiceMix += voice[v].osc[oscId].Process();
             }
         }
-        isOscSyncNeeded = false;
+        
         float env = voice[v].adsr.Process(voice[v].gate);
         voice_sig += voiceMix * env / VOICE_NUM;
 
@@ -244,6 +253,8 @@ void VoiceProcess(float &voice_sig)
             voice[v].active = false;
         }
     }
+    
+
     float drive = fltDrive.Process(voice_sig);
     voice_sig = drive + (voice_sig * (1.0f - paramManager.GetValue(P::FILTER_DRIVE)));
     voice_sig = flt.Process(voice_sig);

@@ -8,7 +8,7 @@ MidiUartHandler midiUart;
 MidiUsbHandler midiUsb;
 USBHostHandle usbHost;
 
-bool is_midi_host_usb = true;
+bool is_midi_host_usb = false;
 bool midi_note_led = false;
 float mod_wheel_value = 0.0f;
 float pitch_bend_multiplier = 1.0f;

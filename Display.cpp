@@ -1,7 +1,7 @@
 
 #include "display.h"
 #include "menu.h"
-#include "OLED_1.5_Daisy_Seed/fonts.h"
+
 #include "effects.h"
 #include "parameters.h"
 #include "voice.h"
@@ -11,14 +11,11 @@ extern float scope_data[128];
 extern int scope_data_index;
 extern bool scope_data_ready;
 
-const UWORD INTRO_PAGE_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
 const UWORD BG_BLACK_SIZE = (((FULL_PAGE_WIDTH % 2 == 0) ? (FULL_PAGE_WIDTH / 2) : (FULL_PAGE_WIDTH / 2 + 1)) * FULL_PAGE_HEIGHT);
 const UWORD PARAM_BLOCK_SIZE = (((PARAM_BLOCK_WIDTH % 2 == 0) ? (PARAM_BLOCK_WIDTH / 2) : (PARAM_BLOCK_WIDTH / 2 + 1)) * PARAM_BLOCK_HEIGHT);
 const UWORD WAVE_BUFFER_SIZE = (((WAVE_BUFFER_WIDTH % 2 == 0) ? (WAVE_BUFFER_WIDTH / 2) : (WAVE_BUFFER_WIDTH / 2 + 1)) * WAVE_BUFFER_HEIGHT);
-const UWORD OSC_ON_BLOCK_SIZE = (((OSC_ON_BLOCK_WIDTH % 2 == 0) ? (OSC_ON_BLOCK_WIDTH / 2) : (OSC_ON_BLOCK_WIDTH / 2 + 1)) * OSC_ON_BLOCK_HEIGHT);
 const UWORD EFFECT_BLOCK_SIZE = (((EFFECT_BLOCK_WIDTH % 2 == 0) ? (EFFECT_BLOCK_WIDTH / 2) : (EFFECT_BLOCK_WIDTH / 2 + 1)) * EFFECT_BLOCK_HEIGHT);
 const UWORD CPU_LOAD_BLOCK_SIZE = (((CPU_LOAD_BLOCK_WIDTH % 2 == 0) ? (CPU_LOAD_BLOCK_WIDTH / 2) : (CPU_LOAD_BLOCK_WIDTH / 2 + 1)) * CPU_LOAD_BLOCK_HEIGHT);
-const UWORD PRESET_NAME_BLOCK_SIZE = (((PRESET_NAME_BLOCK_WIDTH % 2 == 0) ? (PRESET_NAME_BLOCK_WIDTH / 2) : (PRESET_NAME_BLOCK_WIDTH / 2 + 1)) * PRESET_NAME_BLOCK_HEIGHT);
 const UWORD PRESET_NUM_BLOCK_SIZE = (((PRESET_NUM_BLOCK_WIDTH % 2 == 0) ? (PRESET_NUM_BLOCK_WIDTH / 2) : (PRESET_NUM_BLOCK_WIDTH / 2 + 1)) * PRESET_NUM_BLOCK_HEIGHT);
 const UWORD MOD_MATRIX_BLOCK_SIZE = (((MOD_MATRIX_BLOCK_WIDTH % 2 == 0) ? (MOD_MATRIX_BLOCK_WIDTH / 2) : (MOD_MATRIX_BLOCK_WIDTH / 2 + 1)) * MOD_MATRIX_BLOCK_HEIGHT);
 const UWORD SCOPE_BLOCK_SIZE = (((SCOPE_BLOCK_WIDTH % 2 == 0) ? (SCOPE_BLOCK_WIDTH / 2) : (SCOPE_BLOCK_WIDTH / 2 + 1)) * SCOPE_BLOCK_HEIGHT);
@@ -26,28 +23,22 @@ const UWORD SETTINGS_BLOCK_SIZE = (((SETTINGS_BLOCK_WIDTH % 2 == 0) ? (SETTINGS_
 const UWORD STORE_BLOCK_SIZE = (((STORE_BLOCK_WIDTH % 2 == 0) ? (STORE_BLOCK_WIDTH / 2) : (STORE_BLOCK_WIDTH / 2 + 1)) * STORE_BLOCK_HEIGHT);
 const UWORD VOICES_BLOCK_SIZE = (((VOICES_BLOCK_WIDTH % 2 == 0) ? (VOICES_BLOCK_WIDTH / 2) : (VOICES_BLOCK_WIDTH / 2 + 1)) * VOICES_BLOCK_HEIGHT);
 
-UBYTE DSY_SDRAM_BSS intro_page[INTRO_PAGE_SIZE];
 UBYTE DSY_SDRAM_BSS bg_black[BG_BLACK_SIZE];
 UBYTE DSY_SDRAM_BSS param_block[NUM_PARAM_BLOCKS][PARAM_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS wave_buffer[WAVE_BUFFER_SIZE];
-UBYTE DSY_SDRAM_BSS osc_on_block[OSC_ON_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS effect_block[NUM_FX_SLOTS][EFFECT_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS cpu_load_block[CPU_LOAD_BLOCK_SIZE];
-UBYTE DSY_SDRAM_BSS preset_name_block[PRESET_NAME_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS preset_num_block[PRESET_NUM_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS mod_matrix_block[MOD_MATRIX_BLOCKS_NUM][MOD_MATRIX_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS scope_block[SCOPE_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS settings_block[SETTINGS_BLOCKS_NUM][SETTINGS_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS store_block[STORE_BLOCK_SIZE];
 UBYTE DSY_SDRAM_BSS voices_block[VOICES_BLOCK_SIZE];
-ImageData intro_page_data;
 ImageData bg_black_data;
 ImageData param_block_data[NUM_PARAM_BLOCKS];
 ImageData wave_buffer_data;
-ImageData osc_on_block_data;
 ImageData effect_block_data[NUM_FX_SLOTS];
 ImageData cpu_load_block_data;
-ImageData preset_name_block_data;
 ImageData preset_num_block_data;
 ImageData mod_matrix_block_data[MOD_MATRIX_BLOCKS_NUM];
 ImageData scope_block_data;
@@ -61,45 +52,37 @@ bool scope_draw = false;
 void InitImages()
 {
 
-    memset(intro_page, 0, INTRO_PAGE_SIZE);
     memset(bg_black, 0, BG_BLACK_SIZE);
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++)
     {
         memset(param_block[i], 0, PARAM_BLOCK_SIZE);
     }
     memset(wave_buffer, 0, WAVE_BUFFER_SIZE);
-    memset(osc_on_block, 0, OSC_ON_BLOCK_SIZE);
     for (size_t i = 0; i < NUM_FX_SLOTS; i++)
     {
         memset(effect_block[i], 0, EFFECT_BLOCK_SIZE);
     }
-    memset(effect_block, 0, EFFECT_BLOCK_SIZE);
     memset(cpu_load_block, 0, CPU_LOAD_BLOCK_SIZE);
-    memset(preset_name_block, 0, PRESET_NAME_BLOCK_SIZE);
     memset(preset_num_block, 0, PRESET_NUM_BLOCK_SIZE);
     for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
     {
         memset(mod_matrix_block[i], 0, MOD_MATRIX_BLOCK_SIZE);
     }
-    memset(mod_matrix_block, 0, MOD_MATRIX_BLOCK_SIZE);
     memset(scope_block, 0, SCOPE_BLOCK_SIZE);
     memset(settings_block, 0, SETTINGS_BLOCK_SIZE);
     memset(store_block, 0, STORE_BLOCK_SIZE);
     memset(voices_block, 0, VOICES_BLOCK_SIZE);
-    intro_page_data = {intro_page, INTRO_PAGE_SIZE};
     bg_black_data = {bg_black, BG_BLACK_SIZE};
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++)
     {
         param_block_data[i] = {param_block[i], PARAM_BLOCK_SIZE};
     }
     wave_buffer_data = {wave_buffer, WAVE_BUFFER_SIZE};
-    osc_on_block_data = {osc_on_block, OSC_ON_BLOCK_SIZE};
     for (size_t i = 0; i < NUM_FX_SLOTS; i++)
     {
         effect_block_data[i] = {effect_block[i], EFFECT_BLOCK_SIZE};
     }
     cpu_load_block_data = {cpu_load_block, CPU_LOAD_BLOCK_SIZE};
-    preset_name_block_data = {preset_name_block, PRESET_NAME_BLOCK_SIZE};
     preset_num_block_data = {preset_num_block, PRESET_NUM_BLOCK_SIZE};
     for (size_t i = 0; i < MOD_MATRIX_BLOCKS_NUM; i++)
     {
@@ -117,13 +100,13 @@ void InitImages()
 
 void DrawIntroPage()
 {
-    Paint_NewImage(intro_page_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
     Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, Font16, WHITE, BLACK);
     Paint_TextCentered("by abariska", 64, FULL_PAGE_WIDTH, 112, Font8, WHITE, BLACK);
 
-    OLED_Transmit_DMA(&intro_page_data);
+    OLED_Transmit_DMA(&bg_black_data);
     System::Delay(1000);
 }
 
@@ -251,7 +234,7 @@ void DrawScope()
         
         scope_data_ready = false;
 
-        OLED_Part_Transmit_DMA(&scope_block_data,
+        OLED_Transmit_DMA_Part(&scope_block_data,
                             BLOCK_SCOPE_X_START,
                             BLOCK_SCOPE_Y_START,
                             BLOCK_SCOPE_X_END,
@@ -330,7 +313,7 @@ void DrawEffectBlock(uint8_t slot)
     }
     Paint_NumCentered(paramManager.GetNormalised(EFFECT_SLOT_DRYWET[slot]) * 100, 0, EFFECT_BLOCK_WIDTH, 32, 0, Font12, WHITE, BLACK);
 
-    OLED_Part_Transmit_DMA(&effect_block_data[slot],
+    OLED_Transmit_DMA_Part(&effect_block_data[slot],
                            BLOCK_FX_X_START[slot],
                            BLOCK_FX_Y_START[slot],
                            BLOCK_FX_X_END[slot],
@@ -404,7 +387,7 @@ void DrawModMatrixBlock(uint8_t blockIndex)
         Paint_DrawLine(20, arrow_y + 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     }
 
-    OLED_Part_Transmit_DMA(&mod_matrix_block_data[blockIndex],
+    OLED_Transmit_DMA_Part(&mod_matrix_block_data[blockIndex],
                            BLOCK_MOD_MATRIX_X_START,
                            BLOCK_MOD_MATRIX_Y_START[blockIndex],
                            BLOCK_MOD_MATRIX_X_END,
@@ -481,7 +464,7 @@ void DrawSettingsBlock(uint8_t blockIndex)
         Paint_DrawLine(20, arrow_y + 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     }
 
-    OLED_Part_Transmit_DMA(&settings_block_data[blockIndex],
+    OLED_Transmit_DMA_Part(&settings_block_data[blockIndex],
                            BLOCK_SETTINGS_X_START,
                            BLOCK_SETTINGS_Y_START[blockIndex],
                            BLOCK_SETTINGS_X_END,
@@ -520,7 +503,7 @@ void DrawStoreBlock()
     Paint_TextCentered("preset to", 0, 96, 36, Font12, WHITE, BLACK);
     Paint_NumCentered(currentPreset.number, 0, 96, 60, 0, Font16, WHITE, BLACK);
 
-    OLED_Part_Transmit_DMA(&store_block_data,
+    OLED_Transmit_DMA_Part(&store_block_data,
                            BLOCK_STORE_X_START,
                            BLOCK_STORE_Y_START,
                            BLOCK_STORE_X_END,

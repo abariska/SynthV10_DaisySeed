@@ -10,23 +10,22 @@
         "-d",
         "${workspaceRoot}"
       ],
-      "executable": "${workspaceRoot}/build/SynthVoice.elf",
+      "executable": "${workspaceRoot}/build/SynthV10.elf",
       "interface": "swd",
       "name": "Cortex Debug",
       "openOCDLaunchCommands": [
         "init",
-        "reset init"
+        "reset init",
+        "gdb_breakpoint_override hard"
       ],
-      "preLaunchTask": "build_all_debug",
-      "preRestartCommands": [
-        "load",
-        "enable breakpoint",
-        "monitor reset"
-      ],
+      "preLaunchTask": "build_and_program_dfu",
+
       "request": "launch",
-      "runToMain": true,
       "servertype": "openocd",
-      "showDevDebugOutput": true,
+      "runToEntryPoint": "main",
+
+      "preLaunchCommands": ["monitor reset halt", "monitor sleep 50"],
+      "showDevDebugOutput": "raw",
       "svdFile": "${workspaceRoot}/.vscode/STM32H750x.svd",
       "type": "cortex-debug"
     }

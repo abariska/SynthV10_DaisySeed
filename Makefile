@@ -13,7 +13,7 @@ CPP_SOURCES = main.cpp \
 			  sx1509_expander.cpp \
 			  log_uart.cpp \
 			  reverb.cpp \
-	$(OLED_DIR)/DEV_Config.cpp $(OLED_DIR)/OLED_Driver.cpp $(OLED_DIR)/GUI_Paint.cpp $(OLED_DIR)/font8.cpp \
+	$(OLED_DIR)/OLED_Driver.cpp $(OLED_DIR)/GUI_Paint.cpp $(OLED_DIR)/font8.cpp \
 	$(OLED_DIR)/font12.cpp $(OLED_DIR)/font16.cpp $(SX1509_DIR)/SX1509.cpp
 
 
@@ -35,7 +35,7 @@ C_INCLUDES += -I$(OLED_DIR)
 # Library Locations
 LIBDAISY_DIR = ../lib/libDaisy
 DAISYSP_DIR = ../lib/DaisySP
-OLED_DIR = OLED_1.5_Daisy_Seed
+OLED_DIR = OLED_Greyscale_Daisy
 SX1509_DIR = SX1509_Daisy_Seed
 
 # Core location, and generic Makefile.

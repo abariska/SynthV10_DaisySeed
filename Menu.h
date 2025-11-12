@@ -1,11 +1,10 @@
 #ifndef DISPLAY_MENU_H
 #define DISPLAY_MENU_H
 
-#include "OLED_1.5_Daisy_Seed/fonts.h"
+#include "OLED_Greyscale_Daisy/fonts.h"
 #include "imageData.h"
-#include "OLED_1.5_Daisy_Seed/GUI_Paint.h"
-#include "OLED_1.5_Daisy_Seed/OLED_Driver.h"
-#include "OLED_1.5_Daisy_Seed/DEV_Config.h"
+#include "OLED_Greyscale_Daisy/GUI_Paint.h"
+#include "OLED_Greyscale_Daisy/OLED_Driver.h"
 #include "parameters.h"
 #include "display.h"
 #include "sx1509_expander.h"

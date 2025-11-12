@@ -159,7 +159,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
         {
             Paint_DrawRectangle(1, 2, 32, 50, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
         }
-        OLED_Part_Transmit_DMA(&param_block_data[blockIndex],
+        OLED_Transmit_DMA_Part(&param_block_data[blockIndex],
                                BLOCK_MAIN_X_START[blockIndex],
                                BLOCK_MAIN_Y_START[blockIndex],
                                BLOCK_MAIN_X_END[blockIndex],
@@ -167,7 +167,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     }
     else
     {
-        OLED_Part_Transmit_DMA(&param_block_data[blockIndex],
+        OLED_Transmit_DMA_Part(&param_block_data[blockIndex],
                                BLOCK_X_START[blockIndex],
                                BLOCK_Y_START[blockIndex],
                                BLOCK_X_END[blockIndex],
