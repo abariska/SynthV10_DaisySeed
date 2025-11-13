@@ -11,8 +11,6 @@
 
 // Required for array structures
 #define OSC_NUM 3
-#define PARAM_NAME_LENGTH 8
-#define PRESET_NAME_LENGTH 12
 #define PRESET_NUM 40
 #define MOD_MATRIX_NUM 7
 

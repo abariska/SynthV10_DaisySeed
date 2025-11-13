@@ -439,68 +439,68 @@ using P = ParamUnitName;
 void ParameterManager::Init()
 {
     ADD_PARAM(P::NONE, 0, 0, "-", Curve::LINEAR, ParamUnit::UNITLESS, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_WAVEFORM_1, 0, Osc::WAVE_COUNT - 1, "Wav1", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_FREQ_1, 1.0f, 10000.0f, "Frq1", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
-    ADD_PARAM(P::OSC_PITCH_1, -36, 36, "Sem1", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_DETUNE_1, -100, 100, "Dtn1", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_AMP_1, 0.0f, 100.0f, "Amp1", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_PWM_1, -100, 100, "Pwm1", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_ACTIVE_1, 0, 2, "Actv1", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_WAVEFORM_2, 0, Osc::WAVE_COUNT - 1, "Wav2", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_FREQ_2, 1.0f, 10000.0f, "Frq2", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
-    ADD_PARAM(P::OSC_PITCH_2, -36, 36, "Sem2", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_DETUNE_2, -100, 100, "Dtn2", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_AMP_2, 0.0f, 100.0f, "Amp2", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_PWM_2, -100, 100, "Pwm2", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_ACTIVE_2, 0, 2, "Actv2", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE); 
-    ADD_PARAM(P::OSC_WAVEFORM_3, 0, Osc::WAVE_COUNT - 1, "Wav3", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_FREQ_3, 1.0f, 10000.0f, "Frq3", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
-    ADD_PARAM(P::OSC_PITCH_3, -36, 36, "Sem3", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_DETUNE_3, -100, 100, "Dtn3", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_AMP_3, 0.0f, 100.0f, "Amp3", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_PWM_3, -100, 100, "Pwm3", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_ACTIVE_3, 0, 2, "Actv3", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::FILTER_CUTOFF, 20.0f, 20000.0f, "Cut", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_WAVEFORM_1, 0, Osc::WAVE_COUNT - 1, "Wave 1", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_FREQ_1, 1.0f, 10000.0f, "Freq 1", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
+    ADD_PARAM(P::OSC_PITCH_1, -36, 36, "Pitch 1", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_DETUNE_1, -100, 100, "Tune 1", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_AMP_1, 0.0f, 100.0f, "Amp 1", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_PWM_1, -100, 100, "PWM 1", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_ACTIVE_1, 0, 2, "Enbl Osc1", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_WAVEFORM_2, 0, Osc::WAVE_COUNT - 1, "Wave 2", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_FREQ_2, 1.0f, 10000.0f, "Freq 2", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
+    ADD_PARAM(P::OSC_PITCH_2, -36, 36, "Pitch 2", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_DETUNE_2, -100, 100, "Tune 2", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_AMP_2, 0.0f, 100.0f, "Amp 2", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_PWM_2, -100, 100, "PWM 2", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_ACTIVE_2, 0, 2, "Enbl Osc2", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE); 
+    ADD_PARAM(P::OSC_WAVEFORM_3, 0, Osc::WAVE_COUNT - 1, "Wave 3", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_FREQ_3, 1.0f, 10000.0f, "Freq 3", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
+    ADD_PARAM(P::OSC_PITCH_3, -36, 36, "Pitch 3", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_DETUNE_3, -100, 100, "Tune 3", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::OSC_AMP_3, 0.0f, 100.0f, "Amp 3", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_PWM_3, -100, 100, "PWM 3", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::OSC_ACTIVE_3, 0, 2, "Enbl Osc3", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::FILTER_CUTOFF, 20.0f, 20000.0f, "Cutoff", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::FILTER_RESONANCE, 0.0f, 100.0f, "Res", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::FILTER_DRIVE, 0.0f, 100.0f, "Fdrv", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::ADSR_ATTACK, 0.005f, 20.0f, "Atk", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Dcy", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sus", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::ADSR_RELEASE, 0.005f, 20.0f, "Rls", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, Osc::WAVE_COUNT - 1, "Wav", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::MOD_LFO_FREQ, 0.01f, 100.0f, "Frq", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Dpt", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::MOD_LFO_ACTIVE, 0, 2, "Actv", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::MOD_ADSR_ATTACK, 0.005f, 20.0f, "AtkM", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::MOD_ADSR_DECAY, 0.005f, 20.0f, "DcyM", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::MOD_ADSR_SUSTAIN, 0.0f, 100.0f, "SusM", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::MOD_ADSR_RELEASE, 0.005f, 20.0f, "RlsM", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::EFFECT_OVERDRIVE_DRIVE, 0.0f, 100.0f, "Drv", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_CHORUS_FREQ, 0.1f, 100.0f, "FrqC", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_CHORUS_DEPTH, 0.0f, 100.0f, "DptC", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_CHORUS_FBK, 0.0f, 100.0f, "FbkC", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_CHORUS_DELAY, 0.0f, 100.0f, "DlyC", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_ATTACK, 0.001f, 10.0f, "AtkC", Curve::LINEAR, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_RELEASE, 0.001f, 10.0f, "RlsC", Curve::LINEAR, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_THRESHOLD, -80.0f, 0.0f, "ThrC", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_RATIO, 1.0f, 40.0f, "RatC", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_MAKEUP, 0.0f, 80.0f, "MkC", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_REVERB_FEEDBACK, 0.0f, 100.0f, "FbkR", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_REVERB_LPFREQ, 10.0f, 20000.0f, "CutR", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_SLOT_1_DRYWET, 0.0f, 100.0f, "DrW1", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_SLOT_1_ACTIVE, 0, 2, "Actv1", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::EFFECT_SLOT_2_DRYWET, 0.0f, 100.0f, "DrW2", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_SLOT_2_ACTIVE, 0, 2, "Actv2", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::FILTER_DRIVE, 0.0f, 100.0f, "Drive", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::ADSR_ATTACK, 0.005f, 20.0f, "Attack", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Decay", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sustain", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::ADSR_RELEASE, 0.005f, 20.0f, "Release", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, Osc::WAVE_COUNT - 1, "Wave LFO", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::MOD_LFO_FREQ, 0.01f, 100.0f, "Freq LFO", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Depth LFO", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::MOD_LFO_ACTIVE, 0, 2, "Active LFO", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::MOD_ADSR_ATTACK, 0.005f, 20.0f, "Atck Mod", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::MOD_ADSR_DECAY, 0.005f, 20.0f, "Dec Mod", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::MOD_ADSR_SUSTAIN, 0.0f, 100.0f, "Sus Mod", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::MOD_ADSR_RELEASE, 0.005f, 20.0f, "Rel Mod", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
+    ADD_PARAM(P::EFFECT_OVERDRIVE_DRIVE, 0.0f, 100.0f, "Drive", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_CHORUS_FREQ, 0.1f, 100.0f, "Freq Chrs", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_CHORUS_DEPTH, 0.0f, 100.0f, "Dpth Chrs", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_CHORUS_FBK, 0.0f, 100.0f, "Fbk Chrs", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_CHORUS_DELAY, 0.0f, 100.0f, "Dly Chrs", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_ATTACK, 0.001f, 10.0f, "Atck Comp", Curve::LINEAR, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_RELEASE, 0.001f, 10.0f, "Rel Comp", Curve::LINEAR, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_THRESHOLD, -80.0f, 0.0f, "Thrs Comp", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_RATIO, 1.0f, 40.0f, "Ratio Comp", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_MAKEUP, 0.0f, 80.0f, "Mkup Comp", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_REVERB_FEEDBACK, 0.0f, 100.0f, "Feedbk Rvb", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_REVERB_LPFREQ, 10.0f, 20000.0f, "Cutoff Rvb", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_SLOT_1_DRYWET, 0.0f, 100.0f, "FX1", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_SLOT_1_ACTIVE, 0, 2, "Enbl FX1", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::EFFECT_SLOT_2_DRYWET, 0.0f, 100.0f, "FX2", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_SLOT_2_ACTIVE, 0, 2, "Enbl FX2", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::GLOBAL_MONO, 0, 2, "Mono", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::GLOBAL_LEGATO, 0, 2, "Legato", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 100.0f, "Prtmnto", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::GLOBAL_MASTER_VOLUME, 0.0f, 100.0f, "Master", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 100.0f, "Portamento", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::GLOBAL_MASTER_VOLUME, 0.0f, 100.0f, "Master Volume", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
 }
 
 Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::NONE, 0.0f, "-"},
-    {ModSource::LFO, 0.0f, "Lfo"},
-    {ModSource::ADSR, 0.0f, "Adsr"},
-    {ModSource::MOD_WHEEL, 0.0f, "Wheel"},
-    {ModSource::AFTERTOUCH, 0.0f, "Aftch"},
+    {ModSource::LFO, 0.0f, "LFO"},
+    {ModSource::ADSR, 0.0f, "ADSR"},
+    {ModSource::MOD_WHEEL, 0.0f, "ModWheel"},
+    {ModSource::AFTERTOUCH, 0.0f, "Aftertouch"},
 };

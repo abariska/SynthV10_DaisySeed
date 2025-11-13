@@ -100,11 +100,11 @@ void InitImages()
 
 void DrawIntroPage()
 {
-    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
+    Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, 0x00);
+    Paint_Clear(0x00);
 
-    Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, Font16, WHITE, BLACK);
-    Paint_TextCentered("by abariska", 64, FULL_PAGE_WIDTH, 112, Font8, WHITE, BLACK);
+    Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, Font24, 0xFF, 0x00);
+    Paint_TextCentered("by abariska", 128, FULL_PAGE_WIDTH, 112, Font12, 0xFF, 0x00);
 
     OLED_Transmit_DMA(&bg_black_data);
     System::Delay(1000);
@@ -241,8 +241,6 @@ void DrawScope()
                             BLOCK_SCOPE_Y_END);
             time_end = time1;
     }
-    
-
 }
 
 void DrawMainPage()
@@ -253,15 +251,14 @@ void DrawMainPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_DrawLine(5, 18, 123, 18, 0x03, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(5, 20, 123, 20, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(5, 23, FULL_PAGE_WIDTH - 5, 23, 0x0C, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(5, 25, FULL_PAGE_WIDTH - 5, 25, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
     sprintf(prog_num, "%03d", currentPreset.number);
-    Paint_TextCentered(prog_num, 0, 127, 0, Font16, WHITE, BLACK);
+    Paint_TextCentered(prog_num, 0, FULL_PAGE_WIDTH, 0, Font24, WHITE, BLACK);
 
     // sprintf(prog_name, "%s", currentPreset.name);
     // Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
-
     OLED_Transmit_DMA(&bg_black_data);
     DrawMainBlocks();
     DrawScope();
@@ -275,9 +272,9 @@ void DrawParamPage(MenuPage page)
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(4, 22, FULL_PAGE_WIDTH - 4, 22, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
-    Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, Font16, WHITE, BLACK);
 
     // // Індикатор активного ряду
     // uint8_t rowIndicator = (currentActiveRow == ROW_1) ? 1 : 2;
@@ -303,15 +300,15 @@ void DrawEffectBlock(uint8_t slot)
     EffectName selected = currentPreset.effectSlots[slot].selectedEffect;
     if (selected != EFFECT_NONE)
     {
-        Paint_TextCentered(effectLabels[selected], 0, EFFECT_BLOCK_WIDTH, 0, Font12, WHITE, BLACK);
+        Paint_TextCentered(effectLabels[selected], 0, EFFECT_BLOCK_WIDTH, 0, Font16, WHITE, BLACK);
         Paint_TextCentered(currentPreset.effectSlots[slot].isActive ? "On" : "Off", 0, EFFECT_BLOCK_WIDTH, 16, Font12, WHITE, BLACK);
     }
     else
     {
-        Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 0, Font12, WHITE, BLACK);
+        Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 0, Font16, WHITE, BLACK);
         Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 16, Font12, WHITE, BLACK);
     }
-    Paint_NumCentered(paramManager.GetNormalised(EFFECT_SLOT_DRYWET[slot]) * 100, 0, EFFECT_BLOCK_WIDTH, 32, 0, Font12, WHITE, BLACK);
+    Paint_NumCentered(paramManager.GetNormalised(EFFECT_SLOT_DRYWET[slot]) * 100, 0, EFFECT_BLOCK_WIDTH, 32, 0, Font16, WHITE, BLACK);
 
     OLED_Transmit_DMA_Part(&effect_block_data[slot],
                            BLOCK_FX_X_START[slot],
@@ -326,15 +323,15 @@ void DrawEffectsPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_SetScale(16);
     Paint_Clear(BLACK);
-    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(4, 22, FULL_PAGE_WIDTH - 4, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
-    Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, Font16, WHITE, BLACK);
 
-    Paint_TextCentered("Fx1", 0, 63, 40, Font12, WHITE, BLACK);
-    Paint_TextCentered("Fx2", 64, 127, 40, Font12, WHITE, BLACK);
-    Paint_DrawLine(56, 46, 72, 46, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(69, 43, 72, 46, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(69, 49, 72, 46, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_TextCentered("FX1", 0, FULL_PAGE_WIDTH / 2, 40, Font16, WHITE, BLACK);
+    Paint_TextCentered("FX2", FULL_PAGE_WIDTH / 2, FULL_PAGE_WIDTH, 40, Font12, WHITE, BLACK);
+    Paint_DrawLine(56, 46, 72, 46, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(69, 43, 72, 46, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(69, 49, 72, 46, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
     OLED_Transmit_DMA(&bg_black_data);
 
@@ -376,15 +373,15 @@ void DrawModMatrixBlock(uint8_t blockIndex)
     Paint_NewImage(mod_matrix_block_data[blockIndex].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModSourceLabel(), 32, 64, 1, Font12, WHITE, BLACK);
-    Paint_NumCentered(currentPreset.modMtx[blockIndex].GetModAmount() * 100, 64, 96, 1, 0, Font12, WHITE, BLACK);
-    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModTargetLabel(), 96, 128, 1, Font12, WHITE, BLACK);
+    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModSourceLabel(), 64, 128, 1, Font12, WHITE, BLACK);
+    Paint_NumCentered(currentPreset.modMtx[blockIndex].GetModAmount() * 100, 128, 192, 1, 0, Font12, WHITE, BLACK);
+    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModTargetLabel(), 192, 256, 1, Font12, WHITE, BLACK);
     if (blockIndex == selModBlockIndex)
     {
         uint8_t arrow_y = 8;
-        Paint_DrawLine(8, arrow_y, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        Paint_DrawLine(20, arrow_y - 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        Paint_DrawLine(20, arrow_y + 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(24, arrow_y, 40, arrow_y, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(32, arrow_y - 3, 40, arrow_y, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(32, arrow_y + 3, 40, arrow_y, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     }
 
     OLED_Transmit_DMA_Part(&mod_matrix_block_data[blockIndex],
@@ -408,8 +405,8 @@ void DrawModMatrixPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
     
-    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
+    Paint_DrawLine(4, 22, FULL_PAGE_WIDTH - 4, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, Font16, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);
 
@@ -446,22 +443,22 @@ void DrawSettingsBlock(uint8_t blockIndex)
     Paint_NewImage(settings_block_data[blockIndex].data, SETTINGS_BLOCK_WIDTH, SETTINGS_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_TextCentered(paramManager.GetLabel(SETTINGS_PARAMS[blockIndex]), 32, 96, 1, Font12, WHITE, BLACK);
+    Paint_TextCentered(paramManager.GetLabel(SETTINGS_PARAMS[blockIndex]), 64, 128, 1, Font12, WHITE, BLACK);
     if (paramManager.GetUnit(SETTINGS_PARAMS[blockIndex]) == ParamUnit::BOOL)
     {
-        Paint_TextCentered(paramManager.GetBool(SETTINGS_PARAMS[blockIndex]) ? "On" : "Off", 96, 128, 1, Font12, WHITE, BLACK);
+        Paint_TextCentered(paramManager.GetBool(SETTINGS_PARAMS[blockIndex]) ? "On" : "Off", 128, 192, 1, Font12, WHITE, BLACK);
     }
     else
     {
-        Paint_NumCentered((paramManager.GetValue(SETTINGS_PARAMS[blockIndex]) * 100), 96, 128, 1, 0, Font12, WHITE, BLACK);
+        Paint_NumCentered((paramManager.GetValue(SETTINGS_PARAMS[blockIndex]) * 100), 128, 192, 1, 0, Font12, WHITE, BLACK);
     }
 
     if (blockIndex == selSettingsBlockIndex)
     {
         uint8_t arrow_y = 8;
-        Paint_DrawLine(8, arrow_y, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        Paint_DrawLine(20, arrow_y - 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        Paint_DrawLine(20, arrow_y + 3, 24, arrow_y, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(24, arrow_y, 40, arrow_y, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(32, arrow_y - 3, 40, arrow_y, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(32, arrow_y + 3, 40, arrow_y, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     }
 
     OLED_Transmit_DMA_Part(&settings_block_data[blockIndex],
@@ -478,12 +475,9 @@ void DrawSettingsPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(4, 22, FULL_PAGE_WIDTH - 4, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
-    Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
-
-    Paint_DrawLine(4, 22, 123, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_TextCentered(page_name, 0, 127, 4, Font12, WHITE, BLACK);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, Font16, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);
 
@@ -498,10 +492,10 @@ void DrawStoreBlock()
     Paint_NewImage(store_block_data.data, STORE_BLOCK_WIDTH, STORE_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
     
-    Paint_DrawRectangle(1, 2, 96, 96, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-    Paint_TextCentered("Store", 0, 96, 20, Font12, WHITE, BLACK);
-    Paint_TextCentered("preset to", 0, 96, 36, Font12, WHITE, BLACK);
-    Paint_NumCentered(currentPreset.number, 0, 96, 60, 0, Font16, WHITE, BLACK);
+    Paint_DrawRectangle(1, 1, STORE_BLOCK_WIDTH, STORE_BLOCK_HEIGHT, 0x08, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+    Paint_TextCentered("Store", 0, STORE_BLOCK_WIDTH, 20, Font16, WHITE, BLACK);
+    Paint_TextCentered("preset to", 0, STORE_BLOCK_WIDTH, 36, Font16, WHITE, BLACK);
+    Paint_NumCentered(currentPreset.number, 0, STORE_BLOCK_WIDTH, 60, 0, Font24, WHITE, BLACK);
 
     OLED_Transmit_DMA_Part(&store_block_data,
                            BLOCK_STORE_X_START,
