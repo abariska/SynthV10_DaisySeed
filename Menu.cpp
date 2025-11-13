@@ -81,7 +81,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             {
                 value = value / 1000;
                 unit = "kHz";
-                if (value >= 10.0)
+                if (value > 9.99f)
                 {
                     sprintf(value_str, "%.1f", value);
                 }
@@ -114,7 +114,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             if (value >= 1)
             {
                 unit = "s";
-                if (value >= 10.0)
+                if (value > 9.99f)
                 {
                     sprintf(value_str, "%.1f", value);
                 }
