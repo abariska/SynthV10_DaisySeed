@@ -68,12 +68,11 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     if (param_unit == ParamUnit::PICTURE)
     {
         value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
-        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
-        DrawWaveformImage(value);
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, BLOCK_PARAM_Y_LABEL, &Regular_12, textColor, bgColor);
+        DrawWaveformImage(value, true, (UBYTE)textColor);
     }
     else
     {
-
         switch (param_unit)
         {
         case ParamUnit::HZ:
@@ -149,9 +148,9 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             unit = "";
             break;
         }
-        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
-        Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue, Font16, textColor, bgColor);
-        Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, yBlockUnit, Font12, textColor, bgColor);
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, &Regular_12, textColor, bgColor);
+        Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, BLOCK_PARAM_Y_VALUE, &Regular_16, textColor, bgColor);
+        Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, BLOCK_PARAM_Y_UNIT, &Regular_12, textColor, bgColor);
     }
 
     if (currentPage == MAIN_PAGE)
@@ -304,34 +303,31 @@ void EditBlockParam(uint8_t blockIndex)
         int dir = (inc > 0) ? 1 : -1;
 
         int value = (int)currentPreset.mainSlots[blockIndex].target_param;
-        value += dir;
+        int temp_value = value;
+        temp_value += dir;
+        int i = 1;
 
-        while (paramManager.GetUseInMain(static_cast<P>(value)) != UseInMain::USED
-            || isDuplicate(value))
+        while (paramManager.GetUseInMain(static_cast<P>(temp_value)) == UseInMain::NONE
+            || isDuplicate(temp_value))
         {
-            value += dir;
+            temp_value += dir;
+            i++;
+            if (temp_value >= (int)P::COUNT_PARAMS - 1 || temp_value <= (int)P::NONE)
+            {
+                i = 1;
+                temp_value = value;
+                break;
+            }
         }
+        value = temp_value;
+
         if (value >= (int)P::COUNT_PARAMS - 1)
         {
-            if (paramManager.GetUseInMain(static_cast<P>(value)) != UseInMain::USED)
-            {
-                value -= 1;
-            }
-            else
-            {
-                value = (int)P::COUNT_PARAMS - 1;
-            }
+            value = (int)P::COUNT_PARAMS - 1;
         }
         else if (value <= (int)P::NONE)
         {
-            if (paramManager.GetUseInMain(static_cast<P>(value)) != UseInMain::USED)
-            {
-                value += 1;
-            }
-            else
-            {
-                value = (int)P::NONE;
-            }
+            value = (int)P::NONE;
         }
 
         encoderIncs[blockIndex] = 0;

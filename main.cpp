@@ -506,8 +506,8 @@ void CpuUsageDisplay()
         Paint_NewImage(cpu_load_block_data.data, CPU_LOAD_BLOCK_WIDTH, CPU_LOAD_BLOCK_HEIGHT, 0, BLACK);
         Paint_Clear(BLACK);
         float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-        Paint_NumCentered(cpu_avg_load, 0, CPU_LOAD_BLOCK_WIDTH, 0, 0, Font8, WHITE, BLACK);
-        OLED_Transmit_DMA_Part(&cpu_load_block_data, 240, 0, 254, 14);
+        Paint_NumCentered(cpu_avg_load, 0, CPU_LOAD_BLOCK_WIDTH, 0, 1, &Regular_8, WHITE, BLACK);
+        OLED_Transmit_DMA_Part(&cpu_load_block_data, 236, 0, 256, 16);
         // UartPrint("CPU load: ", cpu_avg_load);
     }
     
