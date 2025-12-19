@@ -73,18 +73,18 @@ extern MenuPage currentPage;
 
 const uint16_t BLOCK_X_START[] = {0, 64, 128, 192, 0, 64, 128, 192};
 const uint16_t BLOCK_X_END[] = {64, 128, 192, 256, 64, 128, 192, 256};
-const uint16_t BLOCK_Y_START[] = {24, 24, 24, 24, 74, 74, 74, 74};
-const uint16_t BLOCK_Y_END[] = {74, 74, 74, 74, 124, 124, 124, 124};
+const uint16_t BLOCK_Y_START[] = {28, 28, 28, 28, 78, 78, 78, 78};
+const uint16_t BLOCK_Y_END[] = {78, 78, 78, 78, 128, 128, 128, 128};
 
 const uint16_t BLOCK_MAIN_X_START[] = {0, 64, 128, 192};
 const uint16_t BLOCK_MAIN_X_END[] = {64, 128, 192, 256};
-const uint16_t BLOCK_MAIN_Y_START[] = {74, 74, 74, 74};
-const uint16_t BLOCK_MAIN_Y_END[] = {124, 124, 124, 124};
+const uint16_t BLOCK_MAIN_Y_START[] = {78, 78, 78, 78};
+const uint16_t BLOCK_MAIN_Y_END[] = {128, 128, 128, 128};
 
 const uint16_t BLOCK_FX_X_START[] = {0, 128};
 const uint16_t BLOCK_FX_X_END[] = {128, 256};
-const uint16_t BLOCK_FX_Y_START[] = {64, 64};
-const uint16_t BLOCK_FX_Y_END[] = {124, 124};
+const uint16_t BLOCK_FX_Y_START[] = {68, 68};
+const uint16_t BLOCK_FX_Y_END[] = {128, 128};
 
 const uint16_t BLOCK_MOD_MATRIX_X_START = 0;
 const uint16_t BLOCK_MOD_MATRIX_X_END = 256;
@@ -98,8 +98,8 @@ const uint16_t BLOCK_SETTINGS_Y_END[] = {42, 56, 70, 84, 98, 112, 126};
 
 const uint16_t BLOCK_SCOPE_X_START = 0;
 const uint16_t BLOCK_SCOPE_X_END = 256;
-const uint16_t BLOCK_SCOPE_Y_START = 22;
-const uint16_t BLOCK_SCOPE_Y_END = 72;
+const uint16_t BLOCK_SCOPE_Y_START = 26;
+const uint16_t BLOCK_SCOPE_Y_END = 76;
 
 const uint16_t BLOCK_STORE_X_START = 64;
 const uint16_t BLOCK_STORE_X_END = 192;

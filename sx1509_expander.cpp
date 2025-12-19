@@ -119,7 +119,7 @@ void InitSX1509Extenders()
     sx1509_leds.WritePWM(LED_LFO, 0);
     UpdateLeds();
 
-    System::Delay(10);
+    System::Delay(100);
 }
 
 int8_t EncoderInc(uint8_t pin_a, uint8_t pin_b)

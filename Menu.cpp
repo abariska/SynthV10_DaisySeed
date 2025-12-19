@@ -1,4 +1,5 @@
 #include "menu.h"
+#include "OLED_Greyscale_Daisy/fonts.h"
 #include "display.h"
 
 #include "parameters.h"
@@ -14,9 +15,6 @@ using M = ModSource;
 
 extern ParameterManager paramManager;
 
-const uint8_t yBlockLabel = 0;
-const uint8_t yBlockValue = 16;
-const uint8_t yBlockUnit = 32;
 bool isBlink = false;
 bool blinkStateChanged = false;
 bool isStoreMode = false;
@@ -46,6 +44,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 
     Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor);
     Paint_Clear(bgColor);
+    // Paint_DrawCircle(PARAM_BLOCK_WIDTH / 2, PARAM_BLOCK_HEIGHT / 2, PARAM_BLOCK_WIDTH / 2, 0x04, DOT_PIXEL_1X1, DRAW_FILL_FULL);
 
     ParamUnit param_unit = paramManager.GetParam(target_param).GetUnit();
 
@@ -68,7 +67,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     if (param_unit == ParamUnit::PICTURE)
     {
         value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
-        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, BLOCK_PARAM_Y_LABEL, &Regular_12, textColor, bgColor);
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, &Regular_12, textColor, bgColor);
         DrawWaveformImage(value, true, (UBYTE)textColor);
     }
     else
@@ -149,15 +148,16 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             break;
         }
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, &Regular_12, textColor, bgColor);
-        Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, BLOCK_PARAM_Y_VALUE, &Regular_16, textColor, bgColor);
-        Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, BLOCK_PARAM_Y_UNIT, &Regular_12, textColor, bgColor);
+        Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue, &Font16Bold, textColor, bgColor);
+        Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, yBlockUnit, &Regular_12, textColor, bgColor);
     }
 
     if (currentPage == MAIN_PAGE)
     {
         if (currentPreset.mainSlots[blockIndex].isEditMode && isBlink)
         {
-            Paint_DrawRectangle(1, 1, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0x08, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+            Paint_DrawRectangle(1, 1, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0x0f, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+            Paint_DrawRectangle(2, 2, PARAM_BLOCK_WIDTH - 1, PARAM_BLOCK_HEIGHT - 1, 0x08, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
         }
         OLED_Transmit_DMA_Part(&param_block_data[blockIndex],
                                BLOCK_MAIN_X_START[blockIndex],

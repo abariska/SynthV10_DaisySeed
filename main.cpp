@@ -501,7 +501,7 @@ void CpuUsageDisplay()
 
     // float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
     // UartPrintf("CPU load: ", cpu_avg_load);
-    if (currentPage == MAIN_PAGE)
+    if (currentPage == SETTINGS_PAGE)
     {
         Paint_NewImage(cpu_load_block_data.data, CPU_LOAD_BLOCK_WIDTH, CPU_LOAD_BLOCK_HEIGHT, 0, BLACK);
         Paint_Clear(BLACK);

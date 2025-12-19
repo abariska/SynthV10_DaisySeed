@@ -103,11 +103,16 @@ void DrawIntroPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, 0x00);
     Paint_Clear(0x00);
 
-    Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, &Font24Bold, 0xFF, 0x00); 
-    Paint_TextCentered("by abariska", 128, FULL_PAGE_WIDTH, 112, &Regular_12, 0xFF, 0x00);
+    static uint8_t color = 0x00;
+    for (size_t i = 0; i < 16; i++)
+    {
+        Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, &Font24Bold, color, 0x00); 
+        Paint_TextCentered("by abariska", 128, FULL_PAGE_WIDTH, 112, &Regular_12, color, 0x00);
 
-    OLED_Transmit_DMA(&bg_black_data);
-    System::Delay(1000);
+        OLED_Transmit_DMA(&bg_black_data);
+        System::Delay(50);
+        color = (color + 1) % 16;
+    }
 }
 
 void SetPage(MenuPage newPage)
@@ -251,11 +256,11 @@ void DrawMainPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_DrawLine(5, 23, FULL_PAGE_WIDTH - 5, 23, 0x0C, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(5, 25, FULL_PAGE_WIDTH - 5, 25, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(5, 25, FULL_PAGE_WIDTH - 5, 25, 0x0B, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(5, 27, FULL_PAGE_WIDTH - 5, 27, 0x06, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
     sprintf(prog_num, "%03d", currentPreset.number);
-    Paint_TextCentered(prog_num, 0, FULL_PAGE_WIDTH, 0, &Font24Bold, WHITE, BLACK);
+    Paint_TextCentered(prog_num, 0, FULL_PAGE_WIDTH, 0, &Regular_24, WHITE, BLACK);
 
     // sprintf(prog_name, "%s", currentPreset.name);
     // Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
@@ -272,7 +277,7 @@ void DrawParamPage(MenuPage page)
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_DrawLine(4, 22, FULL_PAGE_WIDTH - 4, 22, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
     Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, &Font16Bold, WHITE, BLACK);
 
@@ -323,15 +328,16 @@ void DrawEffectsPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_SetScale(16);
     Paint_Clear(BLACK);
-    Paint_DrawLine(4, 22, FULL_PAGE_WIDTH - 4, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
     Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, &Font16Bold, WHITE, BLACK);
 
     Paint_TextCentered("FX1", 0, FULL_PAGE_WIDTH / 2, 40, &Regular_16, WHITE, BLACK);
-    Paint_TextCentered("FX2", FULL_PAGE_WIDTH / 2, FULL_PAGE_WIDTH, 40, &Regular_12, WHITE, BLACK);
-    Paint_DrawLine(56, 46, 72, 46, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(69, 43, 72, 46, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(69, 49, 72, 46, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_TextCentered("FX2", FULL_PAGE_WIDTH / 2, FULL_PAGE_WIDTH, 40, &Regular_16, WHITE, BLACK);
+    uint8_t arrow_y = 46;
+    Paint_DrawLine(120, arrow_y, 136, arrow_y, WHITE, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(128, arrow_y - 3, 136, arrow_y, WHITE, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(128, arrow_y + 3, 136, arrow_y, WHITE, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
     OLED_Transmit_DMA(&bg_black_data);
 
@@ -379,9 +385,9 @@ void DrawModMatrixBlock(uint8_t blockIndex)
     if (blockIndex == selModBlockIndex)
     {
         uint8_t arrow_y = 8;
-        Paint_DrawLine(24, arrow_y, 40, arrow_y, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        Paint_DrawLine(32, arrow_y - 3, 40, arrow_y, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-        Paint_DrawLine(32, arrow_y + 3, 40, arrow_y, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(24, arrow_y, 40, arrow_y, WHITE, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(32, arrow_y - 3, 40, arrow_y, WHITE, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(32, arrow_y + 3, 40, arrow_y, WHITE, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     }
 
     OLED_Transmit_DMA_Part(&mod_matrix_block_data[blockIndex],
@@ -405,7 +411,7 @@ void DrawModMatrixPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
     
-    Paint_DrawLine(4, 22, FULL_PAGE_WIDTH - 4, 22, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, &Font16Bold, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);
@@ -419,19 +425,19 @@ void DrawWaveformImage(int waveform, bool custom_color, UBYTE color)
     switch (waveform)
     {
     case 0: // SIN
-        Paint_BitMapCentered(sin_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, BLOCK_WAVEFORM_Y_START, custom_color, color);
+        Paint_BitMapCentered(sin_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     case 1: // TRI
-        Paint_BitMapCentered(tri_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, BLOCK_WAVEFORM_Y_START, custom_color, color);
+        Paint_BitMapCentered(tri_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     case 2: // SAW
-        Paint_BitMapCentered(saw_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, BLOCK_WAVEFORM_Y_START, custom_color, color);
+        Paint_BitMapCentered(saw_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     case 3: // SQR
-        Paint_BitMapCentered(sqr_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, BLOCK_WAVEFORM_Y_START, custom_color, color);
+        Paint_BitMapCentered(sqr_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     case 4: // NOISE
-        Paint_BitMapCentered(noise_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, BLOCK_WAVEFORM_Y_START, custom_color, color);
+        Paint_BitMapCentered(noise_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     default:
         break;
@@ -475,9 +481,10 @@ void DrawSettingsPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_DrawLine(4, 24, FULL_PAGE_WIDTH - 4, 24, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-
+    const char *version = "version: 0.4";
+    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, &Font16Bold, WHITE, BLACK);
+    Paint_TextCentered(version, 0, FULL_PAGE_WIDTH, 112, &Regular_12, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);
 
