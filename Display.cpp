@@ -278,7 +278,6 @@ void DrawParamPage(MenuPage page)
     Paint_Clear(BLACK);
 
     Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-
     Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, &Font16Bold, WHITE, BLACK);
 
     // // Індикатор активного ряду
