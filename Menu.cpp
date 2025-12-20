@@ -67,7 +67,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     if (param_unit == ParamUnit::PICTURE)
     {
         value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
-        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, &Regular_12, textColor, bgColor);
         DrawWaveformImage(value);
     }
     else
@@ -148,9 +148,9 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             unit = "";
             break;
         }
-        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, Font12, textColor, bgColor);
-        Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue - 4, Font12, textColor, bgColor);
-        Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, yBlockValue + 10, Font8, textColor, bgColor);
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, &Regular_12, textColor, bgColor);
+        Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue - 4, &Regular_12, textColor, bgColor);
+        Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, yBlockValue + 10, &Regular_8, textColor, bgColor);
     }
 
     if (currentPage == MAIN_PAGE)

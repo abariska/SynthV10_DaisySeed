@@ -13,8 +13,8 @@ CPP_SOURCES = main.cpp \
 			  sx1509_expander.cpp \
 			  log_uart.cpp \
 			  reverb.cpp \
-	$(OLED_DIR)/OLED_Driver.cpp $(OLED_DIR)/GUI_Paint.cpp $(OLED_DIR)/font8.cpp \
-	$(OLED_DIR)/font12.cpp $(OLED_DIR)/font16.cpp $(SX1509_DIR)/SX1509.cpp
+	$(OLED_DIR)/OLED_Driver.cpp $(OLED_DIR)/GUI_Paint.cpp $(OLED_DIR)/fonts/Regular_8.cpp \
+	$(OLED_DIR)/fonts/Regular_12.cpp $(OLED_DIR)/fonts/Regular_16.cpp $(SX1509_DIR)/SX1509.cpp
 
 
 C_SOURCES = imageData.c
