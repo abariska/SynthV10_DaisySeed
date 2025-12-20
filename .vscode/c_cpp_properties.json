@@ -7,12 +7,13 @@
             "defines": [
                 "_DEBUG",
                 "UNICODE",
-                "_UNICODE"
+                "_UNICODE",
+                "STM32H750xx"
             ],
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/../DaisyExamples/libDaisy/**",
-                "${workspaceFolder}/../DaisyExamples/DaisySP/**"
+                "${workspaceFolder}/../lib/libDaisy/**",
+                "${workspaceFolder}/../lib/DaisySP/**"
             ],
             "name": "macOS"
         }
