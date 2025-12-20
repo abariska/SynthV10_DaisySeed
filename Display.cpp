@@ -449,7 +449,7 @@ void DrawSettingsBlock(uint8_t blockIndex)
     Paint_NewImage(settings_block_data[blockIndex].data, SETTINGS_BLOCK_WIDTH, SETTINGS_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_DrawString_EN(64, 1, paramManager.GetLabel(SETTINGS_PARAMS[blockIndex]), &Regular_12, WHITE, BLACK);
+    Paint_DrawString_EN(64, 1, paramManager.GetFullLabel(SETTINGS_PARAMS[blockIndex]), &Regular_12, WHITE, BLACK);
     if (paramManager.GetUnit(SETTINGS_PARAMS[blockIndex]) == ParamUnit::BOOL)
     {
         Paint_TextCentered(paramManager.GetBool(SETTINGS_PARAMS[blockIndex]) ? "On" : "Off", 192, 256, 1, &Regular_12, WHITE, BLACK);

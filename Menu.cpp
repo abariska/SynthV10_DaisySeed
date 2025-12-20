@@ -56,12 +56,12 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     if (currentPage == MAIN_PAGE)
     {
         value = paramManager.GetPhysical(currentPreset.mainSlots[blockIndex].target_param);
-        label = paramManager.GetLabel(currentPreset.mainSlots[blockIndex].target_param);
+        label = paramManager.GetFullLabel(currentPreset.mainSlots[blockIndex].target_param);
     }
     else
     {
         value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
-        label = paramManager.GetLabel(paramSlots[blockIndex].target_param);
+        label = paramManager.GetShortLabel(paramSlots[blockIndex].target_param);
     }
 
     if (param_unit == ParamUnit::PICTURE)
