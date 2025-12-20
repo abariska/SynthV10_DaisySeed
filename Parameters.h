@@ -11,8 +11,6 @@
 
 // Required for array structures
 #define OSC_NUM 3
-#define PARAM_NAME_LENGTH 8
-#define PRESET_NAME_LENGTH 12
 #define PRESET_NUM 40
 #define MOD_MATRIX_NUM 7
 
@@ -148,7 +146,8 @@ class SynthParameter
 {
 private:
     // Загальні поля
-    const char *name_label;
+    const char *full_label;
+    const char *short_label;
     int param_index;
     float *param_array;
     float norm_value;
@@ -165,7 +164,7 @@ public:
     SynthParameter() = default;
 
     SynthParameter(float min_value, float max_value,
-                   const char *label, uint8_t index, float *array,
+                   const char *full_label, const char *short_label, uint8_t index, float *array,
                    Curve defaultCurve,
                    ParamUnit param_unit,
                    ParamType type = ParamType::CONTINUOUS,
@@ -173,7 +172,7 @@ public:
                    UseInMod useInMod = UseInMod::NONE);
 
     SynthParameter(int min_vals, int max_vals,
-                   const char *label, uint8_t index, float *array,
+                   const char *full_label, const char *short_label, uint8_t index, float *array,
                    Curve defaultCurve = Curve::LINEAR,
                    ParamUnit param_unit = ParamUnit::UNITLESS,
                    ParamType type = ParamType::DISCRETE,
@@ -195,7 +194,8 @@ public:
     float GetNormalised() const;
     float GetPhysical() const;
     bool GetBool() const;
-    const char *GetLabel() const;
+    const char *GetFullLabel() const;
+    const char *GetShortLabel() const;
     ParamType GetType() const;
     ParamUnit GetUnit() const;
     void SetBool(bool value);
@@ -219,7 +219,8 @@ public:
     float GetNormalised(ParamUnitName name) { return GetParam(name).GetNormalised(); }
     float GetPhysical(ParamUnitName name) { return GetParam(name).GetPhysical(); }
     bool GetBool(ParamUnitName name) { return GetParam(name).GetBool(); }
-    const char *GetLabel(ParamUnitName name) { return GetParam(name).GetLabel(); }
+    const char *GetFullLabel(ParamUnitName name) { return GetParam(name).GetFullLabel(); }
+    const char *GetShortLabel(ParamUnitName name) { return GetParam(name).GetShortLabel(); }
     ParamType GetType(ParamUnitName name) { return GetParam(name).GetType(); }
     void AdjustByIncrement(ParamUnitName name, int inc) { GetParam(name).AdjustByIncrement(inc); }
     void SetModifier(ParamUnitName name, float mod_value) { GetParam(name).SetModifier(mod_value); }
@@ -313,7 +314,7 @@ public:
     float GetModSourceValue() const { return modulators[static_cast<int>(modSource.source)].value; }
     const char *GetModSourceLabel() const { return modulators[static_cast<int>(modSource.source)].label; }
     ParamUnitName GetModTarget() const { return modTarget; }
-    const char *GetModTargetLabel() const { return paramManager.GetLabel(modTarget); }
+    const char *GetModTargetLabel() const { return paramManager.GetFullLabel(modTarget); }
 
     void RunMod()
     {

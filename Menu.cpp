@@ -1,4 +1,5 @@
 #include "menu.h"
+#include "OLED_Greyscale_Daisy/fonts.h"
 #include "display.h"
 
 #include "parameters.h"
@@ -14,8 +15,6 @@ using M = ModSource;
 
 extern ParameterManager paramManager;
 
-const uint8_t yBlockLabel = 10;
-const uint8_t yBlockValue = 30;
 bool isBlink = false;
 bool blinkStateChanged = false;
 bool isStoreMode = false;
@@ -45,6 +44,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 
     Paint_NewImage(param_block_data[blockIndex].data, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0, bgColor);
     Paint_Clear(bgColor);
+    // Paint_DrawCircle(PARAM_BLOCK_WIDTH / 2, PARAM_BLOCK_HEIGHT / 2, PARAM_BLOCK_WIDTH / 2, 0x04, DOT_PIXEL_1X1, DRAW_FILL_FULL);
 
     ParamUnit param_unit = paramManager.GetParam(target_param).GetUnit();
 
@@ -56,23 +56,22 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     if (currentPage == MAIN_PAGE)
     {
         value = paramManager.GetPhysical(currentPreset.mainSlots[blockIndex].target_param);
-        label = paramManager.GetLabel(currentPreset.mainSlots[blockIndex].target_param);
+        label = paramManager.GetFullLabel(currentPreset.mainSlots[blockIndex].target_param);
     }
     else
     {
         value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
-        label = paramManager.GetLabel(paramSlots[blockIndex].target_param);
+        label = paramManager.GetShortLabel(paramSlots[blockIndex].target_param);
     }
 
     if (param_unit == ParamUnit::PICTURE)
     {
         value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, &Regular_12, textColor, bgColor);
-        DrawWaveformImage(value);
+        DrawWaveformImage(value, true, (UBYTE)textColor);
     }
     else
     {
-
         switch (param_unit)
         {
         case ParamUnit::HZ:
@@ -80,7 +79,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             {
                 value = value / 1000;
                 unit = "kHz";
-                if (value >= 10.0)
+                if (value > 9.99f)
                 {
                     sprintf(value_str, "%.1f", value);
                 }
@@ -113,7 +112,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             if (value >= 1)
             {
                 unit = "s";
-                if (value >= 10.0)
+                if (value > 9.99f)
                 {
                     sprintf(value_str, "%.1f", value);
                 }
@@ -149,15 +148,16 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             break;
         }
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, &Regular_12, textColor, bgColor);
-        Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue - 4, &Regular_12, textColor, bgColor);
-        Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, yBlockValue + 10, &Regular_8, textColor, bgColor);
+        Paint_TextCentered(value_str, 0, PARAM_BLOCK_WIDTH, yBlockValue, &Font16Bold, textColor, bgColor);
+        Paint_TextCentered(unit, 0, PARAM_BLOCK_WIDTH, yBlockUnit, &Regular_12, textColor, bgColor);
     }
 
     if (currentPage == MAIN_PAGE)
     {
         if (currentPreset.mainSlots[blockIndex].isEditMode && isBlink)
         {
-            Paint_DrawRectangle(1, 2, 32, 50, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+            Paint_DrawRectangle(1, 1, PARAM_BLOCK_WIDTH, PARAM_BLOCK_HEIGHT, 0x0f, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+            Paint_DrawRectangle(2, 2, PARAM_BLOCK_WIDTH - 1, PARAM_BLOCK_HEIGHT - 1, 0x08, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
         }
         OLED_Transmit_DMA_Part(&param_block_data[blockIndex],
                                BLOCK_MAIN_X_START[blockIndex],
@@ -186,7 +186,7 @@ void DrawParamBlocks()
         }
 
         bool isActiveRow = (i < 4 && currentActiveRow == ROW_1) || (i >= 4 && currentActiveRow == ROW_2);
-        uint16_t textColor = isActiveRow ? WHITE : 0x02; // Активні - білі, неактивні - темні
+        uint16_t textColor = isActiveRow ? 0xFF : 0x08; // Активні - білі, неактивні - темні
         uint16_t bgColor = BLACK;
 
         DrawOneParamBlock(i, paramSlots[i].target_param, textColor, bgColor);
@@ -303,34 +303,31 @@ void EditBlockParam(uint8_t blockIndex)
         int dir = (inc > 0) ? 1 : -1;
 
         int value = (int)currentPreset.mainSlots[blockIndex].target_param;
-        value += dir;
+        int temp_value = value;
+        temp_value += dir;
+        int i = 1;
 
-        while (paramManager.GetUseInMain(static_cast<P>(value)) != UseInMain::USED
-            || isDuplicate(value))
+        while (paramManager.GetUseInMain(static_cast<P>(temp_value)) == UseInMain::NONE
+            || isDuplicate(temp_value))
         {
-            value += dir;
+            temp_value += dir;
+            i++;
+            if (temp_value >= (int)P::COUNT_PARAMS - 1 || temp_value <= (int)P::NONE)
+            {
+                i = 1;
+                temp_value = value;
+                break;
+            }
         }
+        value = temp_value;
+
         if (value >= (int)P::COUNT_PARAMS - 1)
         {
-            if (paramManager.GetUseInMain(static_cast<P>(value)) != UseInMain::USED)
-            {
-                value -= 1;
-            }
-            else
-            {
-                value = (int)P::COUNT_PARAMS - 1;
-            }
+            value = (int)P::COUNT_PARAMS - 1;
         }
         else if (value <= (int)P::NONE)
         {
-            if (paramManager.GetUseInMain(static_cast<P>(value)) != UseInMain::USED)
-            {
-                value += 1;
-            }
-            else
-            {
-                value = (int)P::NONE;
-            }
+            value = (int)P::NONE;
         }
 
         encoderIncs[blockIndex] = 0;

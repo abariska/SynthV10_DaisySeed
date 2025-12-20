@@ -13,6 +13,10 @@
 
 using namespace daisy;
 
+const uint8_t yBlockLabel = 2;
+const uint8_t yBlockValue = 18;
+const uint8_t yBlockUnit = 36;
+
 extern char page_name[16];
 extern bool isBlink;
 extern bool blinkStateChanged;
@@ -52,6 +56,7 @@ void SetPageName(const char *name);
 void ToggleActiveRow();
 void EncoderChangeStore();
 void UpdateStoreLed();
+void DrawWaveformImage(int waveform, bool custom_color = false, UBYTE color = 0xFF);
 
 uint8_t GetActiveParamIndex(uint8_t encoderIndex); // Повертає індекс активного параметра для енкодера
 

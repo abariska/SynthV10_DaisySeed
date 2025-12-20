@@ -131,6 +131,7 @@ int main(void)
     System::Delay(10);
     process_type = PROCESS_CONTROLS;
 
+
     while (1)
     {
         UartMidiProcess();
@@ -149,12 +150,12 @@ int main(void)
                 break;
             case PROCESS_DISPLAY:
                 UpdatePage();
-                DrawScope();
                 break;
         }
         
         if (update_1ms)
         {
+            DrawScope();
             UpdatePWMLeds();
             DrawVoicesBlock();
 
@@ -500,13 +501,13 @@ void CpuUsageDisplay()
 
     // float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
     // UartPrintf("CPU load: ", cpu_avg_load);
-    if (currentPage == MAIN_PAGE)
+    if (currentPage == SETTINGS_PAGE)
     {
-        Paint_NewImage(cpu_load_block_data.data, 12, 12, 0, BLACK);
+        Paint_NewImage(cpu_load_block_data.data, CPU_LOAD_BLOCK_WIDTH, CPU_LOAD_BLOCK_HEIGHT, 0, BLACK);
         Paint_Clear(BLACK);
         float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-        Paint_NumCentered(cpu_avg_load, 0, 12, 0, 0, &Regular_8, WHITE, BLACK);
-        OLED_Transmit_DMA_Part(&cpu_load_block_data, 116, 0, 128, 12);
+        Paint_NumCentered(cpu_avg_load, 0, CPU_LOAD_BLOCK_WIDTH, 0, 1, &Regular_8, WHITE, BLACK);
+        OLED_Transmit_DMA_Part(&cpu_load_block_data, 236, 0, 256, 16);
         // UartPrint("CPU load: ", cpu_avg_load);
     }
     
@@ -520,19 +521,19 @@ void CpuUsageDisplay()
 
 void DrawVoicesBlock()
 {
-    Paint_NewImage(voices_block_data.data, 20, 20, 0, BLACK);
+    Paint_NewImage(voices_block_data.data, VOICES_BLOCK_WIDTH, VOICES_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
     
     int x1 = 1, x2 = 1;
     for (size_t i = 0; i < VOICE_NUM; i++)
     {
         x2 = x1 + 2;
-        Paint_DrawLine(x1, 16, x2, 16, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        Paint_DrawLine(x1, 16, x2, 16, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
         if (voice[i].active)
         {
-            Paint_DrawRectangle(x1, 2, x2, 12, 0x01, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+            Paint_DrawRectangle(x1, 2, x2, 12, 0x08, DOT_PIXEL_1X1, DRAW_FILL_FULL);
         }
         x1 += 4;
     }
-    OLED_Transmit_DMA_Part(&voices_block_data, 0, 0, 20, 16);
+    OLED_Transmit_DMA_Part(&voices_block_data, 0, 0, VOICES_BLOCK_WIDTH, VOICES_BLOCK_HEIGHT);
 }
