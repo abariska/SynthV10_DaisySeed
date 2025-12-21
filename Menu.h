@@ -14,8 +14,8 @@
 using namespace daisy;
 
 const uint8_t yBlockLabel = 2;
-const uint8_t yBlockValue = 18;
-const uint8_t yBlockUnit = 36;
+const uint8_t yBlockValue = 20;
+const uint8_t yBlockUnit = 38;
 
 extern char page_name[16];
 extern bool isBlink;

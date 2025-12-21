@@ -6,7 +6,6 @@
 #include "per/spi.h"
 #include "daisy.h"
 
-
 // Display controller types
 #define SSD1327 1327
 #define SSD1363 1363

@@ -16,7 +16,8 @@ CPP_SOURCES = main.cpp \
 	$(OLED_DIR)/OLED_Driver.cpp $(OLED_DIR)/GUI_Paint.cpp \
 	$(SX1509_DIR)/SX1509.cpp \
 	$(FONTS_DIR)/8-bold.cpp $(FONTS_DIR)/12-bold.cpp $(FONTS_DIR)/16-bold.cpp $(FONTS_DIR)/20-bold.cpp $(FONTS_DIR)/24-bold.cpp \
-	$(FONTS_DIR)/Regular_8.cpp $(FONTS_DIR)/Regular_12.cpp $(FONTS_DIR)/Regular_16.cpp $(FONTS_DIR)/Regular_20.cpp $(FONTS_DIR)/Regular_24.cpp
+	$(FONTS_DIR)/Regular_8.cpp $(FONTS_DIR)/Regular_12.cpp $(FONTS_DIR)/Regular_16.cpp $(FONTS_DIR)/Regular_20.cpp $(FONTS_DIR)/Regular_24.cpp \
+	$(FONTS_DIR)/Terminal_Bold_16.cpp $(FONTS_DIR)/Terminal_Bold_20.cpp $(FONTS_DIR)/Terminal_Bold_24.cpp $(FONTS_DIR)/Roboto_B_12.cpp $(FONTS_DIR)/Roboto_B_14.cpp $(FONTS_DIR)/Roboto_B_16.cpp $(FONTS_DIR)/Roboto_B_18.cpp $(FONTS_DIR)/Roboto_B_20.cpp $(FONTS_DIR)/Roboto_B_24.cpp $(FONTS_DIR)/Roboto_L_12.cpp $(FONTS_DIR)/Roboto_L_14.cpp $(FONTS_DIR)/Roboto_L_16.cpp $(FONTS_DIR)/Roboto_L_18.cpp $(FONTS_DIR)/Roboto_L_20.cpp $(FONTS_DIR)/Roboto_L_24.cpp $(FONTS_DIR)/Roboto_M_12.cpp $(FONTS_DIR)/Roboto_M_14.cpp $(FONTS_DIR)/Roboto_M_16.cpp $(FONTS_DIR)/Roboto_M_18.cpp $(FONTS_DIR)/Roboto_M_20.cpp $(FONTS_DIR)/Roboto_M_24.cpp
 
 C_SOURCES = imageData.c
 

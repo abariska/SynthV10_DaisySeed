@@ -10,6 +10,25 @@
 #define PROGRAM_NAME_LENGTH 12
 #define PROGRAM_NUMBER_LENGTH 4
 
+#define FONT_BOLD_12 &Roboto_B_12
+#define FONT_BOLD_14 &Roboto_B_14
+#define FONT_BOLD_16 &Roboto_B_16
+#define FONT_BOLD_18 &Roboto_B_18
+#define FONT_BOLD_20 &Roboto_B_20
+#define FONT_BOLD_24 &Roboto_B_24
+#define FONT_LIGHT_12 &Regular_12
+#define FONT_LIGHT_14 &Regular_14
+#define FONT_LIGHT_16 &Regular_16
+#define FONT_LIGHT_18 &Regular_18
+#define FONT_LIGHT_20 &Regular_20
+#define FONT_LIGHT_24 &Regular_24
+#define FONT_MEDIUM_12 &Roboto_M_12
+#define FONT_MEDIUM_14 &Roboto_M_14
+#define FONT_MEDIUM_16 &Roboto_M_16
+#define FONT_MEDIUM_18 &Roboto_M_18
+#define FONT_MEDIUM_20 &Roboto_M_20
+#define FONT_MEDIUM_24 &Roboto_M_24
+
 #define PARAM_VALUE_LENGTH 8
 #define FULL_PAGE_WIDTH DISPLAY_WIDTH // taken from Display_Config.h
 #define FULL_PAGE_HEIGHT DISPLAY_HEIGHT // taken from Display_Config.h

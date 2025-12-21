@@ -106,8 +106,8 @@ void DrawIntroPage()
     static uint8_t color = 0x00;
     for (size_t i = 0; i < 16; i++)
     {
-        Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, &Font24Bold, color, 0x00); 
-        Paint_TextCentered("by abariska", 128, FULL_PAGE_WIDTH, 112, &Regular_12, color, 0x00);
+        Paint_TextCentered("must B", 0, FULL_PAGE_WIDTH, 50, FONT_BOLD_24, color, 0x00);  
+        Paint_TextCentered("by abariska", 128, FULL_PAGE_WIDTH, 112, FONT_LIGHT_12, color, 0x00);
 
         OLED_Transmit_DMA(&bg_black_data);
         System::Delay(50);
@@ -260,7 +260,7 @@ void DrawMainPage()
     Paint_DrawLine(5, 27, FULL_PAGE_WIDTH - 5, 27, 0x06, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
     sprintf(prog_num, "%03d", currentPreset.number);
-    Paint_TextCentered(prog_num, 0, FULL_PAGE_WIDTH, 0, &Regular_24, WHITE, BLACK);
+    Paint_TextCentered(prog_num, 0, FULL_PAGE_WIDTH, 0, FONT_BOLD_24, WHITE, BLACK);
 
     // sprintf(prog_name, "%s", currentPreset.name);
     // Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
@@ -278,7 +278,7 @@ void DrawParamPage(MenuPage page)
     Paint_Clear(BLACK);
 
     Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, &Font16Bold, WHITE, BLACK);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, FONT_BOLD_20, WHITE, BLACK);
 
     // // Індикатор активного ряду
     // uint8_t rowIndicator = (currentActiveRow == ROW_1) ? 1 : 2;
@@ -304,15 +304,15 @@ void DrawEffectBlock(uint8_t slot)
     EffectName selected = currentPreset.effectSlots[slot].selectedEffect;
     if (selected != EFFECT_NONE)
     {
-        Paint_TextCentered(effectLabels[selected], 0, EFFECT_BLOCK_WIDTH, 0, &Regular_16, WHITE, BLACK);
-        Paint_TextCentered(currentPreset.effectSlots[slot].isActive ? "On" : "Off", 0, EFFECT_BLOCK_WIDTH, 16, &Regular_12, WHITE, BLACK);
+        Paint_TextCentered(effectLabels[selected], 0, EFFECT_BLOCK_WIDTH, 0, FONT_LIGHT_16, WHITE, BLACK);
+        Paint_TextCentered(currentPreset.effectSlots[slot].isActive ? "On" : "Off", 0, EFFECT_BLOCK_WIDTH, 16, FONT_LIGHT_12, WHITE, BLACK);
     }
     else
     {
-        Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 0, &Regular_16, WHITE, BLACK);
-        Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 16, &Regular_12, WHITE, BLACK);
+        Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 0, FONT_LIGHT_16, WHITE, BLACK);
+        Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 16, FONT_LIGHT_12, WHITE, BLACK);
     }
-    Paint_NumCentered(paramManager.GetNormalised(EFFECT_SLOT_DRYWET[slot]) * 100, 0, EFFECT_BLOCK_WIDTH, 32, 0, &Regular_16, WHITE, BLACK);
+    Paint_NumCentered(paramManager.GetNormalised(EFFECT_SLOT_DRYWET[slot]) * 100, 0, EFFECT_BLOCK_WIDTH, 32, 0, FONT_LIGHT_16, WHITE, BLACK);
 
     OLED_Transmit_DMA_Part(&effect_block_data[slot],
                            BLOCK_FX_X_START[slot],
@@ -329,10 +329,10 @@ void DrawEffectsPage()
     Paint_Clear(BLACK);
     Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
-    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, &Font16Bold, WHITE, BLACK);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, FONT_BOLD_20, WHITE, BLACK);
 
-    Paint_TextCentered("FX1", 0, FULL_PAGE_WIDTH / 2, 40, &Regular_16, WHITE, BLACK);
-    Paint_TextCentered("FX2", FULL_PAGE_WIDTH / 2, FULL_PAGE_WIDTH, 40, &Regular_16, WHITE, BLACK);
+    Paint_TextCentered("FX1", 0, FULL_PAGE_WIDTH / 2, 40, FONT_LIGHT_16, WHITE, BLACK);
+    Paint_TextCentered("FX2", FULL_PAGE_WIDTH / 2, FULL_PAGE_WIDTH, 40, FONT_LIGHT_16, WHITE, BLACK);
     uint8_t arrow_y = 46;
     Paint_DrawLine(120, arrow_y, 136, arrow_y, WHITE, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
     Paint_DrawLine(128, arrow_y - 3, 136, arrow_y, WHITE, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
@@ -378,9 +378,9 @@ void DrawModMatrixBlock(uint8_t blockIndex)
     Paint_NewImage(mod_matrix_block_data[blockIndex].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModSourceLabel(), 64, 128, 1, &Regular_12, WHITE, BLACK);
-    Paint_NumCentered(currentPreset.modMtx[blockIndex].GetModAmount() * 100, 128, 192, 1, 0, &Regular_12, WHITE, BLACK);
-    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModTargetLabel(), 192, 256, 1, &Regular_12, WHITE, BLACK);
+    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModSourceLabel(), 64, 128, 1, FONT_LIGHT_12, WHITE, BLACK);
+    Paint_NumCentered(currentPreset.modMtx[blockIndex].GetModAmount() * 100, 128, 192, 1, 0, FONT_LIGHT_12, WHITE, BLACK);
+    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModTargetLabel(), 192, 256, 1, FONT_LIGHT_12, WHITE, BLACK);
     if (blockIndex == selModBlockIndex)
     {
         uint8_t arrow_y = 8;
@@ -411,7 +411,7 @@ void DrawModMatrixPage()
     Paint_Clear(BLACK);
     
     Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, &Font16Bold, WHITE, BLACK);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, FONT_BOLD_20, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);
 
@@ -448,14 +448,14 @@ void DrawSettingsBlock(uint8_t blockIndex)
     Paint_NewImage(settings_block_data[blockIndex].data, SETTINGS_BLOCK_WIDTH, SETTINGS_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_DrawString_EN(64, 1, paramManager.GetFullLabel(SETTINGS_PARAMS[blockIndex]), &Regular_12, WHITE, BLACK);
+    Paint_DrawString_EN(64, 1, paramManager.GetFullLabel(SETTINGS_PARAMS[blockIndex]), FONT_LIGHT_12, WHITE, BLACK);
     if (paramManager.GetUnit(SETTINGS_PARAMS[blockIndex]) == ParamUnit::BOOL)
     {
-        Paint_TextCentered(paramManager.GetBool(SETTINGS_PARAMS[blockIndex]) ? "On" : "Off", 192, 256, 1, &Regular_12, WHITE, BLACK);
+        Paint_TextCentered(paramManager.GetBool(SETTINGS_PARAMS[blockIndex]) ? "On" : "Off", 192, 256, 1, FONT_LIGHT_12, WHITE, BLACK);
     }
     else
     {
-        Paint_NumCentered((paramManager.GetValue(SETTINGS_PARAMS[blockIndex]) * 100), 192, 256, 1, 0, &Regular_12, WHITE, BLACK);
+        Paint_NumCentered((paramManager.GetValue(SETTINGS_PARAMS[blockIndex]) * 100), 192, 256, 1, 0, FONT_LIGHT_12, WHITE, BLACK);
     }
 
     if (blockIndex == selSettingsBlockIndex)
@@ -482,8 +482,8 @@ void DrawSettingsPage()
 
     const char *version = "version: 0.4";
     Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, &Font16Bold, WHITE, BLACK);
-    Paint_TextCentered(version, 0, FULL_PAGE_WIDTH, 112, &Regular_12, WHITE, BLACK);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, FONT_BOLD_20, WHITE, BLACK);
+    Paint_TextCentered(version, 0, FULL_PAGE_WIDTH, 112, FONT_LIGHT_12, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);
 
@@ -499,9 +499,9 @@ void DrawStoreBlock()
     Paint_Clear(BLACK);
     
     Paint_DrawRectangle(1, 1, STORE_BLOCK_WIDTH, STORE_BLOCK_HEIGHT, 0x08, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-    Paint_TextCentered("Store", 0, STORE_BLOCK_WIDTH, 20, &Regular_16, WHITE, BLACK);
-    Paint_TextCentered("preset to", 0, STORE_BLOCK_WIDTH, 36, &Regular_16, WHITE, BLACK);
-    Paint_NumCentered(currentPreset.number, 0, STORE_BLOCK_WIDTH, 60, 0, &Font24Bold, WHITE, BLACK);
+    Paint_TextCentered("Store", 0, STORE_BLOCK_WIDTH, 20, FONT_LIGHT_16, WHITE, BLACK);
+    Paint_TextCentered("preset to", 0, STORE_BLOCK_WIDTH, 36, FONT_LIGHT_16, WHITE, BLACK);
+    Paint_NumCentered(currentPreset.number, 0, STORE_BLOCK_WIDTH, 60, 0, FONT_BOLD_24, WHITE, BLACK);
 
     OLED_Transmit_DMA_Part(&store_block_data,
                            BLOCK_STORE_X_START,
