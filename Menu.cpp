@@ -67,7 +67,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     if (param_unit == ParamUnit::PICTURE)
     {
         value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
-        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, FONT_LIGHT_12, textColor, bgColor);
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, FONT_LIGHT_16, textColor, bgColor);
         DrawWaveformImage(value, true, (UBYTE)textColor);
     }
     else
@@ -186,7 +186,7 @@ void DrawParamBlocks()
         }
 
         bool isActiveRow = (i < 4 && currentActiveRow == ROW_1) || (i >= 4 && currentActiveRow == ROW_2);
-        uint16_t textColor = isActiveRow ? 0xFF : 0x08; // Активні - білі, неактивні - темні
+        uint16_t textColor = isActiveRow ? 0xFF : 0x06; // Активні - білі, неактивні - темні
         uint16_t bgColor = BLACK;
 
         DrawOneParamBlock(i, paramSlots[i].target_param, textColor, bgColor);
@@ -231,34 +231,22 @@ void UpdateEncoderSwitches()
     {
     case MAIN_PAGE:
     {
-        static uint8_t currentEditSlot = 0;
-        bool init_block[NUM_MAIN_SLOTS] = {false, false, false, false};
+        static uint8_t currentEditSlot = UINT8_MAX;
         for (size_t i = 0; i < NUM_MAIN_SLOTS; i++)
         {
-
-            if (currentPreset.mainSlots[i].isEditMode)
+            if (!currentPreset.mainSlots[i].isEditMode)
+            continue;
+            if (currentEditSlot != i)
             {
-                if (currentEditSlot == i)
+                if (currentEditSlot < NUM_MAIN_SLOTS)
                 {
-                    EditBlockParam(currentEditSlot);
-                    continue;
-                }
-                else
-                {
-
                     currentPreset.mainSlots[currentEditSlot].isEditMode = false;
                     DrawOneParamBlock(currentEditSlot, currentPreset.mainSlots[currentEditSlot].target_param);
-                    init_block[currentEditSlot] = true;
-                    currentEditSlot = i;
-                    currentPreset.mainSlots[currentEditSlot].isEditMode = true;
-                    EditBlockParam(currentEditSlot);
                 }
+                currentEditSlot = i;
+                
             }
-            if (init_block[i])
-            {
-                DrawOneParamBlock(i, currentPreset.mainSlots[i].target_param);
-                init_block[i] = false;
-            }
+            // EditBlockParam(currentEditSlot);
         }
         break;
     }
@@ -272,9 +260,7 @@ void UpdateEncoderSwitches()
         break;
     }
     default:
-    {
         break;
-    }
     }
 }
 
@@ -305,16 +291,13 @@ void EditBlockParam(uint8_t blockIndex)
         int value = (int)currentPreset.mainSlots[blockIndex].target_param;
         int temp_value = value;
         temp_value += dir;
-        int i = 1;
 
         while (paramManager.GetUseInMain(static_cast<P>(temp_value)) == UseInMain::NONE
             || isDuplicate(temp_value))
         {
             temp_value += dir;
-            i++;
             if (temp_value >= (int)P::COUNT_PARAMS - 1 || temp_value <= (int)P::NONE)
             {
-                i = 1;
                 temp_value = value;
                 break;
             }
@@ -628,33 +611,28 @@ void EditModBlock()
         int oldTarget = (int)currentPreset.modMtx[selModBlockIndex].GetModTarget();
         int target = oldTarget;
         target += dir;
+        int shift = 0;
+
         while (paramManager.GetUseInMod(static_cast<P>(target)) != UseInMod::USED)
         {
             target += dir;
+            shift += dir;
+            
+            if (target <= (int)P::NONE || target >= (int)P::COUNT_PARAMS - 1)
+            {
+                target = oldTarget;
+            }
         }
-        // ToDo: Переробити
+
         if (target >= (int)P::COUNT_PARAMS - 1)
         {
-            if (paramManager.GetUseInMod(static_cast<P>(target)) != UseInMod::USED)
-            {
-                target -= 1;
-            }
-            else
-            {
-                target = (int)P::COUNT_PARAMS - 1;
-            }
+            target = (int)P::COUNT_PARAMS - 1;
         }
         else if (target <= (int)P::NONE)
         {
-            if (paramManager.GetUseInMod(static_cast<P>(target)) != UseInMod::USED)
-            {
-                target += 1;
-            }
-            else
-            {
-                target = (int)P::NONE;
-            }
+            target = (int)P::NONE;
         }
+       
         paramManager.GetParam(static_cast<P>(oldTarget)).SetModifier(0.0f);
         currentPreset.modMtx[selModBlockIndex].SetModTarget((ParamUnitName)target);
         encoderIncs[3] = 0;

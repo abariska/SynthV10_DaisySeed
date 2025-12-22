@@ -143,6 +143,7 @@ int main(void)
                 ProcessButtons();
                 ProcessEncoders();
                 UpdateEncodersParams();
+                UpdateEncoderSwitches();
                 break;
             case UPDATE_PARAMS: 
                 UpdateModSourcesParams();
@@ -198,7 +199,7 @@ void ProcessButtons()
             return;
         }
 
-        UpdateEncoderSwitches();
+
 
         if (currentPage == MenuPage::FX_PAGE)
         {
@@ -230,7 +231,7 @@ void ProcessButtons()
         else if (currentPage == MenuPage::MAIN_PAGE)
         {
             for (size_t i = 0; i < 4; i++)
-            { // Тільки 4 енкодери
+            { 
                 if (sx1509_buttons.isFallingEdge(ENC_1_SW + i))
                 {
                     currentPreset.mainSlots[i].isEditMode = !currentPreset.mainSlots[i].isEditMode;
@@ -527,13 +528,15 @@ void DrawVoicesBlock()
     int x1 = 1, x2 = 1;
     for (size_t i = 0; i < VOICE_NUM; i++)
     {
-        x2 = x1 + 2;
-        Paint_DrawLine(x1, 16, x2, 16, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+        x2 = x1 + 6;
+        
         if (voice[i].active)
         {
-            Paint_DrawRectangle(x1, 2, x2, 12, 0x08, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+            Paint_DrawRectangle(x1, 2, x2, 22, 0x08, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+        } else {
+            Paint_DrawRectangle(x1, 2, x2, 22, 0x08, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
         }
-        x1 += 4;
+        x1 += 8;
     }
     OLED_Transmit_DMA_Part(&voices_block_data, 0, 0, VOICES_BLOCK_WIDTH, VOICES_BLOCK_HEIGHT);
 }

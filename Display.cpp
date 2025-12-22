@@ -199,7 +199,7 @@ void DrawScope()
     double time1 = System::GetNow();
     static double time_end = 0;
     
-    if (time1 - time_end > 30)
+    if (time1 - time_end > 20)
     {
         if (!scope_data_ready)
         {
@@ -256,11 +256,10 @@ void DrawMainPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_DrawLine(5, 25, FULL_PAGE_WIDTH - 5, 25, 0x0B, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_DrawLine(5, 27, FULL_PAGE_WIDTH - 5, 27, 0x06, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(5, 25, FULL_PAGE_WIDTH - 5, 25, 0x06, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
     sprintf(prog_num, "%03d", currentPreset.number);
-    Paint_TextCentered(prog_num, 0, FULL_PAGE_WIDTH, 0, FONT_BOLD_24, WHITE, BLACK);
+    Paint_TextCentered(prog_num, 0, FULL_PAGE_WIDTH, 1, FONT_BOLD_24, WHITE, BLACK);
 
     // sprintf(prog_name, "%s", currentPreset.name);
     // Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
@@ -277,20 +276,15 @@ void DrawParamPage(MenuPage page)
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x08, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, FONT_BOLD_20, WHITE, BLACK);
+    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x06, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 2, FONT_BOLD_20, WHITE, BLACK);
 
-    // // Індикатор активного ряду
-    // uint8_t rowIndicator = (currentActiveRow == ROW_1) ? 1 : 2;
-    // switch (rowIndicator)
-    // {
-    // case 1:
-    //     Paint_DrawRectangle(0, 24, 127, 75, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-    //     break;
-    // case 2:
-    //     Paint_DrawRectangle(0, 75, 127, 127, 0x01, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
-    //     break;
-    // }
+    if (currentPage == AMPLIFIER_PAGE)
+    {
+        const char *mod_label;
+        mod_label = currentActiveRow == ROW_1 ? "main" : "mod";
+        Paint_DrawString_EN(192, 2, mod_label, FONT_BOLD_20, WHITE, BLACK);
+    }
     OLED_Transmit_DMA(&bg_black_data);
 
     DrawParamBlocks();
@@ -327,9 +321,9 @@ void DrawEffectsPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_SetScale(16);
     Paint_Clear(BLACK);
-    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x06, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
 
-    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, FONT_BOLD_20, WHITE, BLACK);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 2, FONT_BOLD_20, WHITE, BLACK);
 
     Paint_TextCentered("FX1", 0, FULL_PAGE_WIDTH / 2, 40, FONT_LIGHT_16, WHITE, BLACK);
     Paint_TextCentered("FX2", FULL_PAGE_WIDTH / 2, FULL_PAGE_WIDTH, 40, FONT_LIGHT_16, WHITE, BLACK);
@@ -410,8 +404,8 @@ void DrawModMatrixPage()
     Paint_NewImage(bg_black_data.data, FULL_PAGE_WIDTH, FULL_PAGE_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
     
-    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, FONT_BOLD_20, WHITE, BLACK);
+    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x06, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 2, FONT_BOLD_20, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);
 
@@ -424,19 +418,19 @@ void DrawWaveformImage(int waveform, bool custom_color, UBYTE color)
     switch (waveform)
     {
     case 0: // SIN
-        Paint_BitMapCentered(sin_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
+        Paint_BitMapCentered(sin_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     case 1: // TRI
-        Paint_BitMapCentered(tri_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
+        Paint_BitMapCentered(tri_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     case 2: // SAW
-        Paint_BitMapCentered(saw_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
+        Paint_BitMapCentered(saw_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     case 3: // SQR
-        Paint_BitMapCentered(sqr_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
+        Paint_BitMapCentered(sqr_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     case 4: // NOISE
-        Paint_BitMapCentered(noise_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 0, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
+        Paint_BitMapCentered(noise_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     default:
         break;
@@ -481,8 +475,8 @@ void DrawSettingsPage()
     Paint_Clear(BLACK);
 
     const char *version = "version: 0.4";
-    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x01, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
-    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 0, FONT_BOLD_20, WHITE, BLACK);
+    Paint_DrawLine(4, 25, FULL_PAGE_WIDTH - 4, 25, 0x06, DOT_PIXEL_1X1, LINE_STYLE_SOLID);
+    Paint_TextCentered(page_name, 0, FULL_PAGE_WIDTH, 2, FONT_BOLD_20, WHITE, BLACK);
     Paint_TextCentered(version, 0, FULL_PAGE_WIDTH, 112, FONT_LIGHT_12, WHITE, BLACK);
 
     OLED_Transmit_DMA(&bg_black_data);
