@@ -150,7 +150,6 @@ void DrawModMatrixPage();
 void DrawScope();
 void DrawModMatrixBlock(uint8_t blockIndex);
 void DrawModMatrixBlocks();
-void DrawWaveformImage(int waveform);
 void DrawSettingsPage();
 void DrawSettingsBlock(uint8_t blockIndex);
 void DrawStoreBlock();

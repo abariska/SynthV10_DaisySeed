@@ -34,7 +34,8 @@ void Osc::Init(float sample_rate , bool is_lfo)
     sampleRate = sample_rate;
     targetFreq = 440.0f;
     currentFreq = 440.0f;
-    slewRate = 0.1f;
+    slewRate = 1.0f;
+    slewRateBase = 0.1f; 
     mode = WAVE_SIN;
     amp = 0.1f;
     pw = 0.5f;
@@ -50,7 +51,7 @@ void Osc::Init(float sample_rate , bool is_lfo)
 
 void Osc::PhaseProcess()
 {
-    currentFreq += (targetFreq != currentFreq) * (targetFreq - currentFreq) * slewRate;
+    currentFreq += (targetFreq != currentFreq) * (targetFreq - currentFreq) * slewRate; 
     UpdateIncrement();
 
     currentAmp += (amp - currentAmp) * 0.1f;

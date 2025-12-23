@@ -13,9 +13,8 @@ using namespace daisy;
 using M = ModSource;
 
 Adsr adsrMod;
-MoogLadder flt;
+LadderFilter flt;
 Osc lfo;
-Overdrive fltDrive;
 Random rnd[OSC_NUM * VOICE_NUM];
 ModMatrix modMatrix[MOD_MATRIX_NUM];
 Voice voice[VOICE_NUM];
@@ -53,7 +52,6 @@ void SynthInit(float samplerate, int blocksize)
     adsrMod.Init(samplerate, blocksize);
     lfo.Init(samplerate, true);
     EffectsInit(samplerate);
-    fltDrive.Init();
 }
 
 void ModSourcesProcess()
@@ -181,6 +179,7 @@ void UpdateSynthParams()
             voice[v].osc[oscId].SetAmp(amp);
             voice[v].osc[oscId].SetWaveform(waveform);
             voice[v].osc[oscId].SetPw(pw);
+            voice[v].osc[oscId].SetPortamento(paramManager.GetValue(P::GLOBAL_PORTAMENTO));
             if (voice[v].final_freq[oscId] != prev_freq[v * OSC_NUM + oscId])
             {
                 isOscSyncNeeded[v * OSC_NUM + oscId] = true;
@@ -193,9 +192,11 @@ void UpdateSynthParams()
         voice[v].adsr.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
     }
 
+    flt.SetFilterMode(static_cast<LadderFilter::FilterMode>(paramManager.GetValue(P::FILTER_MODE)));
     flt.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
     flt.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
-    fltDrive.SetDrive(paramManager.GetValue(P::FILTER_DRIVE));
+    flt.SetPassbandGain(0.5f);
+    flt.SetInputDrive(1.0f + (paramManager.GetValue(P::FILTER_DRIVE) * 4.0f));
 
     fx.drive.SetDrive(paramManager.GetValue(P::EFFECT_OVERDRIVE_DRIVE));
 
@@ -254,9 +255,6 @@ void VoiceProcess(float &voice_sig)
         }
     }
     
-
-    float drive = fltDrive.Process(voice_sig);
-    voice_sig = drive + (voice_sig * (1.0f - paramManager.GetValue(P::FILTER_DRIVE)));
     voice_sig = flt.Process(voice_sig);
     voice_sig = clamp(voice_sig, -1.0f, 1.0f);
 }

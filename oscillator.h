@@ -27,6 +27,7 @@ public:
 
     void SetPhaseOffset(float offset) { phaseOffset = offset; }
     void SetFreq(float freq) { targetFreq = freq; }
+    void SetPortamento(float portamento) { slewRate = slewRateBase * powf(0.0001f, portamento);   }
 
     void PhaseProcess();
     float Process();
@@ -46,6 +47,7 @@ private:
     float currentFreq;
     float targetFreq;
     float slewRate;
+    float slewRateBase;
 
     float phaseOffset;
     float phaseInc;

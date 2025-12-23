@@ -27,7 +27,7 @@ using namespace daisysp;
 // extern std::array<Osc, OSC_NUM> osc;
 // extern Adsr adsrMain[VOICE_NUM];
 
-extern MoogLadder flt;
+extern LadderFilter flt;
 extern Osc lfo;
 extern float samplerate;
 

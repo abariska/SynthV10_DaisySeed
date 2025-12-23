@@ -52,6 +52,7 @@ enum class ParamUnitName
     OSC_AMP_3,
     OSC_PWM_3,
     OSC_ACTIVE_3,
+    FILTER_MODE,
     FILTER_CUTOFF,
     FILTER_RESONANCE,
     FILTER_DRIVE,
@@ -127,6 +128,7 @@ enum class ParamUnit
     SEMITONES,
     CENTS,
     PICTURE,
+    TEXT,
     BOOL,
     UNITLESS
 };

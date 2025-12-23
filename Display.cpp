@@ -437,6 +437,33 @@ void DrawWaveformImage(int waveform, bool custom_color, UBYTE color)
     }
 }
 
+void DrawFilterModeText(int mode)
+{
+    switch (mode)
+    {
+    case 0: // LP
+        Paint_TextCentered("LP24", 0, PARAM_BLOCK_WIDTH, yBlockValue, FONT_BOLD_18, WHITE, BLACK);
+        break;
+    case 1: // HP
+        Paint_TextCentered("LP12", 0, PARAM_BLOCK_WIDTH, yBlockValue, FONT_BOLD_18, WHITE, BLACK);
+        break;
+    case 2: // BP
+        Paint_TextCentered("BP24", 0, PARAM_BLOCK_WIDTH, yBlockValue, FONT_BOLD_18, WHITE, BLACK);
+        break;
+    case 3: // BR
+        Paint_TextCentered("BP12", 0, PARAM_BLOCK_WIDTH, yBlockValue, FONT_BOLD_18, WHITE, BLACK);
+        break;
+    case 4: // BR
+        Paint_TextCentered("HP24", 0, PARAM_BLOCK_WIDTH, yBlockValue, FONT_BOLD_18, WHITE, BLACK);
+        break;
+    case 5: // BR
+        Paint_TextCentered("HP12", 0, PARAM_BLOCK_WIDTH, yBlockValue, FONT_BOLD_18, WHITE, BLACK);
+        break;
+    default:
+        break;
+    }
+}
+
 void DrawSettingsBlock(uint8_t blockIndex)
 {
     Paint_NewImage(settings_block_data[blockIndex].data, SETTINGS_BLOCK_WIDTH, SETTINGS_BLOCK_HEIGHT, 0, BLACK);

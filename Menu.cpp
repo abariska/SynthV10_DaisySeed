@@ -70,6 +70,12 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, FONT_LIGHT_16, textColor, bgColor);
         DrawWaveformImage(value, true, (UBYTE)textColor);
     }
+    else if (param_unit == ParamUnit::TEXT)
+    {
+        value = paramManager.GetValue(paramSlots[blockIndex].target_param);
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, FONT_LIGHT_16, textColor, bgColor);
+        DrawFilterModeText(value);
+    }
     else
     {
         switch (param_unit)
@@ -141,6 +147,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
             sprintf(value_str, "%d", (int)value);
             break;
         case ParamUnit::UNITLESS:
+        case ParamUnit::TEXT:
             unit = "";
             break;
         default:
@@ -453,7 +460,7 @@ void AssignParamsForPage(MenuPage page)
         paramSlots[0].target_param = P::FILTER_CUTOFF;
         paramSlots[1].target_param = P::FILTER_RESONANCE;
         paramSlots[2].target_param = P::FILTER_DRIVE;
-        paramSlots[3].target_param = P::NONE;
+        paramSlots[3].target_param = P::FILTER_MODE;
         break;
     case LFO_PAGE:
         SetPageName("LFO");
