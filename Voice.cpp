@@ -158,7 +158,6 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
     {
         PushNote(note_in);
     }
-
     int v = AllocVoice();
     voice[v].active = true;
     voice[v].note = note_in;
@@ -191,7 +190,6 @@ void HandleNoteOff(uint8_t note_in)
             if (!paramManager.GetBool(P::GLOBAL_LEGATO))
             {
                 voice[0].adsr.Retrigger(false);
-                adsrMod.Retrigger(false);
             }
             gate = true;
             return;
