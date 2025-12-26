@@ -44,6 +44,9 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
     cpu_load.OnBlockStart();
     static float scope_out = 0.0f;
 
+    UartMidiProcess();
+    UsbMidiProcess(); 
+
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
         currentPreset.modMtx[i].RunMod();
@@ -134,8 +137,7 @@ int main(void)
 
     while (1)
     {
-        UartMidiProcess();
-        UsbMidiProcess();
+
         
         switch (process_type)
         {

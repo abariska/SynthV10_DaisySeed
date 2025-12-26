@@ -280,6 +280,8 @@ enum class ModSource
     ADSR,
     MOD_WHEEL,
     AFTERTOUCH,
+    VELOCITY,
+    SWITCH_PEDAL,
     COUNT_MOD_SOURCES
 };
 

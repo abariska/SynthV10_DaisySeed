@@ -21,11 +21,10 @@
 #define FREQ_MOD_TABLE_SIZE 101
 #define VOICE_NUM 5 
 
+#define MAX_NOTE_STACK 10
+
 using namespace daisy;
 using namespace daisysp;
-
-// extern std::array<Osc, OSC_NUM> osc;
-// extern Adsr adsrMain[VOICE_NUM];
 
 extern LadderFilter flt;
 extern Osc lfo;
@@ -47,12 +46,12 @@ struct Voice
     float   detune_correction[OSC_NUM];
     float   final_freq[OSC_NUM];
     
-    bool     active     = false;   // голос зайнятий
-    bool     gate       = false;   // флаг для ADSR
-    int16_t  note       = -1;      // MIDI-номер ноти
-    float    freq       = 0.0f;    // поточна частота
-    float    vel        = 1.0f;    // 0…1
-    std::uint32_t timestamp  = 0;       // мітка часу (System::GetNow())
+    bool     active     = false;
+    bool     gate       = false;
+    int16_t  note       = -1;
+    float    freq       = 0.0f;
+    float    vel        = 1.0f;
+    std::uint32_t timestamp  = 0;
 };
 
 extern Voice voice[VOICE_NUM];
@@ -66,5 +65,6 @@ void ModSourcesProcess();
 void InitPitchTables();
 void UpdateModSourcesParams();
 void UpdateSynthParams();
-
+void PushNote(uint8_t note);
+uint8_t PopNote(uint8_t note);
 #endif

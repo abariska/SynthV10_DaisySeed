@@ -9,8 +9,6 @@
 #include <stdint.h> 
 #include <cstdint>
 
-
-// #define DTCM __attribute__((section(".dtcm_bss")))
 ParamSlot paramSlots[NUM_PARAM_BLOCKS];
 
 using namespace daisy;
@@ -508,4 +506,6 @@ Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::ADSR, 0.0f, "ADSR"},
     {ModSource::MOD_WHEEL, 0.0f, "ModWheel"},
     {ModSource::AFTERTOUCH, 0.0f, "Aftertouch"},
+    {ModSource::VELOCITY, 0.0f, "Velocity"},
+    {ModSource::SWITCH_PEDAL, 0.0f, "SW Pedal"},
 };

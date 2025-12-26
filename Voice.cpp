@@ -19,6 +19,9 @@ Random rnd[OSC_NUM * VOICE_NUM];
 ModMatrix modMatrix[MOD_MATRIX_NUM];
 Voice voice[VOICE_NUM];
 
+uint8_t noteStack[MAX_NOTE_STACK];
+uint8_t notesInStack = 0;
+
 float midiNoteToFreqTable[128];
 float pitchTable[PITCH_TABLE_SIZE];
 float detuneTable[DETUNE_TABLE_SIZE];
@@ -78,6 +81,46 @@ void UpdateModSourcesParams()
 
 }
 
+void PushNote(uint8_t note)
+{
+    for (int i = 0; i < notesInStack; i++)
+    {
+        if (noteStack[i] == note)
+            return;
+    }
+
+    if (notesInStack < MAX_NOTE_STACK)
+    {
+        noteStack[notesInStack] = note;
+        notesInStack++;
+    }
+    else
+    {
+        for (int i = 0; i < MAX_NOTE_STACK - 1; i++)
+        {
+            noteStack[i] = noteStack[i + 1];
+        }
+        noteStack[MAX_NOTE_STACK - 1] = note;
+    }
+}
+
+uint8_t PopNote( uint8_t note)
+{
+    for (int i = 0; i < notesInStack; i++)
+    {
+        if (noteStack[i] == note)
+        {
+            for (int j = i; j < notesInStack - 1; j++)
+            {
+                noteStack[j] = noteStack[j + 1];
+            }
+            notesInStack--;
+            break;
+        }
+    }
+    return (notesInStack > 0) ? noteStack[notesInStack - 1] : 0;
+}
+
 int FindOldestVoice()
 {
     int oldestVoice = 0;
@@ -95,11 +138,9 @@ int AllocVoice()
 {
     if (!paramManager.GetBool(P::GLOBAL_MONO))
     {
-        // check if there is an inactive voice
         for(int v=0; v<VOICE_NUM; ++v)
             if(!voice[v].active) return v;
 
-        // if there is no inactive voice, find the oldest voice and kill it
         int victim = FindOldestVoice();
         voice[victim].gate = false;
         voice[victim].active = false;
@@ -113,6 +154,11 @@ int AllocVoice()
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 {
+    if (paramManager.GetBool(P::GLOBAL_MONO))
+    {
+        PushNote(note_in);
+    }
+
     int v = AllocVoice();
     voice[v].active = true;
     voice[v].note = note_in;
@@ -127,11 +173,31 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
         adsrMod.Retrigger(false);
     }
     gate = true;
-    // isOscSyncNeeded[v] = true;
 }
 
 void HandleNoteOff(uint8_t note_in)
 {
+    if (paramManager.GetBool(P::GLOBAL_MONO))
+    {
+        uint8_t prevNote = PopNote(note_in);
+        
+        if (prevNote > 0)
+        {
+            voice[0].note = prevNote;
+            voice[0].freq = midiNoteToFreqTable[prevNote];
+            voice[0].gate = true;
+            voice[0].timestamp = System::GetNow();
+            
+            if (!paramManager.GetBool(P::GLOBAL_LEGATO))
+            {
+                voice[0].adsr.Retrigger(false);
+                adsrMod.Retrigger(false);
+            }
+            gate = true;
+            return;
+        }
+    }
+
     for (int v = 0; v < VOICE_NUM; ++v)
     {
         if (voice[v].active && voice[v].note == note_in)
@@ -158,8 +224,8 @@ void UpdateSynthParams()
 {
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {
-        // // if the voice is not active, skip it
-        // if (!voiceState[v].active) continue;
+        // if the voice is not active, skip it
+        if (!voice[v].active) continue;
 
         const float voiceFreq = voice[v].freq;
         const float voiceVel = voice[v].vel;
