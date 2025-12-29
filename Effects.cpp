@@ -8,14 +8,6 @@ using P = ParamUnitName;
 
 float driveGainCompensation = 0.0f;
 
-const char *effectLabels[] = {
-    " - ",
-    "Drive",
-    "Chorus",
-    "Comp",
-    "Reverb"};
-
-// Реалізація функцій
 void EffectsInit(float samplerate)
 {
 
@@ -23,6 +15,13 @@ void EffectsInit(float samplerate)
     fx.chorus.Init(samplerate);
     fx.reverb.Init(samplerate);
     fx.compressor.Init(samplerate);
+    fx.flanger.Init(samplerate);
+    fx.wah.Init(samplerate);
+}
+
+inline float ToMono(float L, float R)
+{
+    return (L + R) * 0.5f;
 }
 
 void ProcessEffectsReverb(float inL, float inR, float &outL, float &outR)
@@ -41,20 +40,31 @@ void ProcessEffects(uint8_t slot, float inL, float inR, float &outL, float &outR
     else
     {
         float dryWet = paramManager.GetValue(EFFECT_SLOT_DRYWET[slot]);
+        float mono = ToMono(inL, inR);
         switch (currentPreset.effectSlots[slot].selectedEffect)
         {
         case EFFECT_OVERDRIVE:
-            outL = (fx.drive.Process(inL) + driveGainCompensation) * dryWet + (inL * (1 - dryWet));
+            
+            outL = (fx.drive.Process(mono) + driveGainCompensation) * dryWet + (mono * (1 - dryWet));
             outR = outL;
             break;
-        case EFFECT_CHORUS:            
-            outL = fx.chorus.Process(inL);
-            outR = fx.chorus.Process(inR);
+        case EFFECT_CHORUS:     
+            fx.chorus.Process(mono);
+            outL = fx.chorus.GetLeft();
+            outR = fx.chorus.GetRight();
             outL = inL + (outL * dryWet);
             outR = inR + (outR * dryWet);
             break;
         case EFFECT_COMPRESSOR:
-            outL = fx.compressor.Process(inL) * dryWet + (inL * (1 - dryWet));
+            outL = fx.compressor.Process(mono) * dryWet + (mono * (1 - dryWet));
+            outR = outL;
+            break;
+        case EFFECT_FLANGER:
+            outL = fx.flanger.Process(mono) * dryWet + (mono * (1 - dryWet));
+            outR = outL;
+            break;
+        case EFFECT_AUTOWAH:
+            outL = fx.wah.Process(mono) * dryWet + (mono * (1 - dryWet));
             outR = outL;
             break;
         case EFFECT_REVERB:

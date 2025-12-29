@@ -13,7 +13,7 @@ using namespace daisy;
 using M = ModSource;
 
 Adsr adsrMod;
-LadderFilter flt;
+LadderFilter fltL, fltR;
 Osc lfo;
 Random rnd[OSC_NUM * VOICE_NUM];
 ModMatrix modMatrix[MOD_MATRIX_NUM];
@@ -28,11 +28,15 @@ float detuneTable[DETUNE_TABLE_SIZE];
 float pitchBendTable[PITCH_BEND_TABLE_SIZE];
 float freqModTable[FREQ_MOD_TABLE_SIZE];
 
+float voice_pan[VOICE_NUM] = {
+    0.0f, 0.5f, -0.5f, 1.0f, -1.0f};
+
+float panningTable[PANNING_TABLE_SIZE][2] = {{0.0f}}; 
+
 uint8_t noteNum = 60;
 float frequency = 0;
 float phaseOffsets[OSC_NUM * VOICE_NUM];
 float prev_freq[OSC_NUM * VOICE_NUM] = {0.0f};
-
 bool is_any_voice_active = false;
 
 bool isOscSyncNeeded[OSC_NUM * VOICE_NUM] = {false};
@@ -41,6 +45,7 @@ bool gate = false;
 void SynthInit(float samplerate, int blocksize)
 {
     InitPitchTables();
+    InitPanningTable();
     for (size_t i = 0; i < VOICE_NUM; i++)
     {
         for (size_t j = 0; j < OSC_NUM; j++)
@@ -51,7 +56,8 @@ void SynthInit(float samplerate, int blocksize)
         voice[i].adsr.Init(samplerate, blocksize);
         
     }
-    flt.Init(samplerate);
+    fltL.Init(samplerate);
+    fltR.Init(samplerate);
     adsrMod.Init(samplerate, blocksize);
     lfo.Init(samplerate, true);
     EffectsInit(samplerate);
@@ -256,11 +262,24 @@ void UpdateSynthParams()
         voice[v].adsr.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
     }
 
-    flt.SetFilterMode(static_cast<LadderFilter::FilterMode>(paramManager.GetValue(P::FILTER_MODE)));
-    flt.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
-    flt.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
-    flt.SetPassbandGain(0.5f);
-    flt.SetInputDrive(1.0f + (paramManager.GetValue(P::FILTER_DRIVE) * 4.0f));
+    fltL.SetFilterMode(static_cast<LadderFilter::FilterMode>(paramManager.GetValue(P::FILTER_MODE)));
+    fltL.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
+    fltL.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
+    fltL.SetPassbandGain(0.5f);
+    fltL.SetInputDrive(1.0f + (paramManager.GetValue(P::FILTER_DRIVE) * 4.0f));
+    fltR.SetFilterMode(static_cast<LadderFilter::FilterMode>(paramManager.GetValue(P::FILTER_MODE)));
+    fltR.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
+    fltR.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
+    fltR.SetPassbandGain(0.5f);
+    fltR.SetInputDrive(1.0f + (paramManager.GetValue(P::FILTER_DRIVE) * 4.0f));
+
+    fx.flanger.SetFeedback(paramManager.GetValue(P::EFFECT_FLANGER_FEEDBACK));
+    fx.flanger.SetLfoDepth(paramManager.GetValue(P::EFFECT_FLANGER_LFO_DEPTH));
+    fx.flanger.SetLfoFreq(paramManager.GetValue(P::EFFECT_FLANGER_LFO_FREQ));
+    fx.flanger.SetDelay(paramManager.GetValue(P::EFFECT_FLANGER_DELAY));
+
+    fx.wah.SetWah(paramManager.GetValue(P::EFFECT_AUTOWAH_WAH));
+    fx.wah.SetLevel(paramManager.GetValue(P::EFFECT_AUTOWAH_LEVEL));
 
     fx.drive.SetDrive(paramManager.GetValue(P::EFFECT_OVERDRIVE_DRIVE));
 
@@ -279,13 +298,14 @@ void UpdateSynthParams()
     fx.reverb.SetLpFreq(paramManager.GetValue(P::EFFECT_REVERB_LPFREQ));
 }
 
-void VoiceProcess(float &voice_sig)
+void VoiceProcess(float &out_sigL, float &out_sigR)
 {
-    voice_sig = 0.0f;
+    float outL = 0.0f;
+    float outR = 0.0f;
     
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {
-        float voiceMix = 0.0f;
+        float voice_out = 0.0f;
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
@@ -304,13 +324,17 @@ void VoiceProcess(float &voice_sig)
 
             if (paramManager.GetValue(OSC_ACTIVE[oscId]))
             {
-                voiceMix += voice[v].osc[oscId].Process();
+                voice_out += voice[v].osc[oscId].Process();
             }
         }
         
         float env = voice[v].adsr.Process(voice[v].gate);
-        voice_sig += voiceMix * env / VOICE_NUM;
-
+        float voice_out_env = voice_out * env / VOICE_NUM;
+        float voiceL, voiceR;
+        VoicePanning(v, voice_out_env, voiceL, voiceR);
+        outL += voiceL;
+        outR += voiceR;
+        
         // if the voice is not active and the envelope is below 0.00001f, kill the voice
         if (!(voice[v].active && voice[v].gate) && env <= 0.00001f) 
         {
@@ -319,8 +343,14 @@ void VoiceProcess(float &voice_sig)
         }
     }
     
-    voice_sig = flt.Process(voice_sig);
-    voice_sig = clamp(voice_sig, -1.0f, 1.0f);
+    outL = fltL.Process(outL);   
+    outR = fltR.Process(outR);
+
+    outL = softClip(outL);
+    outR = softClip(outR);
+
+    out_sigL = outL;
+    out_sigR = outR;
 }
 
 void InitPitchTables()
@@ -374,4 +404,37 @@ float GetPitchBendTableValue(int index)
 float GetFreqModTableValue(int index)
 {
     return freqModTable[index];
+}
+
+inline float softClip(float x)
+{
+    if (x > 1.0f)  return 1.0f - 1.0f / (x + 1.0f);
+    if (x < -1.0f) return -1.0f - 1.0f / (x - 1.0f);
+    return x;
+}
+
+inline void InitPanningTable()
+{
+    for (int i = 0; i <= PANNING_TABLE_SIZE; i++) {
+        float t = (float)i / PANNING_TABLE_SIZE;
+        panningTable[i][0] = sqrtf(t);
+        panningTable[i][1] = sqrtf(1.0f - t);
+    }
+}
+
+inline void VoicePanning(uint8_t voice_num, float &voice_sig, float &out_L, float &out_R)
+{
+    float globalPan = paramManager.GetValue(P::GLOBAL_PAN);
+    
+    // Обчислити фінальну позицію: voice_pan * globalPan
+    float panPos = voice_pan[voice_num] * globalPan;  // -1..1
+    
+    // Конвертувати -1..1 → 0..1 для sqrt
+    float panNorm = (panPos + 1.0f) * 0.5f;  // 0..1
+    
+    int idx = (int)(panNorm * PANNING_TABLE_SIZE); 
+    
+    // З таблиці
+    out_L = voice_sig * panningTable[idx][0];
+    out_R = voice_sig * panningTable[idx][1];
 }

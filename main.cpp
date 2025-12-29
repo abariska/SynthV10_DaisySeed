@@ -54,22 +54,24 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 
     for (size_t i = 0; i < size; i += 2)
     {
-        float sig_after_fxL = 0.0f;
-        float sig_after_fxR = 0.0f;
-        float mix = 0.0f;
         float outL = 0.0f;
         float outR = 0.0f;
 
         ModSourcesProcess();
-        VoiceProcess(mix);
+        VoiceProcess(outL, outR); 
+        float fx1_outL = 0.0f;
+        float fx1_outR = 0.0f;
+        float fx2_outL = 0.0f;
+        float fx2_outR = 0.0f;
+        ProcessEffects(0, outL, outR, fx1_outL, fx1_outR);
+        ProcessEffects(1, fx1_outL, fx1_outR, fx2_outL, fx2_outR);
 
-        ProcessEffects(0, mix, mix, outL, outR);
-        ProcessEffects(1, outL, outR, sig_after_fxL, sig_after_fxR);
+        out[i] = fx2_outL * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
+        out[i + 1] = fx2_outR * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
+        // out[i] = outL;
+        // out[i + 1] = outR;
 
-        out[i] = sig_after_fxL * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
-        out[i + 1] = sig_after_fxR * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
-
-        scope_out = out[i] + out[i + 1];
+        scope_out = outL + outR;
     }
        if (!scope_triggered && 
         scope_prev_sample <= scope_trigger_level && 
@@ -454,7 +456,6 @@ void Callback500ms(void *data)
     isBlink = !isBlink;
     blinkStateChanged = true;
     update_500ms = true;
-    // CpuUsageDisplay();
 }
 
 void Callback1ms(void *data)
@@ -527,9 +528,16 @@ void DrawVoicesBlock()
     Paint_NewImage(voices_block_data.data, VOICES_BLOCK_WIDTH, VOICES_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
     
+    static bool voice_active[VOICE_NUM] = {false};
+    static uint8_t voice_num = 1;
     int x1 = 1, x2 = 1;
     for (size_t i = 0; i < VOICE_NUM; i++)
     {
+        if (voice_active[i] != voice[i].active) 
+        { 
+            voice_active[i] = voice[i].active; voice_num = voice_num + (voice[i].active ? 1 : -1); 
+            return; 
+        }
         x2 = x1 + 6;
         
         if (voice[i].active)
@@ -539,6 +547,11 @@ void DrawVoicesBlock()
             Paint_DrawRectangle(x1, 2, x2, 22, 0x08, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
         }
         x1 += 8;
+        voice_num += voice[i].active ? 1 : 0;
     }
-    OLED_Transmit_DMA_Part(&voices_block_data, 0, 0, VOICES_BLOCK_WIDTH, VOICES_BLOCK_HEIGHT);
+    if (voice_num > 0) 
+    {
+        OLED_Transmit_DMA_Part(&voices_block_data, 0, 0, VOICES_BLOCK_WIDTH, VOICES_BLOCK_HEIGHT);
+        voice_num = 0; 
+    }
 }

@@ -60,6 +60,10 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     }
     else
     {
+        if (paramSlots[blockIndex].target_param == P::NONE)
+        {
+            return;
+        }
         value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
         label = paramManager.GetShortLabel(paramSlots[blockIndex].target_param);
     }
@@ -480,7 +484,7 @@ void AssignParamsForPage(MenuPage page)
         paramSlots[3].target_param = P::NONE;
         break;
     case CHORUS_PAGE:
-        SetPageName("Chorus");
+        SetPageName("Chorus");  
         paramSlots[0].target_param = P::EFFECT_CHORUS_FREQ;
         paramSlots[1].target_param = P::EFFECT_CHORUS_DEPTH;
         paramSlots[2].target_param = P::EFFECT_CHORUS_FBK;
@@ -493,6 +497,20 @@ void AssignParamsForPage(MenuPage page)
         paramSlots[2].target_param = P::EFFECT_COMPRESSOR_THRESHOLD;
         paramSlots[3].target_param = P::EFFECT_COMPRESSOR_RATIO;
         paramSlots[4].target_param = P::EFFECT_COMPRESSOR_MAKEUP;
+        break;
+    case FLANGER_PAGE:
+        SetPageName("Flanger");
+        paramSlots[0].target_param = P::EFFECT_FLANGER_LFO_FREQ;
+        paramSlots[1].target_param = P::EFFECT_FLANGER_LFO_DEPTH;
+        paramSlots[2].target_param = P::EFFECT_FLANGER_DELAY;
+        paramSlots[3].target_param = P::NONE;
+        break;
+    case AUTOWAH_PAGE:
+        SetPageName("Autowah");
+        paramSlots[0].target_param = P::EFFECT_AUTOWAH_WAH; 
+        paramSlots[1].target_param = P::EFFECT_AUTOWAH_LEVEL; 
+        paramSlots[2].target_param = P::NONE;
+        paramSlots[3].target_param = P::NONE;
         break;
     case REVERB_PAGE:
         SetPageName("Reverb");

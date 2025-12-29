@@ -15,8 +15,10 @@ enum EffectName
 {
     EFFECT_NONE,
     EFFECT_OVERDRIVE,
+    EFFECT_FLANGER,
     EFFECT_CHORUS,
     EFFECT_COMPRESSOR,
+    EFFECT_AUTOWAH,
     EFFECT_REVERB,
     EFFECT_COUNT,
 };
@@ -30,6 +32,8 @@ struct FXParam
     Chorus chorus;
     Rev reverb;
     Compressor compressor;
+    Flanger flanger;
+    Autowah wah;
 };
 extern FXParam fx;
 

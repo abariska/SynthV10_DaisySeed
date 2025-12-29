@@ -21,17 +21,19 @@ static const uint32_t FLASH_BLOCK_4KB = 0x1000;
 
 Preset currentPreset;
 float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0.0f,
-                                                                               0.0f, 0.0f, 0.5f, 0.5f, 0.2f, 0.5f, 1.0f, //Osc1
-                                                                               0.0f, 0.0f, 0.5f, 0.5f, 0.2f, 0.5f, 0.0f, //Osc2
-                                                                               0.0f, 0.0f, 0.5f, 0.5f, 0.2f, 0.5f, 0.0f, //Osc3
+                                                                               0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 1.0f, //Osc1
+                                                                               0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 0.0f, //Osc2
+                                                                               0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 0.0f, //Osc3
                                                                                0.0f, 0.1f, 0.0f, 0.01f, 0.01f, 0.1f, 0.5f, 0.01f, //Filter ADSR
                                                                                0.0f, 0.01f, 1.0f, 0.0f, 0.01f, 0.1f, 0.5f, 0.01f, //Mod LFO ADSR
                                                                                0.0f, //Drive
                                                                                0.1f, 0.5f, 0.5f, 0.5f, //Chorus
                                                                                0.01f, 0.01f, 0.5f, 2.0f, 0.5f, //Compressor
+                                                                               0.5f, 0.5f, 0.5f, 0.5f, //Flanger
+                                                                               0.5f, 0.5f, //Autowah
                                                                                0.5f, 1.0f, //Reverb
                                                                                0.5f, 0.0f, 0.5f, 0.0f, //FX slots
-                                                                               0.0f, 0.0f, 0.1f, 0.8f}; //Global
+                                                                               0.0f, 0.0f, 0.0f, 0.5f, 0.8f}; //Global
 
 Preset GetDefaultPreset(int8_t presetNumber)
 {
@@ -53,8 +55,8 @@ Preset GetDefaultPreset(int8_t presetNumber)
     {
         preset.effectSlots[i] = FXSlot(); // Викликає конструктор за замовчуванням
     }
-    preset.effectSlots[0].selectedEffect = EFFECT_CHORUS;
-    preset.effectSlots[1].selectedEffect = EFFECT_REVERB;
+    preset.effectSlots[0].selectedEffect = EFFECT_NONE;
+    preset.effectSlots[1].selectedEffect = EFFECT_NONE;
 
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
@@ -74,13 +76,13 @@ void InitQSPI()
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
     uint32_t init_flag = *((uint32_t *)(0x90000000));
 
-    if (init_flag != 0xDEADBEE5)
+    if (init_flag != 0xDEADBEEF)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
         uint8_t page[PAGE_SIZE];
         memset(page, 0xFF, sizeof(page));
-        uint32_t marker = 0xDEADBEE5;
+        uint32_t marker = 0xDEADBEEF;
         memcpy(page, &marker, sizeof(marker));
 
         hw.qspi.Write(0, sizeof(page), page);
@@ -421,8 +423,11 @@ void ResetPreset(int presetNumber)
 /** --- ApplyPreset --- */
 void ApplyPreset(int presetNumber)
 {
+    for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
+    {
+        currentPreset.modMtx[i].ResetMods();
+    }
     ReadPreset(presetNumber, currentPreset);
-
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
         paramManager.GetParam(static_cast<ParamUnitName>(i)).SetNormalized(currentPreset.array[i]);
@@ -488,6 +493,12 @@ void ParameterManager::Init()
     ADD_PARAM(P::EFFECT_COMPRESSOR_THRESHOLD, -80.0f, 0.0f, "Thrs Com", "Threshold", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_COMPRESSOR_RATIO, 1.0f, 40.0f, "Rat Com", "Ratio", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_COMPRESSOR_MAKEUP, 0.0f, 80.0f, "Mkup Com", "Makeup", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_FLANGER_FEEDBACK, 0.0f, 100.0f, "Fdbk Flg", "Feedback", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_FLANGER_LFO_DEPTH, 0.0f, 100.0f, "Dpth Flg", "Depth", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_FLANGER_LFO_FREQ, 0.1f, 100.0f, "Freq Flg", "Freq", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_FLANGER_DELAY, 0.0f, 100.0f, "Dly Flg", "Delay", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_AUTOWAH_WAH, 0.0f, 100.0f, "Wah Aut", "Wah", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_AUTOWAH_LEVEL, 0.0f, 100.0f, "Lvl Aut", "Level", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_REVERB_FEEDBACK, 0.0f, 100.0f, "Fdbk Rvb", "Feedback", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_REVERB_LPFREQ, 10.0f, 20000.0f, "Cut Rvb", "Cutoff", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_SLOT_1_DRYWET, 0.0f, 100.0f, "FX1", "FX1", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
@@ -497,6 +508,7 @@ void ParameterManager::Init()
     ADD_PARAM(P::GLOBAL_MONO, 0, 2, "Mono", "Mono", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::GLOBAL_LEGATO, 0, 2, "Legato", "Legato", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 100.0f, "Portamento", "Portamento", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::GLOBAL_PAN, 0.0f, 100.0f, "Voices Pan", "Pan", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::GLOBAL_MASTER_VOLUME, 0.0f, 100.0f, "Master Volume", "Master Volume", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
 }
 

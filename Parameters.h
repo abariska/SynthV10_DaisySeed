@@ -78,6 +78,12 @@ enum class ParamUnitName
     EFFECT_COMPRESSOR_THRESHOLD,
     EFFECT_COMPRESSOR_RATIO,
     EFFECT_COMPRESSOR_MAKEUP,
+    EFFECT_FLANGER_FEEDBACK,
+    EFFECT_FLANGER_LFO_DEPTH,
+    EFFECT_FLANGER_LFO_FREQ,
+    EFFECT_FLANGER_DELAY,
+    EFFECT_AUTOWAH_WAH,
+    EFFECT_AUTOWAH_LEVEL,
     EFFECT_REVERB_FEEDBACK,
     EFFECT_REVERB_LPFREQ,
     EFFECT_SLOT_1_DRYWET,
@@ -87,6 +93,7 @@ enum class ParamUnitName
     GLOBAL_MONO,
     GLOBAL_LEGATO,
     GLOBAL_PORTAMENTO,
+    GLOBAL_PAN,
     GLOBAL_MASTER_VOLUME,
     COUNT_PARAMS
 };
@@ -104,7 +111,7 @@ const P OSC_ACTIVE[OSC_NUM] = {P::OSC_ACTIVE_1, P::OSC_ACTIVE_2, P::OSC_ACTIVE_3
 const P EFFECT_SLOT_ACTIVE[2] = {P::EFFECT_SLOT_1_ACTIVE, P::EFFECT_SLOT_2_ACTIVE};
 const P EFFECT_SLOT_DRYWET[2] = {P::EFFECT_SLOT_1_DRYWET, P::EFFECT_SLOT_2_DRYWET};
 
-const P SETTINGS_PARAMS[SETTINGS_BLOCKS_NUM] = {P::GLOBAL_MONO, P::GLOBAL_LEGATO, P::GLOBAL_PORTAMENTO, P::GLOBAL_MASTER_VOLUME};
+const P SETTINGS_PARAMS[SETTINGS_BLOCKS_NUM] = {P::GLOBAL_MONO, P::GLOBAL_LEGATO, P::GLOBAL_PORTAMENTO, P::GLOBAL_PAN, P::GLOBAL_MASTER_VOLUME};
 
 enum class Curve
 {
@@ -319,6 +326,11 @@ public:
     const char *GetModSourceLabel() const { return modulators[static_cast<int>(modSource.source)].label; }
     ParamUnitName GetModTarget() const { return modTarget; }
     const char *GetModTargetLabel() const { return paramManager.GetFullLabel(modTarget); }
+    void ResetMods() 
+    {
+        modSource.value = 0.0f;
+        modAmount = 0.0f;
+    }
 
     void RunMod()
     {

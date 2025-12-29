@@ -19,6 +19,7 @@
 #define PITCH_BEND_TABLE_SIZE 401
 #define PITCH_BEND_CENTER_INDEX 200
 #define FREQ_MOD_TABLE_SIZE 101
+#define PANNING_TABLE_SIZE 101
 #define VOICE_NUM 5 
 
 #define MAX_NOTE_STACK 10
@@ -58,13 +59,17 @@ extern Voice voice[VOICE_NUM];
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity);
 void HandleNoteOff(uint8_t note_in);
-void HandlePitchBend(int16_t pitch_bend); 
+inline void HandlePitchBend(int16_t pitch_bend); 
 void SynthInit(float samplerate, int blocksize);
-void VoiceProcess(float &sig);
+void VoiceProcess(float &out_sigL, float &out_sigR);
+inline void VoicePanning(uint8_t voice_num, float &voice_sig, float &out_L, float &out_R);
+inline float softClip(float x);
 void ModSourcesProcess();
-void InitPitchTables();
+inline void InitPitchTables();
 void UpdateModSourcesParams();
 void UpdateSynthParams();
-void PushNote(uint8_t note);
-uint8_t PopNote(uint8_t note);
+inline void PushNote(uint8_t note);
+inline uint8_t PopNote(uint8_t note);
+extern float panningTable[101][2];
+inline void InitPanningTable();
 #endif

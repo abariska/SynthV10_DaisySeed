@@ -290,7 +290,7 @@ void DrawParamPage(MenuPage page)
     DrawParamBlocks();
 }
 
-void DrawEffectBlock(uint8_t slot)
+void  DrawEffectBlock(uint8_t slot)
 {
     Paint_NewImage(effect_block_data[slot].data, EFFECT_BLOCK_WIDTH, EFFECT_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
@@ -298,15 +298,40 @@ void DrawEffectBlock(uint8_t slot)
     EffectName selected = currentPreset.effectSlots[slot].selectedEffect;
     if (selected != EFFECT_NONE)
     {
-        Paint_TextCentered(effectLabels[selected], 0, EFFECT_BLOCK_WIDTH, 0, FONT_LIGHT_16, WHITE, BLACK);
-        Paint_TextCentered(currentPreset.effectSlots[slot].isActive ? "On" : "Off", 0, EFFECT_BLOCK_WIDTH, 16, FONT_LIGHT_12, WHITE, BLACK);
+        char effect_name[16];
+        switch (selected)
+        {
+        case EFFECT_OVERDRIVE:
+            strcpy(effect_name, "Drive");
+            break;
+        case EFFECT_CHORUS:
+            strcpy(effect_name, "Chorus");
+            break;
+        case EFFECT_COMPRESSOR:
+            strcpy(effect_name, "Compressor");
+            break;
+        case EFFECT_FLANGER:
+            strcpy(effect_name, "Flanger");
+            break;
+        case EFFECT_AUTOWAH:
+            strcpy(effect_name, "Autowah");
+            break;
+        case EFFECT_REVERB:
+            strcpy(effect_name, "Reverb");
+            break;
+        default:
+            strcpy(effect_name, " - ");
+            break;
+        }
+        Paint_TextCentered(effect_name, 0, EFFECT_BLOCK_WIDTH, 0, FONT_LIGHT_16, WHITE, BLACK);
+        Paint_TextCentered(currentPreset.effectSlots[slot].isActive ? "On" : "Off", 0, EFFECT_BLOCK_WIDTH, 20, FONT_LIGHT_16, WHITE, BLACK);
     }
     else
     {
         Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 0, FONT_LIGHT_16, WHITE, BLACK);
-        Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 16, FONT_LIGHT_12, WHITE, BLACK);
+        Paint_TextCentered(" - ", 0, EFFECT_BLOCK_WIDTH, 16, FONT_LIGHT_16, WHITE, BLACK);
     }
-    Paint_NumCentered(paramManager.GetNormalised(EFFECT_SLOT_DRYWET[slot]) * 100, 0, EFFECT_BLOCK_WIDTH, 32, 0, FONT_LIGHT_16, WHITE, BLACK);
+    Paint_NumCentered(paramManager.GetNormalised(EFFECT_SLOT_DRYWET[slot]) * 100, 0, EFFECT_BLOCK_WIDTH, 40, 0, FONT_BOLD_20, WHITE, BLACK);
 
     OLED_Transmit_DMA_Part(&effect_block_data[slot],
                            BLOCK_FX_X_START[slot],
@@ -354,6 +379,12 @@ void SelectEffectPage(uint8_t slot)
         break;
     case EFFECT_COMPRESSOR:
         page = MenuPage::COMPRESSOR_PAGE;
+        break;
+    case EFFECT_FLANGER:
+        page = MenuPage::FLANGER_PAGE;
+        break;
+    case EFFECT_AUTOWAH:
+        page = MenuPage::AUTOWAH_PAGE;
         break;
     case EFFECT_REVERB:
         page = MenuPage::REVERB_PAGE;
