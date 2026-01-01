@@ -318,7 +318,6 @@ public:
     void SetModSource(ModSource source) { modSource.source = modulators[static_cast<int>(source)].source; }
     void SetModTarget(ParamUnitName target) { modTarget = target; }
     void SetModAmount(float amount) { modAmount = amount; }
-    // Зчитування значення з глобального масиву modulators
 
     float GetModAmount() const { return modAmount; }
     ModSource GetModSource() const{ return modSource.source; }

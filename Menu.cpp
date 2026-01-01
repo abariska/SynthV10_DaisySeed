@@ -623,9 +623,9 @@ void EditModBlock()
         {
             amount = 1.0f;
         }
-        if (amount < 0.0f)
+        if (amount < -1.0f)
         {
-            amount = 0.0f;
+            amount = -1.0f;
         }
         currentPreset.modMtx[selModBlockIndex].SetModAmount(amount);
         encoderIncs[2] = 0;
