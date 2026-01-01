@@ -1,3 +1,2 @@
 /build
-.cursor
-.gitmodules
+.DS_Store
