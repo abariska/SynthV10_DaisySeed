@@ -1,5 +1,5 @@
 # Project Name
-TARGET = SynthV10
+TARGET = mustB
 
 # Sources
 CPP_SOURCES = main.cpp \
