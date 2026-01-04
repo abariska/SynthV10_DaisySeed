@@ -5,6 +5,9 @@
 #include "midi_handler.h"
 #include "sx1509_expander.h"
 
+#define RANDOM_AMP_MAX 0.0001f
+#define RANDOM_FREQ_MAX 0.0001f
+#define RANDOM_PWM_MAX 0.0001f
 
 #define DTCM __attribute__((section(".dtcmram_bss")))
 
@@ -15,7 +18,7 @@ using M = ModSource;
 Adsr adsrMod;
 LadderFilter fltL, fltR;
 Osc lfo;
-Random rnd[OSC_NUM * VOICE_NUM];
+Random rnd;
 ModMatrix modMatrix[MOD_MATRIX_NUM];
 Voice voice[VOICE_NUM];
 
@@ -35,7 +38,6 @@ float panningTable[PANNING_TABLE_SIZE][2] = {{0.0f}};
 
 uint8_t noteNum = 60;
 float frequency = 0;
-float phaseOffsets[OSC_NUM * VOICE_NUM];
 float prev_freq[OSC_NUM * VOICE_NUM] = {0.0f};
 bool is_any_voice_active = false;
 
@@ -46,12 +48,12 @@ void SynthInit(float samplerate, int blocksize)
 {
     InitPitchTables();
     InitPanningTable();
+    rnd.Init();
     for (size_t i = 0; i < VOICE_NUM; i++)
     {
         for (size_t j = 0; j < OSC_NUM; j++)
         {
             voice[i].osc[j].Init(samplerate);
-            voice[i].rnd[j].Init();
         }
         voice[i].adsr.Init(samplerate, blocksize);
         
@@ -63,10 +65,17 @@ void SynthInit(float samplerate, int blocksize)
     EffectsInit(samplerate);
 }
 
+inline uint32_t GetRandom()
+{
+    uint32_t new_state = rnd.GetFloat(0.0f, 0.000001f); 
+    new_state ^= new_state << 13; 
+    new_state ^= new_state >> 17;
+    new_state ^= new_state << 5;
+    return (new_state & 0xFFFFFF) * (1.0f / 16777216.0f);
+}
+
 void ModSourcesProcess()
 {
-    lfo.PhaseProcess();
-
     modulators[static_cast<int>(M::LFO)].value = lfo.Process() / 2.0f + 0.5f;
     modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(gate);
 
@@ -171,6 +180,10 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
     voice[v].vel = velocity / 127.0f;
     voice[v].gate = true;
     voice[v].timestamp = System::GetNow();
+    for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
+    {
+        voice[v].osc[oscId].SetDrift(GetRandom() * RANDOM_FREQ_MAX);
+    }
     
     if (!paramManager.GetBool(P::GLOBAL_LEGATO))
     {
@@ -236,7 +249,6 @@ void UpdateSynthParams()
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
-            phaseOffsets[v * OSC_NUM + oscId] = rnd[v].GetFloat(0.0f, 0.000001f);
             float pitch = GetPitchTableValue(paramManager.GetValue(OSC_PITCH[oscId]));
             float detune = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[oscId]));
             voice[v].final_freq[oscId] = voiceFreq * pitch * detune * pitch_bend_multiplier;
@@ -309,18 +321,20 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
-            if (isOscSyncNeeded[v * OSC_NUM + oscId])
+            if (voice[v].osc[oscId].sampleCounter >= 255)
             {
-                float phase = voice[v].osc[0].GetPhase();
-                if (oscId != 0)
-                { 
-                    voice[v].osc[oscId].SyncPhase(phase);
-                }
-
-                isOscSyncNeeded[v * OSC_NUM + oscId] = false; 
+                voice[v].osc[oscId].SetDrift(GetRandom() * RANDOM_FREQ_MAX);
             }
+            // if (isOscSyncNeeded[v * OSC_NUM + oscId])
+            // {
+            //     float phase = voice[v].osc[0].GetPhase();
+            //     if (oscId != 0)
+            //     { 
+            //         voice[v].osc[oscId].SyncPhase(phase);
+            //     }
 
-            voice[v].osc[oscId].PhaseProcess();
+            //     isOscSyncNeeded[v * OSC_NUM + oscId] = false; 
+            // }
 
             if (paramManager.GetValue(OSC_ACTIVE[oscId]))
             {

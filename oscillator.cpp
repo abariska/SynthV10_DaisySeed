@@ -34,35 +34,49 @@ void Osc::Init(float sample_rate , bool is_lfo)
     sampleRate = sample_rate;
     targetFreq = 440.0f;
     currentFreq = 440.0f;
-    slewRate = 1.0f;
-    slewRateBase = 0.1f; 
+    freqSlewRateBase = 0.1f;
+    freqSlewRate = 1.0f;
     mode = WAVE_SIN;
     amp = 0.1f;
     pw = 0.5f;
     noiseState = 1;
+    driftTarget = 0.0f;
+    driftAmount = 0.0f;
+    driftSlew = 0.0001f;
+    driftValue = 0.0f;
 
     phaseOsc = 0.0f;
-    phaseOffset = 0.0f;
     blepGain = 1.0f;
+
     currentAmp = 0.0f;
-    UpdateIncrement();
+    ampSlew = 0.1f;
+
     use_gain = !is_lfo;
+    sampleCounter = 0;
 }
 
-void Osc::PhaseProcess()
+void Osc::SetDrift(float randomValue)
 {
-    currentFreq += (targetFreq != currentFreq) * (targetFreq - currentFreq) * slewRate; 
-    UpdateIncrement();
-
-    currentAmp += (amp - currentAmp) * 0.1f;
-    phaseOsc += phaseInc;
-    phaseOsc -= (phaseOsc >= 1.0f) ? 1.0f : 0.0f;
+    driftTarget = randomValue;
 }
 
 float Osc::Process()
 {
     float out = 0.0f;
     float gain = kWaveGain[mode] * 0.5f;
+    sampleCounter++;
+    if (sampleCounter >= 255)
+    {
+        sampleCounter = 0;
+    }
+
+    driftValue += (driftTarget - driftValue) * driftSlew;
+    currentFreq += (targetFreq - currentFreq) * freqSlewRate; 
+    phaseInc = currentFreq / sampleRate * (1.0f + driftValue);
+
+    currentAmp += (amp - currentAmp) * 0.1f;
+    phaseOsc += phaseInc;
+    phaseOsc -= (phaseOsc >= 1.0f) ? 1.0f : 0.0f;
 
     switch (mode)
     {
@@ -95,15 +109,3 @@ float Osc::Process()
     return out * gain;
 }
 
-void Osc::UpdateIncrement()
-{
-    phaseInc = currentFreq / sampleRate;
-}
-
-// // Xorshift алгоритм (трохи швидший)
-// float GenerateNoise() {
-//     noiseState ^= noiseState << 13;
-//     noiseState ^= noiseState >> 17;
-//     noiseState ^= noiseState << 5;
-//     return (float)(int32_t(noiseState)) / 2147483648.0f;
-// }

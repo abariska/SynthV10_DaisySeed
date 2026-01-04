@@ -23,44 +23,48 @@ public:
         WAVE_COUNT,
     };
 
+    uint8_t sampleCounter;
+
     void Init(float sample_rate, bool is_lfo = false);
 
-    void SetPhaseOffset(float offset) { phaseOffset = offset; }
     void SetFreq(float freq) { targetFreq = freq; }
-    void SetPortamento(float portamento) { slewRate = slewRateBase * powf(0.0001f, portamento);   }
+    void SetPortamento(float portamento) { freqSlewRate = freqSlewRateBase * powf(0.0001f, portamento);   }
 
-    void PhaseProcess();
     float Process();
-    float GetCurrentFreq() const { return currentFreq; }
     float GetPhase() const { return phaseOsc; }
 
     void SetWaveform(int wf) { mode = wf; }
     void SetAmp(float a) { amp = a; }
     void SetPw(float pw_) { pw = pw_; }
-    void SyncPhase(float phase) { phaseOsc = phase; }
     void SyncPhaseToZero() { phaseOsc = 0.0f; }
-    void UpdateIncrement();
+    void SetDrift(float randomValue);
 
 private:
     float sampleRate;
 
     float currentFreq;
     float targetFreq;
-    float slewRate;
-    float slewRateBase;
-
-    float phaseOffset;
+    float freqSlewRate;
+    float freqSlewRateBase;
+    float phaseOsc;
     float phaseInc;
+    float driftValue;
+    float driftTarget;
+    float driftSlew;
+    float driftAmount;
+    uint32_t rng_state;
 
     int mode;
     float amp;
+    float currentAmp;
+    float ampSlew;
     float pw;
-    float phaseOsc;
+
     float blepGain;
     float prev_phase;
     float current_phase;
     uint32_t noiseState;
-    float currentAmp;
+    
     bool use_gain;
 };
 
