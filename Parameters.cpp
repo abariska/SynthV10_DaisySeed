@@ -33,7 +33,7 @@ float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0
                                                                                0.5f, 0.5f, //Autowah
                                                                                0.5f, 1.0f, //Reverb
                                                                                0.5f, 0.0f, 0.5f, 0.0f, //FX slots
-                                                                               0.0f, 0.0f, 0.0f, 0.5f, 0.8f}; //Global
+                                                                               0.0f, 0.0f, 0.0f, 0.5f, 0.001f, 0.8f}; //Global
 
 Preset GetDefaultPreset(int8_t presetNumber)
 {
@@ -509,6 +509,7 @@ void ParameterManager::Init()
     ADD_PARAM(P::GLOBAL_LEGATO, 0, 2, "Legato", "Legato", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 100.0f, "Portamento", "Portamento", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::GLOBAL_PAN, 0.0f, 100.0f, "Voices Pan", "Pan", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::GLOBAL_ANALOG_DRIFT, 0.0f, 100.0f, "Analog Drift", "Drift", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::GLOBAL_MASTER_VOLUME, 0.0f, 100.0f, "Master Volume", "Master Volume", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
 }
 

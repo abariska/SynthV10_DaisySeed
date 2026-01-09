@@ -18,6 +18,7 @@ TimerHandle timer_500ms;
 TimerHandle timer_1ms;
 CpuLoadMeter cpu_load;
 ProcessType process_type;
+AudioHandle audio_handle;
 
 extern Preset currentPreset;
 
@@ -107,12 +108,11 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 int main(void)
 {
     int blocksize = 16;
-
-    hw.Configure();
     hw.Init(true);
     UartSerialInit();
 
     hw.SetAudioBlockSize(blocksize);
+    hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
     samplerate = hw.AudioSampleRate();
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
 
@@ -170,6 +170,7 @@ int main(void)
         {
             CpuUsageDisplay();
             UpdateStoreLed();
+
             update_500ms = false;
         }
         process_type = (ProcessType)((process_type + 1) % 3);

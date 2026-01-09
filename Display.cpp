@@ -228,7 +228,7 @@ void DrawScope()
         for (int i = 0; i < SCOPE_BLOCK_WIDTH - 1; i++)
         {
             int data_index = (i * 128) / SCOPE_BLOCK_WIDTH;  // Інтерполяція
-            int y = center_y - (int)(scope_data[data_index] * 30);
+            int y = center_y - (int)(scope_data[data_index] * 50);
             
             // Обмежуємо координати
             if (y < 0) y = 0;

@@ -21,6 +21,11 @@ static inline float poly_blep(float t, float dt)
     return 0.0f;
 }
 
+inline float clampf(float x, float lo, float hi)
+{
+    return fminf(hi, fmaxf(lo, x));
+}
+
 static constexpr float kWaveGain[] = {
     0.8f, // WAVE_SIN
     0.95f, // WAVE_TRIANGLE
@@ -41,8 +46,8 @@ void Osc::Init(float sample_rate , bool is_lfo)
     pw = 0.5f;
     noiseState = 1;
     driftTarget = 0.0f;
-    driftAmount = 0.0f;
-    driftSlew = 0.0001f;
+    driftSlew = 0.042f;
+    driftAmount = 0.0f; 
     driftValue = 0.0f;
 
     phaseOsc = 0.0f;
@@ -53,6 +58,7 @@ void Osc::Init(float sample_rate , bool is_lfo)
 
     use_gain = !is_lfo;
     sampleCounter = 0;
+    need_phase_sync = false;
 }
 
 void Osc::SetDrift(float randomValue)
@@ -60,23 +66,57 @@ void Osc::SetDrift(float randomValue)
     driftTarget = randomValue;
 }
 
+void Osc::SetDriftAmount(float amount)
+{
+    driftAmount = amount;
+}
+
+void Osc::ResetDrift()
+{
+    driftTarget = 0.0f;
+    need_phase_sync = true;
+}
+
+void Osc::SyncPhaseToZero()
+{
+    need_phase_sync = true;
+}
+
 float Osc::Process()
 {
     float out = 0.0f;
     float gain = kWaveGain[mode] * 0.5f;
     sampleCounter++;
-    if (sampleCounter >= 255)
+
+    driftValue += (driftTarget - driftValue) * driftSlew; 
+
+    baseFreq += (targetFreq - baseFreq) * freqSlewRate; 
+    phaseBaseInc = baseFreq / sampleRate; 
+
+    float driftInc = (baseFreq + driftValue * driftAmount) * SAMPLE_TIME;
+    
+    phaseBase += phaseBaseInc;
+    phaseBase -= (phaseBase >= 1.0f) ? 1.0f : 0.0f;
+    phaseOsc += driftInc;
+    phaseOsc -= (phaseOsc >= 1.0f) ? 1.0f : 0.0f;
+
+    phaseDiff = phaseOsc - phaseBase;
+
+    if (need_phase_sync)
     {
-        sampleCounter = 0;
+        if (fabsf(phaseDiff) < 0.00000001f)
+        {
+            phaseOsc = phaseBase;
+            need_phase_sync = false;
+        }
+        else
+        {
+            phaseOsc -= phaseDiff * driftSlew;
+            phaseOsc -= (phaseOsc >= 1.0f) ? 1.0f : 0.0f;
+        }
     }
 
-    driftValue += (driftTarget - driftValue) * driftSlew;
-    currentFreq += (targetFreq - currentFreq) * freqSlewRate; 
-    phaseInc = currentFreq / sampleRate * (1.0f + driftValue);
-
     currentAmp += (amp - currentAmp) * 0.1f;
-    phaseOsc += phaseInc;
-    phaseOsc -= (phaseOsc >= 1.0f) ? 1.0f : 0.0f;
 
     switch (mode)
     {
@@ -97,13 +137,12 @@ float Osc::Process()
         break;
     case WAVE_NOISE:
         noiseState = noiseState * 1664525U + 1013904223U;
-        out = (int32_t(noiseState)) / 2147483648.0f;
+        out = (noiseState >> 8) * (1.0f / 8388608.0f);
         break;
     default:
         out = 0.0f;
         break;
     }
-    prev_phase = phaseOsc;
 
     gain = use_gain ? gain * currentAmp : 1.0f;
     return out * gain;

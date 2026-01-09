@@ -29,7 +29,6 @@ using namespace daisysp;
 
 extern LadderFilter flt;
 extern Osc lfo;
-extern float samplerate;
 
 extern float midiNoteToFreqTable[128];
 extern float pitchTable[PITCH_TABLE_SIZE];
@@ -37,6 +36,7 @@ extern float detuneTable[DETUNE_TABLE_SIZE];
 extern float pitchBendTable[PITCH_BEND_TABLE_SIZE];
 extern bool isOscSyncNeeded[OSC_NUM * VOICE_NUM];
 
+extern float randomValue;
 struct Voice
 {
     Osc     osc[OSC_NUM];
@@ -68,4 +68,6 @@ inline void PushNote(uint8_t note);
 inline uint8_t PopNote(uint8_t note);
 extern float panningTable[101][2];
 inline void InitPanningTable();
+extern float GetRandom(); 
+
 #endif

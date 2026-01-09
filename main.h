@@ -38,6 +38,7 @@ extern bool scope_data_ready;
 
 extern UartHandler uart_serial;
 extern ParameterManager paramManager;
+extern float samplerate;
 
 void Timer500ms();
 void Timer1ms();

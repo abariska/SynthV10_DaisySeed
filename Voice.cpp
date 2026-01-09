@@ -4,6 +4,7 @@
 #include "parameters.h"
 #include "midi_handler.h"
 #include "sx1509_expander.h"
+#include "log_uart.h"
 
 #define RANDOM_AMP_MAX 0.0001f
 #define RANDOM_FREQ_MAX 0.0001f
@@ -14,6 +15,8 @@
 using P = ParamUnitName;
 using namespace daisy;
 using M = ModSource;
+
+extern DaisySeed hw;
 
 Adsr adsrMod;
 LadderFilter fltL, fltR;
@@ -31,6 +34,9 @@ float detuneTable[DETUNE_TABLE_SIZE];
 float pitchBendTable[PITCH_BEND_TABLE_SIZE];
 float freqModTable[FREQ_MOD_TABLE_SIZE];
 
+static float staticDrift = 0.0f;
+static bool staticDriftChanged = false;
+
 float voice_pan[VOICE_NUM] = {
     0.0f, 0.5f, -0.5f, 1.0f, -1.0f};
 
@@ -43,6 +49,7 @@ bool is_any_voice_active = false;
 
 bool isOscSyncNeeded[OSC_NUM * VOICE_NUM] = {false};
 bool gate = false;
+float rndVal = 0.0f;
 
 void SynthInit(float samplerate, int blocksize)
 {
@@ -65,13 +72,18 @@ void SynthInit(float samplerate, int blocksize)
     EffectsInit(samplerate);
 }
 
-inline uint32_t GetRandom()
+float GetRandom()
 {
-    uint32_t new_state = rnd.GetFloat(0.0f, 0.000001f); 
-    new_state ^= new_state << 13; 
-    new_state ^= new_state >> 17;
-    new_state ^= new_state << 5;
-    return (new_state & 0xFFFFFF) * (1.0f / 16777216.0f);
+    if (rnd.IsReady())
+    {
+        uint32_t value = rnd.GetValue();
+        value ^= value << 13;     
+        value ^= value >> 17;
+        value ^= value << 5;
+        float random = (value & 0xFFFFFF) * (1.0f / 16777216.0f);
+        return (random - 0.5f) * 0.5f;
+    }
+    return 0.0f;
 }
 
 void ModSourcesProcess()
@@ -180,10 +192,10 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
     voice[v].vel = velocity / 127.0f;
     voice[v].gate = true;
     voice[v].timestamp = System::GetNow();
-    for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
-    {
-        voice[v].osc[oscId].SetDrift(GetRandom() * RANDOM_FREQ_MAX);
-    }
+    // for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
+    // {
+    //     voice[v].osc[oscId].SetDrift(GetRandom());
+    // }
     
     if (!paramManager.GetBool(P::GLOBAL_LEGATO))
     {
@@ -239,10 +251,20 @@ void HandleNoteOff(uint8_t note_in)
 
 void UpdateSynthParams()
 {
+    if (staticDrift != paramManager.GetValue(P::GLOBAL_ANALOG_DRIFT))
+    {
+        staticDrift = paramManager.GetValue(P::GLOBAL_ANALOG_DRIFT);
+        staticDriftChanged = true;
+    }
+
+    float attack = paramManager.GetValue(P::ADSR_ATTACK);
+    float decay = paramManager.GetValue(P::ADSR_DECAY);
+    float sustain = paramManager.GetValue(P::ADSR_SUSTAIN);
+    float release = paramManager.GetValue(P::ADSR_RELEASE);
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {
         // if the voice is not active, skip it
-        if (!voice[v].active) continue;
+        // if (!voice[v].active) continue;
 
         const float voiceFreq = voice[v].freq;
         const float voiceVel = voice[v].vel;
@@ -257,6 +279,12 @@ void UpdateSynthParams()
             float pw = paramManager.GetValue(OSC_PWM[oscId]);
             int waveform = static_cast<int>(paramManager.GetValue(OSC_WAVEFORM[oscId]));
 
+            voice[v].osc[oscId].SetDriftAmount(staticDrift);
+            if (staticDriftChanged)
+            {
+                voice[v].osc[oscId].ResetDrift();
+            } 
+
             voice[v].osc[oscId].SetFreq(paramManager.GetValue(OSC_FREQ[oscId]));    
             voice[v].osc[oscId].SetAmp(amp);
             voice[v].osc[oscId].SetWaveform(waveform);
@@ -268,11 +296,12 @@ void UpdateSynthParams()
                 prev_freq[v * OSC_NUM + oscId] = voice[v].final_freq[oscId];
             }
         }
-        voice[v].adsr.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
-        voice[v].adsr.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
-        voice[v].adsr.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
-        voice[v].adsr.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
+        voice[v].adsr.SetAttackTime(attack, 1.0f);
+        voice[v].adsr.SetDecayTime(decay);
+        voice[v].adsr.SetSustainLevel(sustain);
+        voice[v].adsr.SetReleaseTime(release);
     }
+    staticDriftChanged = false;
 
     fltL.SetFilterMode(static_cast<LadderFilter::FilterMode>(paramManager.GetValue(P::FILTER_MODE)));
     fltL.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
@@ -314,6 +343,8 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
 {
     float outL = 0.0f;
     float outR = 0.0f;
+    float voiceL = 0.0f;
+    float voiceR = 0.0f;
     
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {
@@ -321,33 +352,47 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
-            if (voice[v].osc[oscId].sampleCounter >= 255)
+            if (voice[v].osc[oscId].sampleCounter >= 2048)
             {
-                voice[v].osc[oscId].SetDrift(GetRandom() * RANDOM_FREQ_MAX);
+                float randomValue1 = GetRandom();
+                float randomValue2 = GetRandom();
+                voice[v].osc[oscId].SetDrift(randomValue1 - randomValue2);
+                voice[v].osc[oscId].sampleCounter = 0;
             }
-            // if (isOscSyncNeeded[v * OSC_NUM + oscId])
+            if (isOscSyncNeeded[v * OSC_NUM + oscId])
+            {
+                float phase = voice[v].osc[0].GetPhase();
+                if (oscId != 0)
+                { 
+                    voice[v].osc[oscId].SyncPhase(phase);
+                }
+
+                isOscSyncNeeded[v * OSC_NUM + oscId] = false; 
+            }
+            
+            if (!paramManager.GetValue(OSC_ACTIVE[oscId]))
+            {
+                voice[v].osc[oscId].SetAmp(0.0f);
+            }
+            // if (oscId == 0)
             // {
-            //     float phase = voice[v].osc[0].GetPhase();
-            //     if (oscId != 0)
-            //     { 
-            //         voice[v].osc[oscId].SyncPhase(phase);
-            //     }
-
-            //     isOscSyncNeeded[v * OSC_NUM + oscId] = false; 
+            //     voiceL += voice[v].osc[oscId].Process();
             // }
-
-            if (paramManager.GetValue(OSC_ACTIVE[oscId]))
-            {
-                voice_out += voice[v].osc[oscId].Process();
-            }
+            // else if (oscId == 1)
+            // {
+            //     voiceR += voice[v].osc[oscId].Process();
+            // }
+            voice_out += voice[v].osc[oscId].Process();
         }
         
         float env = voice[v].adsr.Process(voice[v].gate);
         float voice_out_env = voice_out * env / VOICE_NUM;
-        float voiceL, voiceR;
+
         VoicePanning(v, voice_out_env, voiceL, voiceR);
         outL += voiceL;
         outR += voiceR;
+        // outL += voiceL * env / VOICE_NUM;
+        // outR += voiceR * env / VOICE_NUM;
         
         // if the voice is not active and the envelope is below 0.00001f, kill the voice
         if (!(voice[v].active && voice[v].gate) && env <= 0.00001f) 

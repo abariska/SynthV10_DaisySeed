@@ -4,6 +4,9 @@
 
 #include <stdint.h>
 
+#define SAMPLE_RATE 48000.0f
+#define SAMPLE_TIME 1.0f / SAMPLE_RATE
+
 /** Band Limited Oscillator
 
 */
@@ -23,30 +26,48 @@ public:
         WAVE_COUNT,
     };
 
-    uint8_t sampleCounter;
+    uint16_t sampleCounter;
+    bool need_phase_sync;
 
     void Init(float sample_rate, bool is_lfo = false);
 
     void SetFreq(float freq) { targetFreq = freq; }
-    void SetPortamento(float portamento) { freqSlewRate = freqSlewRateBase * powf(0.0001f, portamento);   }
-
-    float Process();
-    float GetPhase() const { return phaseOsc; }
-
     void SetWaveform(int wf) { mode = wf; }
     void SetAmp(float a) { amp = a; }
     void SetPw(float pw_) { pw = pw_; }
-    void SyncPhaseToZero() { phaseOsc = 0.0f; }
+    void SyncPhase(float phase) { phaseOsc = phase; }
+    void SyncPhaseToZero();
     void SetDrift(float randomValue);
+    void SetDriftAmount(float amount);
+    void SetPortamento(float portamento) { freqSlewRate = freqSlewRateBase * powf(0.0001f, portamento);   }
+    void ResetDrift();
+
+    float Process();
+    float GetPhase() const { return phaseOsc; }
+    float GetAmp() const { return amp; }
+    float GetFreq() const { return currentFreq; }
+    float GetPw() const { return pw; }
+    float GetWaveform() const { return mode; }
+    float GetDrift() const { return driftValue; }
+    float GetDriftTarget() const { return driftTarget; }
+    float GetDriftSlew() const { return driftSlew; }
+    float GetDriftAmount() const { return driftAmount; }
+    float GetSampleCounter() const { return sampleCounter; }
+    float GetPhaseOsc() const { return phaseOsc; }
 
 private:
     float sampleRate;
 
     float currentFreq;
+    float baseFreq;
     float targetFreq;
     float freqSlewRate;
     float freqSlewRateBase;
     float phaseOsc;
+    float phaseBaseInc;
+    float phaseIncWithDrift;
+    float phaseDiff;
+    float phaseBase;
     float phaseInc;
     float driftValue;
     float driftTarget;
@@ -61,7 +82,6 @@ private:
     float pw;
 
     float blepGain;
-    float prev_phase;
     float current_phase;
     uint32_t noiseState;
     
