@@ -76,13 +76,13 @@ void InitQSPI()
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
     uint32_t init_flag = *((uint32_t *)(0x90000000));
 
-    if (init_flag != 0xDEADBEEF)
+    if (init_flag != 0xDEADBEED)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
         uint8_t page[PAGE_SIZE];
         memset(page, 0xFF, sizeof(page));
-        uint32_t marker = 0xDEADBEEF;
+        uint32_t marker = 0xDEADBEED;
         memcpy(page, &marker, sizeof(marker));
 
         hw.qspi.Write(0, sizeof(page), page);
