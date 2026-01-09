@@ -3,9 +3,9 @@
 #define OSC_H
 
 #include <stdint.h>
+extern float samplerate;
 
-#define SAMPLE_RATE 48000.0f
-#define SAMPLE_TIME 1.0f / SAMPLE_RATE
+#define SAMPLE_TIME (1.0f / samplerate)
 
 /** Band Limited Oscillator
 
