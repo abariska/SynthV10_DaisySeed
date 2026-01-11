@@ -30,7 +30,7 @@ using namespace daisysp;
 extern LadderFilter flt;
 extern Osc lfo;
 extern float samplerate;
-
+extern float lfo_value;
 extern float midiNoteToFreqTable[128];
 extern float pitchTable[PITCH_TABLE_SIZE];
 extern float detuneTable[DETUNE_TABLE_SIZE];

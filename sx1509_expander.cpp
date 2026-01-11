@@ -4,6 +4,7 @@
 #include "parameters.h"
 #include "menu.h"
 #include "log_uart.h"
+#include "voice.h"
 
 using namespace std;
 
@@ -65,7 +66,7 @@ void UpdateLeds()
 }
 void UpdatePWMLeds()
 {
-    sx1509_leds.WritePWM(LED_LFO, (int)(modulators[static_cast<int>(M::LFO)].value * 255));
+    sx1509_leds.WritePWM(LED_LFO, 255 - (int)(lfo_value * 255));
 }
 
 void UpdateStoreLed()

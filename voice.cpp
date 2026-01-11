@@ -41,6 +41,7 @@ bool is_any_voice_active = false;
 
 bool isOscSyncNeeded[OSC_NUM * VOICE_NUM] = {false};
 bool gate = false;
+float lfo_value = 0.0f;
 
 void SynthInit(float samplerate, int blocksize)
 {
@@ -65,7 +66,9 @@ void SynthInit(float samplerate, int blocksize)
 
 void ModSourcesProcess()
 {
-    modulators[static_cast<int>(M::LFO)].value = lfo.Process() / 2.0f + 0.5f;
+
+    lfo_value = lfo.Process() * 0.5f + 0.5f;
+    modulators[static_cast<int>(M::LFO)].value = lfo_value;
     modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(gate);
 
     modulators[static_cast<int>(M::MOD_WHEEL)].value = mod_wheel_value;
@@ -158,6 +161,14 @@ int AllocVoice()
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity)
 {
+    if (!is_any_voice_active)
+    {
+        lfo.SyncPhaseToZero();
+    }
+
+    is_any_voice_active = true;
+    gate = true;
+
     if (paramManager.GetBool(P::GLOBAL_MONO))
     {
         PushNote(note_in);
@@ -176,7 +187,6 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
         voice[v].adsr.Retrigger(false);
         adsrMod.Retrigger(false);
     }
-    gate = true;
 }
 
 void HandleNoteOff(uint8_t note_in)
@@ -218,13 +228,19 @@ void HandleNoteOff(uint8_t note_in)
     }
 
     is_any_voice_active = false;
+    int active_voices = 0;
     for (int v = 0; v < VOICE_NUM; ++v)
     {
         if (voice[v].active && voice[v].gate)
         {
-            is_any_voice_active = true;
-            break;
+            active_voices++;
         }
+    }
+    if (active_voices > 0)
+    {
+        is_any_voice_active = true;
+    } else {
+        is_any_voice_active = false;
     }
     gate = is_any_voice_active;
 }

@@ -6,9 +6,9 @@
 #include "SX1509_Daisy_Seed/SX1509.h"
 
 // sx1509 buttons
-#define BUTTON_OSC_3 0
+#define BUTTON_OSC_3 2
 #define BUTTON_OSC_2 1
-#define BUTTON_OSC_1 2
+#define BUTTON_OSC_1 0
 #define BUTTON_FLT 3
 #define BUTTON_AMP 4
 #define BUTTON_LFO 5
@@ -22,7 +22,6 @@
 #define ENC_2_SW 13
 #define ENC_3_SW 14
 #define ENC_4_SW 15
-#define ENC_DIAL_SW 15
 
 // sx1509 encoders
 #define ENC_1_B 0
@@ -38,9 +37,9 @@
 #define ENC_DIAL_SW 10
 
 // sx1509 leds
-#define LED_OSC_1 0
+#define LED_OSC_1 2
 #define LED_OSC_2 1
-#define LED_OSC_3 2
+#define LED_OSC_3 0
 #define LED_LFO 3
 #define LED_STORE 4
 #define LED_1 5

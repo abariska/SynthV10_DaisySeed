@@ -45,7 +45,6 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
     static float scope_out = 0.0f;
 
     UartMidiProcess();
-    UsbMidiProcess(); 
 
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
@@ -112,7 +111,7 @@ int main(void)
 
     hw.Configure();
     hw.Init(true);
-    UartSerialInit();
+    // UartSerialInit();
 
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate();
@@ -131,16 +130,17 @@ int main(void)
     InitSX1509Extenders();
     SetPage(MAIN_PAGE);
 
-    hw.StartAudio(AudioCallback);
-
     Timer500ms();
     Timer1ms();
     System::Delay(10);
     process_type = PROCESS_CONTROLS;
 
+    hw.StartAudio(AudioCallback);
 
     while (1)
     {
+
+        UsbMidiProcess(); 
         switch (process_type)
         {
             case PROCESS_CONTROLS:
@@ -185,7 +185,7 @@ void ProcessButtons()
     {
         if (isStoreMode)
         {
-            if (shift_pressed)
+            if (sx1509_buttons.isFallingEdge(BUTTON_EXIT))
             {
                 isStoreMode = false;
                 currentPreset.number = old_preset_number;

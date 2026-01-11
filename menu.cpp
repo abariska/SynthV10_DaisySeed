@@ -496,14 +496,14 @@ void AssignParamsForPage(MenuPage page)
         paramSlots[1].target_param = P::EFFECT_COMPRESSOR_RELEASE;
         paramSlots[2].target_param = P::EFFECT_COMPRESSOR_THRESHOLD;
         paramSlots[3].target_param = P::EFFECT_COMPRESSOR_RATIO;
-        paramSlots[4].target_param = P::EFFECT_COMPRESSOR_MAKEUP;
+        // paramSlots[4].target_param = P::EFFECT_COMPRESSOR_MAKEUP;
         break;
     case FLANGER_PAGE:
         SetPageName("Flanger");
         paramSlots[0].target_param = P::EFFECT_FLANGER_LFO_FREQ;
         paramSlots[1].target_param = P::EFFECT_FLANGER_LFO_DEPTH;
         paramSlots[2].target_param = P::EFFECT_FLANGER_DELAY;
-        paramSlots[3].target_param = P::NONE;
+        paramSlots[3].target_param = P::EFFECT_FLANGER_FEEDBACK;
         break;
     case AUTOWAH_PAGE:
         SetPageName("Autowah");

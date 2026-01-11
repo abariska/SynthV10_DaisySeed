@@ -27,9 +27,9 @@ float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0
                                                                                0.0f, 0.1f, 0.0f, 0.01f, 0.01f, 0.1f, 0.5f, 0.01f, //Filter ADSR
                                                                                0.0f, 0.01f, 1.0f, 0.0f, 0.01f, 0.1f, 0.5f, 0.01f, //Mod LFO ADSR
                                                                                0.0f, //Drive
-                                                                               0.1f, 0.5f, 0.5f, 0.5f, //Chorus
+                                                                               0.01f, 0.5f, 0.1f, 0.1f, //Chorus
                                                                                0.01f, 0.01f, 0.5f, 2.0f, 0.5f, //Compressor
-                                                                               0.5f, 0.5f, 0.5f, 0.5f, //Flanger
+                                                                               0.5f, 0.5f, 0.1f, 0.1f, //Flanger
                                                                                0.5f, 0.5f, //Autowah
                                                                                0.5f, 1.0f, //Reverb
                                                                                0.5f, 0.0f, 0.5f, 0.0f, //FX slots
@@ -490,16 +490,16 @@ void ParameterManager::Init()
     ADD_PARAM(P::EFFECT_CHORUS_DELAY, 0.0f, 100.0f, "Dly Chrs", "Delay", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_COMPRESSOR_ATTACK, 0.001f, 10.0f, "Atck Com", "Attack", Curve::LINEAR, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_COMPRESSOR_RELEASE, 0.001f, 10.0f, "Rel Com", "Release", Curve::LINEAR, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_THRESHOLD, -80.0f, 0.0f, "Thrs Com", "Threshold", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_COMPRESSOR_THRESHOLD, -80.0f, 0.0f, "Thrs Com", "Thresh", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_COMPRESSOR_RATIO, 1.0f, 40.0f, "Rat Com", "Ratio", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_COMPRESSOR_MAKEUP, 0.0f, 80.0f, "Mkup Com", "Makeup", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_FLANGER_FEEDBACK, 0.0f, 100.0f, "Fdbk Flg", "Feedback", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_FLANGER_FEEDBACK, 0.0f, 100.0f, "Fdbk Flg", "Feedbck", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_FLANGER_LFO_DEPTH, 0.0f, 100.0f, "Dpth Flg", "Depth", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_FLANGER_LFO_FREQ, 0.1f, 100.0f, "Freq Flg", "Freq", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_FLANGER_DELAY, 0.0f, 100.0f, "Dly Flg", "Delay", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_AUTOWAH_WAH, 0.0f, 100.0f, "Wah Aut", "Wah", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_AUTOWAH_LEVEL, 0.0f, 100.0f, "Lvl Aut", "Level", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_REVERB_FEEDBACK, 0.0f, 100.0f, "Fdbk Rvb", "Feedback", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::EFFECT_REVERB_FEEDBACK, 0.0f, 100.0f, "Fdbk Rvb", "Feedbck", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_REVERB_LPFREQ, 10.0f, 20000.0f, "Cut Rvb", "Cutoff", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_SLOT_1_DRYWET, 0.0f, 100.0f, "FX1", "FX1", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::EFFECT_SLOT_1_ACTIVE, 0, 2, "Enbl FX1", "Enbl", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
