@@ -29,17 +29,17 @@ public:
     void SetFreq(float freq) { targetFreq = freq; }
     void SetPortamento(float portamento) { slewRate = slewRateBase * powf(0.0001f, portamento);   }
 
-    void PhaseProcess();
     float Process();
     float GetCurrentFreq() const { return currentFreq; }
     float GetPhase() const { return phaseOsc; }
+    bool IsActive() const { return active; }
 
     void SetWaveform(int wf) { mode = wf; }
-    void SetAmp(float a) { amp = a; }
+    void SetAmp(float a) { targetAmp = a; }
     void SetPw(float pw_) { pw = pw_; }
     void SyncPhase(float phase) { phaseOsc = phase; }
     void SyncPhaseToZero() { phaseOsc = 0.0f; }
-    void UpdateIncrement();
+    void SetActive(bool a) { active = a; }
 
 private:
     float sampleRate;
@@ -53,7 +53,6 @@ private:
     float phaseInc;
 
     int mode;
-    float amp;
     float pw;
     float phaseOsc;
     float blepGain;
@@ -61,7 +60,9 @@ private:
     float current_phase;
     uint32_t noiseState;
     float currentAmp;
+    float targetAmp;
     bool use_gain;
+    bool active;
 };
 
 #endif

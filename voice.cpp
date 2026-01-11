@@ -65,8 +65,6 @@ void SynthInit(float samplerate, int blocksize)
 
 void ModSourcesProcess()
 {
-    lfo.PhaseProcess();
-
     modulators[static_cast<int>(M::LFO)].value = lfo.Process() / 2.0f + 0.5f;
     modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(gate);
 
@@ -164,6 +162,7 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
     {
         PushNote(note_in);
     }
+    
     int v = AllocVoice();
     voice[v].active = true;
     voice[v].note = note_in;
@@ -184,6 +183,12 @@ void HandleNoteOff(uint8_t note_in)
 {
     if (paramManager.GetBool(P::GLOBAL_MONO))
     {
+        if (voice[0].note != note_in)
+        {
+            PopNote(note_in);
+            return;
+        }
+
         uint8_t prevNote = PopNote(note_in);
         
         if (prevNote > 0)
@@ -245,6 +250,7 @@ void UpdateSynthParams()
             float pw = paramManager.GetValue(OSC_PWM[oscId]);
             int waveform = static_cast<int>(paramManager.GetValue(OSC_WAVEFORM[oscId]));
 
+            voice[v].osc[oscId].SetActive(paramManager.GetValue(OSC_ACTIVE[oscId]));
             voice[v].osc[oscId].SetFreq(paramManager.GetValue(OSC_FREQ[oscId]));    
             voice[v].osc[oscId].SetAmp(amp);
             voice[v].osc[oscId].SetWaveform(waveform);
@@ -320,12 +326,8 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
                 isOscSyncNeeded[v * OSC_NUM + oscId] = false; 
             }
 
-            voice[v].osc[oscId].PhaseProcess();
-
-            if (paramManager.GetValue(OSC_ACTIVE[oscId]))
-            {
-                voice_out += voice[v].osc[oscId].Process();
-            }
+            float process_out = voice[v].osc[oscId].Process();
+            voice_out += process_out;
         }
         
         float env = voice[v].adsr.Process(voice[v].gate);

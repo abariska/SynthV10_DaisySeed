@@ -37,30 +37,31 @@ void Osc::Init(float sample_rate , bool is_lfo)
     slewRate = 1.0f;
     slewRateBase = 0.1f; 
     mode = WAVE_SIN;
-    amp = 0.1f;
     pw = 0.5f;
     noiseState = 1;
 
     phaseOsc = 0.0f;
     phaseOffset = 0.0f;
     blepGain = 1.0f;
-    currentAmp = 0.0f;
-    UpdateIncrement();
+    currentAmp = 0.1f;
+    targetAmp = 0.0f;
     use_gain = !is_lfo;
-}
-
-void Osc::PhaseProcess()
-{
-    currentFreq += (targetFreq != currentFreq) * (targetFreq - currentFreq) * slewRate; 
-    UpdateIncrement();
-
-    currentAmp += (amp - currentAmp) * 0.1f;
-    phaseOsc += phaseInc;
-    phaseOsc -= (phaseOsc >= 1.0f) ? 1.0f : 0.0f;
+    active = false;
 }
 
 float Osc::Process()
 {
+    currentFreq += (targetFreq != currentFreq) * (targetFreq - currentFreq) * slewRate; 
+    phaseInc = currentFreq / sampleRate;
+
+    if (!active)
+    {
+        targetAmp = 0.0f;
+    }
+    currentAmp += (targetAmp - currentAmp) * 0.1f;
+    phaseOsc += phaseInc;
+    phaseOsc -= (phaseOsc >= 1.0f) ? 1.0f : 0.0f;
+
     float out = 0.0f;
     float gain = kWaveGain[mode] * 0.5f;
 
@@ -94,16 +95,3 @@ float Osc::Process()
     gain = use_gain ? gain * currentAmp : 1.0f;
     return out * gain;
 }
-
-void Osc::UpdateIncrement()
-{
-    phaseInc = currentFreq / sampleRate;
-}
-
-// // Xorshift алгоритм (трохи швидший)
-// float GenerateNoise() {
-//     noiseState ^= noiseState << 13;
-//     noiseState ^= noiseState >> 17;
-//     noiseState ^= noiseState << 5;
-//     return (float)(int32_t(noiseState)) / 2147483648.0f;
-// }

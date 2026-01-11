@@ -36,7 +36,7 @@ void InitSX1509Encoders()
     i2c_conf_encoders.transport_config.i2c_config.speed = I2CHandle::Config::Speed::I2C_400KHZ;
     i2c_conf_encoders.transport_config.i2c_config.pin_config.scl = Pin(PORTB, 8);
     i2c_conf_encoders.transport_config.i2c_config.pin_config.sda = Pin(PORTB, 9);
-    i2c_conf_encoders.transport_config.i2c_address = 0x3F;
+    i2c_conf_encoders.transport_config.i2c_address = 0x71;
     sx1509_encoders.Init(i2c_conf_encoders);
     sx1509_encoders.Check();
 }
@@ -50,7 +50,7 @@ void InitSX1509Leds()
     i2c_conf_leds.transport_config.i2c_config.speed = I2CHandle::Config::Speed::I2C_400KHZ;
     i2c_conf_leds.transport_config.i2c_config.pin_config.scl = Pin(PORTB, 8);
     i2c_conf_leds.transport_config.i2c_config.pin_config.sda = Pin(PORTB, 9);
-    i2c_conf_leds.transport_config.i2c_address = 0x70;
+    i2c_conf_leds.transport_config.i2c_address = 0x3F;
     sx1509_leds.Init(i2c_conf_leds);
     sx1509_leds.Check();
 }

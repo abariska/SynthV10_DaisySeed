@@ -56,6 +56,8 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
     {
         float outL = 0.0f;
         float outR = 0.0f;
+        float inL = in[i] * 0.5f;
+        float inR = in[i+1] * 0.5f;
 
         ModSourcesProcess();
         VoiceProcess(outL, outR); 
@@ -66,8 +68,8 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         ProcessEffects(0, outL, outR, fx1_outL, fx1_outR);
         ProcessEffects(1, fx1_outL, fx1_outR, fx2_outL, fx2_outR);
 
-        out[i] = fx2_outL * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
-        out[i + 1] = fx2_outR * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
+        out[i] = (fx2_outL + inL) * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
+        out[i + 1] = (fx2_outR + inR) * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
         // out[i] = outL;
         // out[i + 1] = outR;
 
@@ -139,8 +141,6 @@ int main(void)
 
     while (1)
     {
-
-        
         switch (process_type)
         {
             case PROCESS_CONTROLS:
@@ -283,7 +283,7 @@ void ProcessButtons()
         }
         else
         {
-            if (sx1509_buttons.isFallingEdge(BUTTON_BACK))
+            if (sx1509_buttons.isFallingEdge(BUTTON_EXIT))
             {
                 SetPage(MenuPage::MAIN_PAGE);
             }
@@ -361,7 +361,7 @@ void ProcessButtons()
             {
                 SetPage(MenuPage::MOD_MATRIX_PAGE);
             }
-            if (sx1509_buttons.isFallingEdge(ENC_DIAL_SW))
+            if (sx1509_buttons.isFallingEdge(BUTTON_SETTINGS))
             {
                 SetPage(MenuPage::SETTINGS_PAGE);
             }
