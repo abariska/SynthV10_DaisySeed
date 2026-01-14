@@ -35,7 +35,6 @@ float panningTable[PANNING_TABLE_SIZE][2] = {{0.0f}};
 
 uint8_t noteNum = 60;
 float frequency = 0;
-float phaseOffsets[OSC_NUM * VOICE_NUM];
 float prev_freq[OSC_NUM * VOICE_NUM] = {0.0f};
 bool is_any_voice_active = false;
 
@@ -257,7 +256,7 @@ void UpdateSynthParams()
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
-            phaseOffsets[v * OSC_NUM + oscId] = rnd[v].GetFloat(0.0f, 0.000001f);
+            // phaseOffsets[v * OSC_NUM + oscId] = rnd[v].GetFloat(0.0f, 0.000001f);
             float pitch = GetPitchTableValue(paramManager.GetValue(OSC_PITCH[oscId]));
             float detune = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[oscId]));
             voice[v].final_freq[oscId] = voiceFreq * pitch * detune * pitch_bend_multiplier;
