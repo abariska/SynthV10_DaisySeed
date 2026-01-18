@@ -46,6 +46,8 @@ struct Voice
     float   pitch_correction[OSC_NUM];
     float   detune_correction[OSC_NUM];
     float   final_freq[OSC_NUM];
+    float   final_amp[OSC_NUM];
+    float   final_pw[OSC_NUM];
     
     bool     active     = false;
     bool     gate       = false;
@@ -56,6 +58,10 @@ struct Voice
 };
 
 extern Voice voice[VOICE_NUM];
+
+void SetAudioDirtyFlag(int paramIndex);
+
+void UpdateCachedFreq(uint8_t voice_num, uint8_t osc_num, float freq);
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity);
 void HandleNoteOff(uint8_t note_in);

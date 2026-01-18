@@ -46,7 +46,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     Paint_Clear(bgColor);
     // Paint_DrawCircle(PARAM_BLOCK_WIDTH / 2, PARAM_BLOCK_HEIGHT / 2, PARAM_BLOCK_WIDTH / 2, 0x04, DOT_PIXEL_1X1, DRAW_FILL_FULL);
 
-    ParamUnit param_unit = paramManager.GetParam(target_param).GetUnit();
+    ParamUnit param_unit = paramManager.GetUnit(target_param);
 
     float value = 0;
     char value_str[10];

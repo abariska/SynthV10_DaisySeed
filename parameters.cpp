@@ -20,6 +20,7 @@ static const uint32_t FLASH_BASE_ADDR = 0x1000; // Починаємо пресе
 static const uint32_t FLASH_BLOCK_4KB = 0x1000;
 
 Preset currentPreset;
+AudioParamsDirty dirty;
 float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0.0f,
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 1.0f, //Osc1
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 0.0f, //Osc2
@@ -205,7 +206,7 @@ float SynthParameter::AdjustByIncrement(int inc)
     {
         if (unit == ParamUnit::BOOL)
         {
-            float newValue = static_cast<float>(GetNormalised());
+            float newValue = static_cast<float>(norm_value);
             newValue += inc;
             SetNormalized(newValue);
             return static_cast<float>(newValue);
@@ -302,7 +303,7 @@ float SynthParameter::GetValue()
         return value + ((m - value) * modifier_value);
         break;
     case ParamUnit::BOOL:
-        return static_cast<float>(GetBool());
+        return static_cast<float>(norm_value > 0.5f ? 1.0f : 0.0f);
         break;
     default:
         return 0.0f;
@@ -327,17 +328,6 @@ void SynthParameter::SetBool(bool value)
     SetNormalized(val);
 }
 
-// Getters
-float SynthParameter::GetNormalised() const { return norm_value; }
-bool SynthParameter::GetBool() const { return static_cast<float>(norm_value) > 0.5f; }
-const char *SynthParameter::GetFullLabel() const { return full_label; }
-const char *SynthParameter::GetShortLabel() const { return short_label; }
-ParamType SynthParameter::GetType() const { return type; }
-ParamUnit SynthParameter::GetUnit() const { return unit; }
-Curve SynthParameter::GetCurve() const { return curve; }
-float SynthParameter::GetPhysical() const { return physical_value; }
-float SynthParameter::GetModifier() const { return modifier_value; }
-
 //--------------------------------
 //--------------------------------
 
@@ -359,7 +349,7 @@ void SavePreset(uint8_t preset_num, const Preset &prst)
 
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
-        float v = paramManager.GetParam(static_cast<ParamUnitName>(i)).GetNormalised();
+        float v = paramManager.GetParam(static_cast<ParamUnitName>(i)).norm_value;
         p.type = PresetType::CUSTOM;
         p.number = prst.number;
         p.array[i] = v;
@@ -521,3 +511,39 @@ Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::VELOCITY, 0.0f, "Velocity"},
     {ModSource::SWITCH_PEDAL, 0.0f, "SW Pedal"},
 };
+
+void SetAudioDirtyFlag(int paramIndex) {
+    ParamUnitName param = static_cast<ParamUnitName>(paramIndex);
+    
+    if (param >= P::OSC_PITCH_1 && param <= P::OSC_ACTIVE_3) {
+        dirty.oscParams = true;
+    }
+    else if (param >= P::ADSR_ATTACK && param <= P::ADSR_RELEASE) {
+        dirty.adsrParams = true;
+    }
+    else if (param >= P::FILTER_MODE && param <= P::FILTER_DRIVE) {
+        dirty.filterParams = true;
+    }
+    else if (param >= P::EFFECT_FLANGER_FEEDBACK && param <= P::EFFECT_FLANGER_DELAY) {
+        dirty.flangerParams = true;
+    }
+    else if (param >= P::EFFECT_CHORUS_FREQ && param <= P::EFFECT_CHORUS_DELAY) {
+        dirty.chorusParams = true;
+    }
+    else if (param >= P::EFFECT_COMPRESSOR_ATTACK && param <= P::EFFECT_COMPRESSOR_MAKEUP) {
+        dirty.compressorParams = true;
+    }
+    else if (param >= P::EFFECT_REVERB_FEEDBACK && param <= P::EFFECT_REVERB_LPFREQ) {
+        dirty.reverbParams = true;
+    }
+    else if (param == P::EFFECT_OVERDRIVE_DRIVE) {
+        dirty.driveParams = true;
+    }
+    else if (param == P::EFFECT_AUTOWAH_WAH) {
+        dirty.wahParams = true;
+    }
+    else if (param == P::GLOBAL_MASTER_VOLUME) {
+        dirty.portamentoParams = true;
+    }
+    paramManager.GetParam(param).isDirty = true;
+}

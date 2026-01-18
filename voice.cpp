@@ -23,10 +23,20 @@ uint8_t noteStack[MAX_NOTE_STACK];
 uint8_t notesInStack = 0;
 
 float midiNoteToFreqTable[128];
+float velocityToAmpTable[128];
 float pitchTable[PITCH_TABLE_SIZE];
 float detuneTable[DETUNE_TABLE_SIZE];
 float pitchBendTable[PITCH_BEND_TABLE_SIZE];
 float freqModTable[FREQ_MOD_TABLE_SIZE];
+
+static float cached_pitch[OSC_NUM];
+static float cached_detune[OSC_NUM];
+static float osc_freq_factor[OSC_NUM] = {1.0f};
+static float cached_portamento = 0.0f;
+static int cached_waveform[OSC_NUM];
+static bool cached_active[OSC_NUM];
+static float cached_pw[OSC_NUM];
+static float cached_amp[OSC_NUM];
 
 float voice_pan[VOICE_NUM] = {
     0.0f, 0.5f, -0.5f, 1.0f, -1.0f};
@@ -177,7 +187,7 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
     voice[v].active = true;
     voice[v].note = note_in;
     voice[v].freq = midiNoteToFreqTable[note_in];
-    voice[v].vel = velocity / 127.0f;
+    voice[v].vel = velocityToAmpTable[velocity];
     voice[v].gate = true;
     voice[v].timestamp = System::GetNow();
     
@@ -186,6 +196,8 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
         voice[v].adsr.Retrigger(false);
         adsrMod.Retrigger(false);
     }
+    dirty.oscParams = true;
+    dirty.adsrParams = true;
 }
 
 void HandleNoteOff(uint8_t note_in)
@@ -211,6 +223,8 @@ void HandleNoteOff(uint8_t note_in)
             {
                 voice[0].adsr.Retrigger(false);
             }
+            dirty.adsrParams = true;
+            dirty.oscParams = true;
             gate = true;
             return;
         }
@@ -246,77 +260,125 @@ void HandleNoteOff(uint8_t note_in)
 
 void UpdateSynthParams()
 {
+    if (dirty.portamentoParams)
+    {
+        cached_portamento = paramManager.GetValue(P::GLOBAL_PORTAMENTO);
+        dirty.portamentoParams = false;
+    }
+    if (dirty.oscParams)
+    {
+        for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
+        {
+            cached_pitch[oscId] = GetPitchTableValue(paramManager.GetValue(OSC_PITCH[oscId]));
+            cached_detune[oscId] = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[oscId]));   
+            osc_freq_factor[oscId] = cached_pitch[oscId] * cached_detune[oscId] * pitch_bend_multiplier;
+
+            cached_waveform[oscId] = static_cast<int>(paramManager.GetValue(OSC_WAVEFORM[oscId]));
+            cached_pw[oscId] = paramManager.GetValue(OSC_PWM[oscId]);
+            cached_active[oscId] = paramManager.GetValue(OSC_ACTIVE[oscId]);
+            cached_amp[oscId] = paramManager.GetValue(OSC_AMP[oscId]);
+        }
+    }
+
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {
         // if the voice is not active, skip it
         if (!voice[v].active) continue;
 
-        const float voiceFreq = voice[v].freq;
-        const float voiceVel = voice[v].vel;
-
-        for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
+        if (dirty.oscParams)
         {
-            // phaseOffsets[v * OSC_NUM + oscId] = rnd[v].GetFloat(0.0f, 0.000001f);
-            float pitch = GetPitchTableValue(paramManager.GetValue(OSC_PITCH[oscId]));
-            float detune = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[oscId]));
-            voice[v].final_freq[oscId] = voiceFreq * pitch * detune * pitch_bend_multiplier;
-            paramManager.SetValue(OSC_FREQ[oscId], voice[v].final_freq[oscId]);
-            float amp = paramManager.GetValue(OSC_AMP[oscId]) * voiceVel;
-            float pw = paramManager.GetValue(OSC_PWM[oscId]);
-            int waveform = static_cast<int>(paramManager.GetValue(OSC_WAVEFORM[oscId]));
-
-            voice[v].osc[oscId].SetActive(paramManager.GetValue(OSC_ACTIVE[oscId]));
-            voice[v].osc[oscId].SetFreq(paramManager.GetValue(OSC_FREQ[oscId]));    
-            voice[v].osc[oscId].SetAmp(amp);
-            voice[v].osc[oscId].SetWaveform(waveform);
-            voice[v].osc[oscId].SetPw(pw);
-            voice[v].osc[oscId].SetPortamento(paramManager.GetValue(P::GLOBAL_PORTAMENTO));
-            if (voice[v].final_freq[oscId] != prev_freq[v * OSC_NUM + oscId])
+            for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
             {
-                isOscSyncNeeded[v * OSC_NUM + oscId] = true;
-                prev_freq[v * OSC_NUM + oscId] = voice[v].final_freq[oscId];
-            }
+                // phaseOffsets[v * OSC_NUM + oscId] = rnd[v].GetFloat(0.0f, 0.000001f);
+                paramManager.SetValue(OSC_FREQ[oscId], voice[v].freq * osc_freq_factor[oscId]);
+                voice[v].final_freq[oscId] = paramManager.GetValue(OSC_FREQ[oscId]);
+
+                voice[v].osc[oscId].SetActive(cached_active[oscId]);
+                voice[v].osc[oscId].SetWaveform(cached_waveform[oscId]);
+                voice[v].osc[oscId].SetPw(cached_pw[oscId]);
+                voice[v].final_amp[oscId] = cached_amp[oscId] * voice[v].vel;
+
+                if (voice[v].final_freq[oscId] != prev_freq[v * OSC_NUM + oscId])
+                {
+                    isOscSyncNeeded[v * OSC_NUM + oscId] = true;
+                    prev_freq[v * OSC_NUM + oscId] = voice[v].final_freq[oscId];
+                }
+            }   
         }
-        voice[v].adsr.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
-        voice[v].adsr.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
-        voice[v].adsr.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
-        voice[v].adsr.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
+        
+        if (dirty.adsrParams)
+        {
+            voice[v].adsr.SetAttackTime(paramManager.GetValue(P::ADSR_ATTACK), 1.0f);
+            voice[v].adsr.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
+            voice[v].adsr.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
+            voice[v].adsr.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
+        }
     }
+    dirty.oscParams = false;
+    dirty.adsrParams = false;
+    
+    if (dirty.filterParams)
+    {
+        LadderFilter::FilterMode mode = static_cast<LadderFilter::FilterMode>(paramManager.GetValue(P::FILTER_MODE));
+        float filter_cutoff = paramManager.GetValue(P::FILTER_CUTOFF);
+        float filter_resonance = paramManager.GetValue(P::FILTER_RESONANCE);
+        float filter_drive = paramManager.GetValue(P::FILTER_DRIVE);
+        float input_drive = 1.0f + (filter_drive * 4.0f);
 
-    fltL.SetFilterMode(static_cast<LadderFilter::FilterMode>(paramManager.GetValue(P::FILTER_MODE)));
-    fltL.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
-    fltL.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
-    fltL.SetPassbandGain(0.5f);
-    fltL.SetInputDrive(1.0f + (paramManager.GetValue(P::FILTER_DRIVE) * 4.0f));
-    fltR.SetFilterMode(static_cast<LadderFilter::FilterMode>(paramManager.GetValue(P::FILTER_MODE)));
-    fltR.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
-    fltR.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
-    fltR.SetPassbandGain(0.5f);
-    fltR.SetInputDrive(1.0f + (paramManager.GetValue(P::FILTER_DRIVE) * 4.0f));
-
-    fx.flanger.SetFeedback(paramManager.GetValue(P::EFFECT_FLANGER_FEEDBACK));
-    fx.flanger.SetLfoDepth(paramManager.GetValue(P::EFFECT_FLANGER_LFO_DEPTH));
-    fx.flanger.SetLfoFreq(paramManager.GetValue(P::EFFECT_FLANGER_LFO_FREQ));
-    fx.flanger.SetDelay(paramManager.GetValue(P::EFFECT_FLANGER_DELAY));
-
-    fx.wah.SetWah(paramManager.GetValue(P::EFFECT_AUTOWAH_WAH));
-    fx.wah.SetLevel(paramManager.GetValue(P::EFFECT_AUTOWAH_LEVEL));
-
-    fx.drive.SetDrive(paramManager.GetValue(P::EFFECT_OVERDRIVE_DRIVE));
-
-    fx.chorus.SetLfoFreq(paramManager.GetValue(P::EFFECT_CHORUS_FREQ));
-    fx.chorus.SetLfoDepth(paramManager.GetValue(P::EFFECT_CHORUS_DEPTH));
-    fx.chorus.SetFeedback(paramManager.GetValue(P::EFFECT_CHORUS_FBK));
-    fx.chorus.SetDelay(paramManager.GetValue(P::EFFECT_CHORUS_DELAY));
-
-    fx.compressor.SetAttack(paramManager.GetValue(P::EFFECT_COMPRESSOR_ATTACK));
-    fx.compressor.SetRelease(paramManager.GetValue(P::EFFECT_COMPRESSOR_RELEASE));
-    fx.compressor.SetThreshold(paramManager.GetValue(P::EFFECT_COMPRESSOR_THRESHOLD));
-    fx.compressor.SetRatio(paramManager.GetValue(P::EFFECT_COMPRESSOR_RATIO));
-    fx.compressor.SetMakeup(paramManager.GetValue(P::EFFECT_COMPRESSOR_MAKEUP));
-
-    fx.reverb.SetFeedback(paramManager.GetValue(P::EFFECT_REVERB_FEEDBACK));
-    fx.reverb.SetLpFreq(paramManager.GetValue(P::EFFECT_REVERB_LPFREQ));
+        fltL.SetFilterMode(mode);
+        fltL.SetFreq(filter_cutoff);
+        fltL.SetRes(filter_resonance);
+        fltL.SetPassbandGain(0.5f);
+        fltL.SetInputDrive(input_drive);
+        fltR.SetFilterMode(mode);
+        fltR.SetFreq(filter_cutoff);
+        fltR.SetRes(filter_resonance);
+        fltR.SetPassbandGain(0.5f);
+        fltR.SetInputDrive(input_drive);
+        dirty.filterParams = false;
+    }
+    if (dirty.flangerParams)
+    {
+        fx.flanger.SetFeedback(paramManager.GetValue(P::EFFECT_FLANGER_FEEDBACK));
+        fx.flanger.SetLfoDepth(paramManager.GetValue(P::EFFECT_FLANGER_LFO_DEPTH));
+        fx.flanger.SetLfoFreq(paramManager.GetValue(P::EFFECT_FLANGER_LFO_FREQ));
+        fx.flanger.SetDelay(paramManager.GetValue(P::EFFECT_FLANGER_DELAY));
+        dirty.flangerParams = false;
+    }
+    if (dirty.wahParams)
+    {
+        fx.wah.SetWah(paramManager.GetValue(P::EFFECT_AUTOWAH_WAH));
+        fx.wah.SetLevel(paramManager.GetValue(P::EFFECT_AUTOWAH_LEVEL));
+        dirty.wahParams = false;
+    }
+    if (dirty.driveParams)
+    {
+        fx.drive.SetDrive(paramManager.GetValue(P::EFFECT_OVERDRIVE_DRIVE));
+        dirty.driveParams = false;
+    }
+    if (dirty.chorusParams)
+    {
+        fx.chorus.SetLfoFreq(paramManager.GetValue(P::EFFECT_CHORUS_FREQ));
+        fx.chorus.SetLfoDepth(paramManager.GetValue(P::EFFECT_CHORUS_DEPTH));
+        fx.chorus.SetFeedback(paramManager.GetValue(P::EFFECT_CHORUS_FBK));
+        fx.chorus.SetDelay(paramManager.GetValue(P::EFFECT_CHORUS_DELAY));
+        dirty.chorusParams = false;
+    }
+    if (dirty.compressorParams)
+    {
+        fx.compressor.SetAttack(paramManager.GetValue(P::EFFECT_COMPRESSOR_ATTACK));
+        fx.compressor.SetRelease(paramManager.GetValue(P::EFFECT_COMPRESSOR_RELEASE));
+        fx.compressor.SetThreshold(paramManager.GetValue(P::EFFECT_COMPRESSOR_THRESHOLD));
+        fx.compressor.SetRatio(paramManager.GetValue(P::EFFECT_COMPRESSOR_RATIO));
+        fx.compressor.SetMakeup(paramManager.GetValue(P::EFFECT_COMPRESSOR_MAKEUP));
+        dirty.compressorParams = false;
+    }
+    if (dirty.reverbParams)
+    {
+        fx.reverb.SetFeedback(paramManager.GetValue(P::EFFECT_REVERB_FEEDBACK));
+        fx.reverb.SetLpFreq(paramManager.GetValue(P::EFFECT_REVERB_LPFREQ));
+        dirty.reverbParams = false;
+    }
 }
 
 void VoiceProcess(float &out_sigL, float &out_sigR)
@@ -324,27 +386,29 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
     float outL = 0.0f;
     float outR = 0.0f;
     
+    float phase = voice[0].osc[0].GetPhase();
     for (size_t v = 0; v < VOICE_NUM; ++v)
-    {
+    {        
         float voice_out = 0.0f;
 
+        
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
             if (isOscSyncNeeded[v * OSC_NUM + oscId])
             {
-                float phase = voice[v].osc[0].GetPhase();
-                if (oscId != 0)
+                if ((oscId != 0) && (phase == 0.0f))
                 { 
                     voice[v].osc[oscId].SyncPhase(phase);
+                    isOscSyncNeeded[v * OSC_NUM + oscId] = false; 
                 }
-
-                isOscSyncNeeded[v * OSC_NUM + oscId] = false; 
             }
+
+            voice[v].osc[oscId].SetFreq(voice[v].final_freq[oscId]);
+            voice[v].osc[oscId].SetAmp(voice[v].final_amp[oscId]);
 
             float process_out = voice[v].osc[oscId].Process();
             voice_out += process_out;
         }
-        
         float env = voice[v].adsr.Process(voice[v].gate);
         float voice_out_env = voice_out * env / VOICE_NUM;
         float voiceL, voiceR;
@@ -375,6 +439,10 @@ void InitPitchTables()
     for (int i = 0; i < 128; i++)
     {
         midiNoteToFreqTable[i] = 440.0f * powf(2.0f, (i - 69) / 12.0f);
+    }
+    for (int i = 0; i < 128; i++)
+    {
+        velocityToAmpTable[i] = i / 127.0f;
     }
 
     for (int i = 0; i < PITCH_TABLE_SIZE; i++)
@@ -423,6 +491,11 @@ float GetFreqModTableValue(int index)
     return freqModTable[index];
 }
 
+float GetVelocityToAmpTableValue(uint8_t velocity)
+{
+    return velocityToAmpTable[velocity];
+}
+
 inline float softClip(float x)
 {
     if (x > 1.0f)  return 1.0f - 1.0f / (x + 1.0f);
@@ -432,7 +505,7 @@ inline float softClip(float x)
 
 inline void InitPanningTable()
 {
-    for (int i = 0; i <= PANNING_TABLE_SIZE; i++) {
+    for (int i = 0; i < PANNING_TABLE_SIZE; i++) {
         float t = (float)i / PANNING_TABLE_SIZE;
         panningTable[i][0] = sqrtf(t);
         panningTable[i][1] = sqrtf(1.0f - t);

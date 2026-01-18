@@ -150,7 +150,6 @@ void HandlePitchBend(int16_t pb)
 {
     float bend_cents = (float)(pb / 8192.0f) * 200.0f;
     pitch_bend_multiplier = GetPitchBendTableValue(bend_cents);
-    
 }
 
 // Handle Control Change

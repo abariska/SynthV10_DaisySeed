@@ -18,6 +18,7 @@ extern float GetPitchTableValue(int index);
 extern float GetDetuneTableValue(int index);
 extern float GetPitchBendTableValue(int index);
 extern float GetFreqModTableValue(int index);
+extern void SetAudioDirtyFlag(int paramIndex);
 
 template <typename T>
 constexpr const T &clamp(const T &v, const T &lo, const T &hi)
@@ -154,22 +155,25 @@ enum class UseInMain
 class SynthParameter
 {
 private:
-    // Загальні поля
-    const char *full_label;
-    const char *short_label;
+
+
+public:
+    const char *full_label = "-";
+    const char *short_label = "-";
     int param_index;
     float *param_array;
-    float norm_value;
     float min;
     float max;
     Curve curve;
     ParamUnit unit;
-    float physical_value;
     UseInMain useInMain;
     UseInMod useInMod;
     ParamType type;
+    float modifier_value = 0.0f;
+    float norm_value = 0.0f;
+    float physical_value = 0.0f;
+    bool isDirty = false;
 
-public:
     SynthParameter() = default;
 
     SynthParameter(float min_value, float max_value,
@@ -188,7 +192,6 @@ public:
                    UseInMain useInMain = UseInMain::NONE,
                    UseInMod useInMod = UseInMod::NONE);
 
-    float modifier_value;
     // Універсальні методи
     float SetNormalized(float n);
 
@@ -200,21 +203,9 @@ public:
     // Геттери
     float GetValue();
     int GetInt() const;
-    float GetNormalised() const;
-    float GetPhysical() const;
-    bool GetBool() const;
-    const char *GetFullLabel() const;
-    const char *GetShortLabel() const;
-    ParamType GetType() const;
-    ParamUnit GetUnit() const;
     void SetBool(bool value);
     void SetFromCurrentPreset();
-    void SetFloat(float value) { physical_value = value; }
-    Curve GetCurve() const;
     void SetModifier(float value);
-    float GetModifier() const;
-    UseInMain GetUseInMain() const { return useInMain; }
-    UseInMod GetUseInMod() const { return useInMod; }
 };
 
 class ParameterManager
@@ -225,22 +216,25 @@ private:
 public:
     void Init();
     SynthParameter &GetParam(ParamUnitName name) { return params[static_cast<int>(name)]; }
-    float GetNormalised(ParamUnitName name) { return GetParam(name).GetNormalised(); }
-    float GetPhysical(ParamUnitName name) { return GetParam(name).GetPhysical(); }
-    bool GetBool(ParamUnitName name) { return GetParam(name).GetBool(); }
-    const char *GetFullLabel(ParamUnitName name) { return GetParam(name).GetFullLabel(); }
-    const char *GetShortLabel(ParamUnitName name) { return GetParam(name).GetShortLabel(); }
-    ParamType GetType(ParamUnitName name) { return GetParam(name).GetType(); }
-    void AdjustByIncrement(ParamUnitName name, int inc) { GetParam(name).AdjustByIncrement(inc); }
+    float GetNormalised(ParamUnitName name) { return GetParam(name).norm_value; }
+    float GetPhysical(ParamUnitName name) { return GetParam(name).physical_value; }
+    bool GetBool(ParamUnitName name) { return static_cast<float>(GetParam(name).norm_value) > 0.5f; }
+    const char *GetFullLabel(ParamUnitName name) { return GetParam(name).full_label; }
+    const char *GetShortLabel(ParamUnitName name) { return GetParam(name).short_label; }
+    ParamType GetType(ParamUnitName name) { return GetParam(name).type; } 
+    void AdjustByIncrement(ParamUnitName name, int inc) 
+    { 
+        GetParam(name).AdjustByIncrement(inc); 
+        SetAudioDirtyFlag(static_cast<int>(name));
+    }
     void SetModifier(ParamUnitName name, float mod_value) { GetParam(name).SetModifier(mod_value); }
     void SetValue(ParamUnitName name, float value) { GetParam(name).SetPhysicalValue(value); }
     void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
-    ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).GetUnit(); }
-    Curve GetCurve(ParamUnitName name) { return GetParam(name).GetCurve(); }
-    void SetFloat(ParamUnitName name, float value) { GetParam(name).SetFloat(value); }
+    ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).unit; }
+    Curve GetCurve(ParamUnitName name) { return GetParam(name).curve; }
     float GetValue(ParamUnitName name) { return GetParam(name).GetValue(); }
-    UseInMain GetUseInMain(ParamUnitName name) { return GetParam(name).GetUseInMain(); }
-    UseInMod GetUseInMod(ParamUnitName name) { return GetParam(name).GetUseInMod(); }
+    UseInMain GetUseInMain(ParamUnitName name) { return GetParam(name).useInMain; }
+    UseInMod GetUseInMod(ParamUnitName name) { return GetParam(name).useInMod; }
 };
 
 extern ParameterManager paramManager;
@@ -363,5 +357,19 @@ struct Preset
 };
 
 extern Preset currentPreset;
+
+struct AudioParamsDirty {
+    bool oscParams = false;      // OSC_PITCH, OSC_DETUNE, OSC_AMP, OSC_PWM, OSC_WAVEFORM
+    bool adsrParams = false;      // ADSR_ATTACK, DECAY, SUSTAIN, RELEASE
+    bool filterParams = false;    // FILTER_MODE, CUTOFF, RESONANCE, DRIVE
+    bool flangerParams = false;   // EFFECT_FLANGER_*
+    bool chorusParams = false;    // EFFECT_CHORUS_*
+    bool compressorParams = false;// EFFECT_COMPRESSOR_*
+    bool reverbParams = false;    // EFFECT_REVERB_*
+    bool driveParams = false;     // EFFECT_OVERDRIVE_DRIVE
+    bool wahParams = false;       // EFFECT_AUTOWAH_*
+    bool portamentoParams = false; // GLOBAL_PORTAMENTO
+};
+extern AudioParamsDirty dirty;
 
 #endif // PARAMETERS_H
