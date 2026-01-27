@@ -26,7 +26,7 @@ float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 0.0f, //Osc2
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 0.0f, //Osc3
                                                                                0.0f, 0.1f, 0.0f, 0.01f, 0.01f, 0.1f, 0.5f, 0.01f, //Filter ADSR
-                                                                               0.0f, 0.01f, 1.0f, 0.0f, 0.01f, 0.1f, 0.5f, 0.01f, //Mod LFO ADSR
+                                                                               0.0f, 0.01f, 1.0f, 0.0f,0.0f, 0.01f, 0.1f, 0.5f, 0.01f, //Mod LFO ADSR
                                                                                0.0f, //Drive
                                                                                0.01f, 0.5f, 0.1f, 0.1f, //Chorus
                                                                                0.01f, 0.01f, 0.5f, 2.0f, 0.5f, //Compressor
@@ -77,13 +77,13 @@ void InitQSPI()
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
     uint32_t init_flag = *((uint32_t *)(0x90000000));
 
-    if (init_flag != 0xDEADBEED)
+    if (init_flag != 0xDEADBEE6)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
         uint8_t page[PAGE_SIZE];
         memset(page, 0xFF, sizeof(page));
-        uint32_t marker = 0xDEADBEED;
+        uint32_t marker = 0xDEADBEE6;
         memcpy(page, &marker, sizeof(marker));
 
         hw.qspi.Write(0, sizeof(page), page);
@@ -436,21 +436,21 @@ using P = ParamUnitName;
 void ParameterManager::Init()
 {
     ADD_PARAM(P::NONE, 0, 0, "-", "-", Curve::LINEAR, ParamUnit::UNITLESS, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_WAVEFORM_1, 0, Osc::WAVE_COUNT - 1, "Wave 1", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_WAVEFORM_1, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 1", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::OSC_FREQ_1, 1.0f, 10000.0f, "Freq 1", "Freq", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
     ADD_PARAM(P::OSC_PITCH_1, -36, 36, "Pitch 1", "Pitch", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_DETUNE_1, -100, 100, "Tune 1", "Tune", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_AMP_1, 0.0f, 100.0f, "Amp 1", "Amp", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_PWM_1, -100, 100, "PWM 1", "PWM", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_ACTIVE_1, 0, 2, "Enbl Osc1", "Enbl", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_WAVEFORM_2, 0, Osc::WAVE_COUNT - 1, "Wave 2", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_WAVEFORM_2, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 2", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::OSC_FREQ_2, 1.0f, 10000.0f, "Freq 2", "Freq", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
     ADD_PARAM(P::OSC_PITCH_2, -36, 36, "Pitch 2", "Pitch", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_DETUNE_2, -100, 100, "Tune 2", "Tune", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_AMP_2, 0.0f, 100.0f, "Amp 2", "Amp", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_PWM_2, -100, 100, "PWM 2", "PWM", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_ACTIVE_2, 0, 2, "Enbl Osc2", "Enbl", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE); 
-    ADD_PARAM(P::OSC_WAVEFORM_3, 0, Osc::WAVE_COUNT - 1, "Wave 3", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_WAVEFORM_3, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 3", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::OSC_FREQ_3, 1.0f, 10000.0f, "Freq 3", "Freq", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
     ADD_PARAM(P::OSC_PITCH_3, -36, 36, "Pitch 3", "Pitch", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_DETUNE_3, -100, 100, "Tune 3", "Tune", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
@@ -465,9 +465,10 @@ void ParameterManager::Init()
     ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Decay", "Decay", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sustain", "Sustain", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::ADSR_RELEASE, 0.005f, 20.0f, "Release", "Release", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, Osc::WAVE_COUNT - 1, "Wave LFO", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, OscWaveforms::WAVE_COUNT - 1, "Wave LFO", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::MOD_LFO_FREQ, 0.01f, 100.0f, "Freq Lfo", "Freq", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Depth Lfo", "Depth", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::MOD_LFO_TRIGGER, 0, 2, "Trig Lfo", "Trigger", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::MOD_LFO_ACTIVE, 0, 2, "ActiveLFO", "Active", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::MOD_ADSR_ATTACK, 0.005f, 20.0f, "Atck Mod", "Attack", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::MOD_ADSR_DECAY, 0.005f, 20.0f, "Dec Mod", "Decay", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
@@ -502,6 +503,12 @@ void ParameterManager::Init()
     ADD_PARAM(P::GLOBAL_MASTER_VOLUME, 0.0f, 100.0f, "Master Volume", "Master Volume", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
 }
 
+void ParameterManager::AdjustByIncrement(ParamUnitName name, int inc) 
+{ 
+    params[static_cast<int>(name)].AdjustByIncrement(inc); 
+    SetAudioDirtyFlag(name);
+}
+
 Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::NONE, 0.0f, "-"},
     {ModSource::LFO, 0.0f, "LFO"},
@@ -512,18 +519,25 @@ Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::SWITCH_PEDAL, 0.0f, "SW Pedal"},
 };
 
-void SetAudioDirtyFlag(int paramIndex) {
-    ParamUnitName param = static_cast<ParamUnitName>(paramIndex);
-    
+void SetAudioDirtyFlag(ParamUnitName param) {
+
+    paramManager.GetParam(param).isDirty = true;
+
     if (param >= P::OSC_PITCH_1 && param <= P::OSC_ACTIVE_3) {
         dirty.oscParams = true;
     }
-    else if (param >= P::ADSR_ATTACK && param <= P::ADSR_RELEASE) {
+    if (param >= P::ADSR_ATTACK && param <= P::ADSR_RELEASE) {
         dirty.adsrParams = true;
     }
     else if (param >= P::FILTER_MODE && param <= P::FILTER_DRIVE) {
         dirty.filterParams = true;
     }
+    else if (param >= P::MOD_LFO_WAVEFORM && param <= P::MOD_LFO_ACTIVE) {
+        dirty.modLfoParams = true;
+    }
+    else if (param >= P::MOD_ADSR_ATTACK && param <= P::MOD_ADSR_RELEASE) {
+        dirty.modAdsrParams = true;
+    } 
     else if (param >= P::EFFECT_FLANGER_FEEDBACK && param <= P::EFFECT_FLANGER_DELAY) {
         dirty.flangerParams = true;
     }
@@ -542,8 +556,7 @@ void SetAudioDirtyFlag(int paramIndex) {
     else if (param == P::EFFECT_AUTOWAH_WAH) {
         dirty.wahParams = true;
     }
-    else if (param == P::GLOBAL_MASTER_VOLUME) {
-        dirty.portamentoParams = true;
+    else if (param >= P::GLOBAL_MONO && param <= P::GLOBAL_MASTER_VOLUME) {
+        dirty.globalParams = true;
     }
-    paramManager.GetParam(param).isDirty = true;
 }

@@ -29,14 +29,15 @@ static constexpr float kWaveGain[] = {
     0.8f  // WAVE_NOISE (рівномірний)
 };
 
-void Osc::Init(float sample_rate , bool is_lfo)
+// Osc
+void Osc::Init(float sample_rate)
 {
     sampleRate = sample_rate;
     targetFreq = 440.0f;
     currentFreq = 440.0f;
     slewRate = 1.0f;
     slewRateBase = 0.1f; 
-    mode = WAVE_SIN;
+    mode = SIN;
     pw = 0.5f;
     noiseState = 1;
 
@@ -45,7 +46,6 @@ void Osc::Init(float sample_rate , bool is_lfo)
     blepGain = 1.0f;
     currentAmp = 0.1f;
     targetAmp = 0.0f;
-    use_gain = !is_lfo;
     active = false;
 }
 
@@ -67,22 +67,22 @@ float Osc::Process()
 
     switch (mode)
     {
-    case WAVE_SIN:
+    case SIN:
         out = sinf((phaseOsc + 0.25f) * 2.0f * M_PI); // +0.25f - offset to avoid DC offset
         break;
-    case WAVE_TRIANGLE:
+    case TRIANGLE:
         out = 4.0f * (fabsf(phaseOsc - 0.5f) - 0.25f);
         break;
-    case WAVE_SAW:
+    case SAW:
         out = 1.0f - 2.0f * phaseOsc;
         out += poly_blep(phaseOsc, phaseInc) * blepGain;
         break;
-    case WAVE_SQUARE:
+    case PULSE:
         out = phaseOsc < pw ? 1.0f : -1.0f;
         out += poly_blep(phaseOsc, phaseInc) * blepGain;
         out -= poly_blep(fmodf(phaseOsc + (1.0f - pw), 1.0f), phaseInc) * blepGain;
         break;
-    case WAVE_NOISE:
+    case NOISE:
         noiseState = noiseState * 1664525U + 1013904223U;
         out = (int32_t(noiseState)) / 2147483648.0f;
         break;
@@ -92,6 +92,61 @@ float Osc::Process()
     }
     prev_phase = phaseOsc;
 
-    gain = use_gain ? gain * currentAmp : 1.0f;
+    gain = gain * currentAmp;
     return out * gain;
+}
+
+// Osc Lfo
+void OscLfo::Init(float sample_rate)
+{
+    sampleRate = sample_rate;
+    freq = 1.0f;
+    amp = 1.0f;
+    wave = SIN;
+    phase = 0.0f;
+    timer = 0;
+    noiseState = 1;
+}
+
+float OscLfo::Process()
+{
+    phaseInc = freq / sampleRate;
+    phase += phaseInc;
+    bool phaseExceeded = (phase >= 1.0f);
+    if (phaseExceeded)
+    {
+        phase = 0.0f;
+    }
+
+    float out = 0.0f;
+    switch (wave)
+    {
+    case SIN:
+        out = (sinf((phase + 0.25f) * 2.0f * M_PI) + 1.0f) * 0.5f;
+        break;
+    case TRIANGLE:
+        out = phase < 0.5f ? 2.0f * phase : 2.0f * (1.0f - phase);
+        break;
+    case SAW:
+        out = 1.0f - phase;
+        break;
+    case RAMP:
+        out = phase;
+        break;
+    case PULSE:
+        out = phase < 0.5f ? 0.0f : 1.0f;
+        break;
+    case NOISE:
+        if (phaseExceeded) 
+        {
+            noiseState = noiseState * 1664525U + 1013904223U;
+            noiseValue = ((noiseState >> 1) / 2147483648.0f); 
+        }
+        out = noiseValue;
+        break;
+    default:
+        out = 0.0f;
+        break;
+    }
+    return out * amp;
 }

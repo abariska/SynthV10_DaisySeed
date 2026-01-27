@@ -27,8 +27,8 @@
 using namespace daisy;
 using namespace daisysp;
 
-extern LadderFilter flt;
-extern Osc lfo;
+extern LadderFilter flt[2];
+extern OscLfo lfo;
 extern float samplerate;
 extern float lfo_value;
 extern float midiNoteToFreqTable[128];
@@ -36,6 +36,8 @@ extern float pitchTable[PITCH_TABLE_SIZE];
 extern float detuneTable[DETUNE_TABLE_SIZE];
 extern float pitchBendTable[PITCH_BEND_TABLE_SIZE];
 extern bool isOscSyncNeeded[OSC_NUM * VOICE_NUM];
+
+extern float cached_master_volume;
 
 struct Voice
 {
@@ -58,8 +60,7 @@ struct Voice
 };
 
 extern Voice voice[VOICE_NUM];
-
-void SetAudioDirtyFlag(int paramIndex);
+extern AudioParamsDirty dirty;
 
 void UpdateCachedFreq(uint8_t voice_num, uint8_t osc_num, float freq);
 

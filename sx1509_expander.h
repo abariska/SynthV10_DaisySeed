@@ -50,7 +50,7 @@
 #define LED_6 10
 
 #define NUM_BUTTONS 16
-#define NUM_ENCODERS 10
+#define NUM_ENCODERS 5
 #define NUM_LEDS 8
 extern SX1509 sx1509_buttons;
 extern SX1509 sx1509_encoders;

@@ -14,11 +14,13 @@
 #define PRESET_NUM 40
 #define MOD_MATRIX_NUM 7
 
+enum class ParamUnitName; 
+
 extern float GetPitchTableValue(int index);
 extern float GetDetuneTableValue(int index);
 extern float GetPitchBendTableValue(int index);
 extern float GetFreqModTableValue(int index);
-extern void SetAudioDirtyFlag(int paramIndex);
+void SetAudioDirtyFlag(ParamUnitName param);
 
 template <typename T>
 constexpr const T &clamp(const T &v, const T &lo, const T &hi)
@@ -64,6 +66,7 @@ enum class ParamUnitName
     MOD_LFO_WAVEFORM,
     MOD_LFO_FREQ,
     MOD_LFO_DEPTH,
+    MOD_LFO_TRIGGER,
     MOD_LFO_ACTIVE,
     MOD_ADSR_ATTACK,
     MOD_ADSR_DECAY,
@@ -222,11 +225,7 @@ public:
     const char *GetFullLabel(ParamUnitName name) { return GetParam(name).full_label; }
     const char *GetShortLabel(ParamUnitName name) { return GetParam(name).short_label; }
     ParamType GetType(ParamUnitName name) { return GetParam(name).type; } 
-    void AdjustByIncrement(ParamUnitName name, int inc) 
-    { 
-        GetParam(name).AdjustByIncrement(inc); 
-        SetAudioDirtyFlag(static_cast<int>(name));
-    }
+    void AdjustByIncrement(ParamUnitName name, int inc);
     void SetModifier(ParamUnitName name, float mod_value) { GetParam(name).SetModifier(mod_value); }
     void SetValue(ParamUnitName name, float value) { GetParam(name).SetPhysicalValue(value); }
     void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
@@ -359,17 +358,18 @@ struct Preset
 extern Preset currentPreset;
 
 struct AudioParamsDirty {
-    bool oscParams = false;      // OSC_PITCH, OSC_DETUNE, OSC_AMP, OSC_PWM, OSC_WAVEFORM
-    bool adsrParams = false;      // ADSR_ATTACK, DECAY, SUSTAIN, RELEASE
-    bool filterParams = false;    // FILTER_MODE, CUTOFF, RESONANCE, DRIVE
-    bool flangerParams = false;   // EFFECT_FLANGER_*
-    bool chorusParams = false;    // EFFECT_CHORUS_*
-    bool compressorParams = false;// EFFECT_COMPRESSOR_*
-    bool reverbParams = false;    // EFFECT_REVERB_*
-    bool driveParams = false;     // EFFECT_OVERDRIVE_DRIVE
-    bool wahParams = false;       // EFFECT_AUTOWAH_*
-    bool portamentoParams = false; // GLOBAL_PORTAMENTO
+    bool oscParams = true;      // OSC_PITCH, OSC_DETUNE, OSC_AMP, OSC_PWM, OSC_WAVEFORM
+    bool adsrParams = true;      // ADSR_ATTACK, DECAY, SUSTAIN, RELEASE
+    bool filterParams = true;    // FILTER_MODE, CUTOFF, RESONANCE, DRIVE
+    bool flangerParams = true;   // EFFECT_FLANGER_*
+    bool chorusParams = true;    // EFFECT_CHORUS_*
+    bool compressorParams = true;// EFFECT_COMPRESSOR_*
+    bool reverbParams = true;    // EFFECT_REVERB_*
+    bool driveParams = true;     // EFFECT_OVERDRIVE_DRIVE
+    bool wahParams = true;       // EFFECT_AUTOWAH_*
+    bool modLfoParams = true;     // MOD_LFO_*
+    bool modAdsrParams = true;    // MOD_ADSR_*
+    bool globalParams = true;    // GLOBAL_MONO, GLOBAL_LEGATO, GLOBAL_PORTAMENTO, GLOBAL_PAN, GLOBAL_MASTER_VOLUME
 };
-extern AudioParamsDirty dirty;
 
 #endif // PARAMETERS_H

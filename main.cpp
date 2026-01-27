@@ -67,8 +67,8 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         ProcessEffects(0, outL, outR, fx1_outL, fx1_outR);
         ProcessEffects(1, fx1_outL, fx1_outR, fx2_outL, fx2_outR);
 
-        out[i] = (fx2_outL + inL) * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
-        out[i + 1] = (fx2_outR + inR) * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
+        out[i] = (fx2_outL + inL) * cached_master_volume;
+        out[i + 1] = (fx2_outR + inR) * cached_master_volume;
         // out[i] = outL;
         // out[i + 1] = outR;
 
@@ -139,24 +139,15 @@ int main(void)
 
     while (1)
     {
-
+        UpdatePage();
         UsbMidiProcess(); 
-        switch (process_type)
-        {
-            case PROCESS_CONTROLS:
-                ProcessButtons();
-                ProcessEncoders();
-                UpdateEncodersParams();
-                UpdateEncoderSwitches();
-                break;
-            case UPDATE_PARAMS: 
-                UpdateModSourcesParams();
-                UpdateSynthParams();
-                break;
-            case PROCESS_DISPLAY:
-                UpdatePage();
-                break;
-        }
+
+        ProcessButtons();
+        ProcessEncoders();
+        UpdateEncodersParams();
+        UpdateEncoderSwitches();
+        UpdateModSourcesParams();
+        UpdateSynthParams();
         
         if (update_1ms)
         {
@@ -172,7 +163,6 @@ int main(void)
             UpdateStoreLed();
             update_500ms = false;
         }
-        process_type = (ProcessType)((process_type + 1) % 3);
     }
 }
 
