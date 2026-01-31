@@ -265,7 +265,7 @@ void DrawMainPage()
     // Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
     OLED_Transmit_DMA(&bg_black_data);
     DrawMainBlocks();
-    DrawScope();
+    // DrawScope();
 }
 
 void DrawParamPage(MenuPage page)

@@ -62,8 +62,6 @@ struct Voice
 extern Voice voice[VOICE_NUM];
 extern AudioParamsDirty dirty;
 
-void UpdateCachedFreq(uint8_t voice_num, uint8_t osc_num, float freq);
-
 void HandleNoteOn(uint8_t note_in, uint8_t velocity);
 void HandleNoteOff(uint8_t note_in);
 inline void HandlePitchBend(int16_t pitch_bend); 
@@ -79,4 +77,6 @@ inline void PushNote(uint8_t note);
 inline uint8_t PopNote(uint8_t note);
 extern float panningTable[101][2];
 inline void InitPanningTable();
+void SynthVoiceReset(uint8_t voice_num);
+void ModMatrixReset(uint8_t mod_matrix_num);
 #endif

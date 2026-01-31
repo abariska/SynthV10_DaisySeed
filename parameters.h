@@ -21,7 +21,9 @@ extern float GetDetuneTableValue(int index);
 extern float GetPitchBendTableValue(int index);
 extern float GetFreqModTableValue(int index);
 void SetAudioDirtyFlag(ParamUnitName param);
-
+void SynthVoiceReset(uint8_t voice_num);
+void ModMatrixReset(uint8_t mod_matrix_num);
+void ResetDirtyFlags();
 template <typename T>
 constexpr const T &clamp(const T &v, const T &lo, const T &hi)
 {

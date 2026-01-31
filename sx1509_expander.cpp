@@ -56,29 +56,6 @@ void InitSX1509Leds()
     sx1509_leds.Check();
 }
 
-void UpdateLeds()
-{
-    sx1509_leds.WritePin(LED_OSC_1, paramManager.GetBool(P::OSC_ACTIVE_1));
-    sx1509_leds.WritePin(LED_OSC_2, paramManager.GetBool(P::OSC_ACTIVE_2));
-    sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(P::OSC_ACTIVE_3)); 
-    sx1509_leds.WritePin(LED_STORE, isStoreMode);    
-
-}
-void UpdatePWMLeds()
-{
-    sx1509_leds.WritePWM(LED_LFO, 255 - (int)(lfo_value * 255));
-}
-
-void UpdateStoreLed()
-{
-    if (isStoreMode)
-    {
-        sx1509_leds.WritePin(LED_STORE, updateStoreLed);
-        updateStoreLed = !updateStoreLed;
-    }
-    
-}
-
 void InitSX1509Extenders()
 {
     InitSX1509Buttons();
@@ -103,24 +80,105 @@ void InitSX1509Extenders()
     {
         sx1509_leds.SetPinMode(i, SX_PIN_OUTPUT, 0);
     }
-    
-    for (size_t i = 0; i < 8; i++)
-    {
-        sx1509_leds.WritePin(i, 1);
-        sx1509_leds.WritePin(i - 1, 0);
-        System::Delay(100);
-    }
-    for (size_t i = 6; i > 0; i--)
-    {
-        sx1509_leds.WritePin(i, 1);
-        sx1509_leds.WritePin(i + 1, 0);
-        System::Delay(100);
-    }
+
     sx1509_leds.LedDriverInit(LED_LFO, 1, true);
-    sx1509_leds.WritePWM(LED_LFO, 0);
+    sx1509_leds.WritePWM(LED_LFO, 255);
+    sx1509_leds.LedDriverInit(LED_STORE, 1, true);
+    sx1509_leds.WritePWM(LED_STORE, 255);
+    sx1509_leds.LedDriverInit(LED_OSC_1, 1, true);
+    sx1509_leds.WritePWM(LED_OSC_1, 255);
+    sx1509_leds.LedDriverInit(LED_OSC_2, 1, true);
+    sx1509_leds.WritePWM(LED_OSC_2, 255);
+    sx1509_leds.LedDriverInit(LED_OSC_3, 1, true);
+    sx1509_leds.WritePWM(LED_OSC_3, 255);
+    
+    sx1509_leds.WritePin(LED_1, 1);
+    sx1509_leds.WritePin(LED_3, 1);
+    System::Delay(200);
+    sx1509_leds.WritePin(LED_1, 0);
+    sx1509_leds.WritePin(LED_3, 0);
+    sx1509_leds.WritePin(LED_2, 1);
+    sx1509_leds.WritePin(LED_4, 1);
+    System::Delay(200);
+    sx1509_leds.WritePin(LED_2, 0);
+    sx1509_leds.WritePin(LED_4, 0);
+    sx1509_leds.WritePin(LED_3, 1);
+    sx1509_leds.WritePin(LED_5, 1);
+    System::Delay(200);
+    sx1509_leds.WritePin(LED_3, 0);
+    sx1509_leds.WritePin(LED_5, 0);
+    sx1509_leds.WritePin(LED_4, 1);
+    sx1509_leds.WritePin(LED_6, 1);
+    System::Delay(200);
+    sx1509_leds.WritePin(LED_4, 0);
+    sx1509_leds.WritePin(LED_6, 0);
+    sx1509_leds.WritePin(LED_3, 1);
+    sx1509_leds.WritePin(LED_5, 1);
+    System::Delay(200);
+    sx1509_leds.WritePin(LED_3, 0);
+    sx1509_leds.WritePin(LED_5, 0);
+    sx1509_leds.WritePin(LED_2, 1);
+    sx1509_leds.WritePin(LED_4, 1);
+    System::Delay(200);
+    sx1509_leds.WritePin(LED_4, 0);
+    sx1509_leds.WritePin(LED_2, 0);
+    sx1509_leds.WritePin(LED_1, 1);
+    sx1509_leds.WritePin(LED_3, 1);
+    System::Delay(200);
+    sx1509_leds.WritePin(LED_1, 0);
+    sx1509_leds.WritePin(LED_3, 0);
+    System::Delay(100);
+
+    for (int i = 255; i > 0; i--)
+    {
+        sx1509_leds.WritePWM(LED_STORE, i);
+        sx1509_leds.WritePWM(LED_LFO, i);
+        sx1509_leds.WritePWM(LED_OSC_1, i);
+        sx1509_leds.WritePWM(LED_OSC_2, i);
+        sx1509_leds.WritePWM(LED_OSC_3, i);
+        System::Delay(1);
+    }
+    for (int i = 0; i < 255; i++)
+    {
+        sx1509_leds.WritePWM(LED_LFO, i);
+        sx1509_leds.WritePWM(LED_STORE, i);
+        sx1509_leds.WritePWM(LED_OSC_1, i);
+        sx1509_leds.WritePWM(LED_OSC_2, i);
+        sx1509_leds.WritePWM(LED_OSC_3, i);
+        System::Delay(1);
+    }
+    sx1509_leds.WritePWM(LED_LFO, 255);
+    sx1509_leds.WritePWM(LED_STORE, 255);
+    sx1509_leds.WritePWM(LED_OSC_1, 255);
+    sx1509_leds.WritePWM(LED_OSC_2, 255);
+    sx1509_leds.WritePWM(LED_OSC_3, 255);
+
     UpdateLeds();
 
     System::Delay(100);
+}
+
+void UpdateLeds()
+{
+    sx1509_leds.WritePin(LED_OSC_1, paramManager.GetBool(P::OSC_ACTIVE_1));
+    sx1509_leds.WritePin(LED_OSC_2, paramManager.GetBool(P::OSC_ACTIVE_2));
+    sx1509_leds.WritePin(LED_OSC_3, paramManager.GetBool(P::OSC_ACTIVE_3)); 
+    sx1509_leds.WritePin(LED_STORE, isStoreMode);    
+
+}
+void UpdatePWMLeds()
+{
+    sx1509_leds.WritePWM(LED_LFO, 255 - (int)(lfo_value * 255));
+}
+
+void UpdateStoreLed()
+{
+    if (isStoreMode)
+    {
+        sx1509_leds.WritePin(LED_STORE, updateStoreLed);
+        updateStoreLed = !updateStoreLed;
+    }
+    
 }
 
 int8_t EncoderInc(uint8_t pin_a, uint8_t pin_b)

@@ -8,12 +8,13 @@
 #include "sys/dma.h"
 #include <stdint.h> 
 #include <cstdint>
+#include "voice.h"
 
 ParamSlot paramSlots[NUM_PARAM_BLOCKS];
 
 using namespace daisy;
 extern DaisySeed hw;
-extern bool page_need_update;
+extern bool page_need_update; 
 
 static const size_t PAGE_SIZE = 1024;           // округлюємо до 512 байт
 static const uint32_t FLASH_BASE_ADDR = 0x1000; // Починаємо пресети з 4KB
@@ -413,15 +414,20 @@ void ResetPreset(int presetNumber)
 /** --- ApplyPreset --- */
 void ApplyPreset(int presetNumber)
 {
+    ReadPreset(presetNumber, currentPreset);
+    for (size_t i = 0; i < VOICE_NUM; i++)
+    {
+        SynthVoiceReset(i);
+    }
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
-        currentPreset.modMtx[i].ResetMods();
+        ModMatrixReset(i);
     }
-    ReadPreset(presetNumber, currentPreset);
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
         paramManager.GetParam(static_cast<ParamUnitName>(i)).SetNormalized(currentPreset.array[i]);
     }
+    ResetDirtyFlags();
     page_need_update = true;
 }
 
@@ -559,4 +565,20 @@ void SetAudioDirtyFlag(ParamUnitName param) {
     else if (param >= P::GLOBAL_MONO && param <= P::GLOBAL_MASTER_VOLUME) {
         dirty.globalParams = true;
     }
+}
+
+void ResetDirtyFlags()
+{
+    dirty.oscParams = true;
+    dirty.adsrParams = true;
+    dirty.filterParams = true;
+    dirty.flangerParams = true;
+    dirty.chorusParams = true;
+    dirty.compressorParams = true;
+    dirty.reverbParams = true;
+    dirty.driveParams = true;
+    dirty.wahParams = true;
+    dirty.modLfoParams = true;
+    dirty.modAdsrParams = true;
+    dirty.globalParams = true;
 }

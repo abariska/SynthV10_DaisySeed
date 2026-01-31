@@ -113,6 +113,7 @@ int main(void)
     hw.Init(true);
     // UartSerialInit();
 
+    hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate();
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
@@ -151,9 +152,9 @@ int main(void)
         
         if (update_1ms)
         {
-            DrawScope();
+            // DrawScope();
             UpdatePWMLeds();
-            DrawVoicesBlock();
+            // DrawVoicesBlock();
 
             update_1ms = false;
         }
