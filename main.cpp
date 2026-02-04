@@ -7,6 +7,8 @@
 #include "log_uart.h"
 #include "parameters.h"
 #include "display.h"
+#include "globals.h"
+#include "controls.h"
 
 using namespace daisy;
 
@@ -16,15 +18,12 @@ using M = ModSource;
 DaisySeed hw;
 TimerHandle timer_500ms;
 TimerHandle timer_1ms;
-CpuLoadMeter cpu_load;
 ProcessType process_type;
 
 extern Preset currentPreset;
 
-int encoderIncs[5];
 int test = 123;
 float samplerate = 0;
-bool shift_pressed = false;
 float scope_data[128];
 int scope_data_index = 0;
 bool scope_data_ready = true;
@@ -35,20 +34,32 @@ int scope_trigger_delay = 0;
 bool update_1ms = false;
 bool update_500ms = false;
 bool updateStoreLed = false;
-uint8_t old_preset_number = 0;
+static float scope_out = 0.0f;
+
+void ProcessScope(float sig);
 
 static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
                           AudioHandle::InterleavingOutputBuffer out,
                           size_t size)
 {
     cpu_load.OnBlockStart();
-    static float scope_out = 0.0f;
 
+    UsbMidiProcess(); 
     UartMidiProcess();
 
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
         currentPreset.modMtx[i].RunMod();
+        P modTarget = currentPreset.modMtx[i].GetModTarget();
+        if (modTarget == P::OSC_FREQ_1 || modTarget == P::OSC_FREQ_2 || modTarget == P::OSC_FREQ_3)
+        {
+            static float oldModAmt = 0.0f;
+            float modAmt = currentPreset.modMtx[i].GetModAmount();
+            if (fabsf(modAmt - oldModAmt) > 0.000001f) {
+                isModAffectsOscFreq++;
+            } 
+            oldModAmt = modAmt;
+        }
     }
 
     for (size_t i = 0; i < size; i += 2)
@@ -67,41 +78,15 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         ProcessEffects(0, outL, outR, fx1_outL, fx1_outR);
         ProcessEffects(1, fx1_outL, fx1_outR, fx2_outL, fx2_outR);
 
-        out[i] = (fx2_outL + inL) * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
-        out[i + 1] = (fx2_outR + inR) * paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
+        out[i] = (fx2_outL + inL) * cached_master_volume;
+        out[i + 1] = (fx2_outR + inR) * cached_master_volume;
         // out[i] = outL;
         // out[i + 1] = outR;
 
         scope_out = outL + outR;
+        ProcessScope(scope_out);
     }
-       if (!scope_triggered && 
-        scope_prev_sample <= scope_trigger_level && 
-        scope_out > scope_trigger_level)
-    {
-        scope_triggered = true;
-        scope_data_index = 0;
-        scope_trigger_delay = 0;
-    }
-    
-    if (scope_triggered)
-    {
-        if (scope_trigger_delay > 2)
-        {
-            scope_data[scope_data_index] = scope_out;
-            scope_data_index++;
-            
-            if (scope_data_index >= 128)
-            {
-                scope_data_ready = true;
-                scope_triggered = false;
-                scope_data_index = 0;
-            }
-        }
-        scope_trigger_delay++;
-    }
-    
-    scope_prev_sample = scope_out;
-    
+
     cpu_load.OnBlockEnd();
 }
 
@@ -111,8 +96,9 @@ int main(void)
 
     hw.Configure();
     hw.Init(true);
-    // UartSerialInit();
+    UartSerialInit();
 
+    hw.SetAudioSampleRate(SaiHandle::Config::SampleRate::SAI_48KHZ);
     hw.SetAudioBlockSize(blocksize);
     samplerate = hw.AudioSampleRate();
     cpu_load.Init(hw.AudioSampleRate(), hw.AudioBlockSize());
@@ -139,315 +125,43 @@ int main(void)
 
     while (1)
     {
-
-        UsbMidiProcess(); 
+        if (isMidiData)
+        {
+            DirtyFlagsToTrue();
+            isMidiData = false;
+        }
         switch (process_type)
         {
             case PROCESS_CONTROLS:
-                ProcessButtons();
                 ProcessEncoders();
                 UpdateEncodersParams();
-                UpdateEncoderSwitches();
                 break;
-            case UPDATE_PARAMS: 
+            case UPDATE_PARAMS:
                 UpdateModSourcesParams();
                 UpdateSynthParams();
                 break;
             case PROCESS_DISPLAY:
                 UpdatePage();
                 break;
-        }
-        
+        }        
         if (update_1ms)
         {
-            DrawScope();
+            ProcessButtons();
+            UpdateEncoderSwitches();
+            // DrawScope();
             UpdatePWMLeds();
-            DrawVoicesBlock();
+            // DrawVoicesBlock();
+            UpdateVoiceLeds();
 
             update_1ms = false;
         }
         if (update_500ms)
         {
-            CpuUsageDisplay();
+            DrawCpuUsage();
             UpdateStoreLed();
             update_500ms = false;
         }
-        process_type = (ProcessType)((process_type + 1) % 3);
-    }
-}
-
-void ProcessButtons()
-{
-    bool any_button_change = sx1509_buttons.ReadAllPins();
-    shift_pressed = sx1509_buttons.IsPressed(BUTTON_SHIFT);
-
-    if (any_button_change)
-    {
-        if (isStoreMode)
-        {
-            if (sx1509_buttons.isFallingEdge(BUTTON_EXIT))
-            {
-                isStoreMode = false;
-                currentPreset.number = old_preset_number;
-                page_need_update = true;
-                UpdatePage();
-            } 
-            if (sx1509_buttons.isFallingEdge(BUTTON_STORE))
-            {
-                SavePreset(currentPreset.number, currentPreset);
-                page_need_update = true;
-                isStoreMode = false;
-                old_preset_number = currentPreset.number;
-                UpdatePage();
-            }
-            return;
-        }
-
-
-
-        if (currentPage == MenuPage::FX_PAGE)
-        {
-            if (shift_pressed)
-            {
-                if (sx1509_buttons.isFallingEdge(ENC_1_SW))
-                {
-                    currentPreset.effectSlots[0].isActive = !currentPreset.effectSlots[0].isActive;
-                    DrawEffectBlock(0);
-                }
-                if (sx1509_buttons.isFallingEdge(ENC_4_SW))
-                {
-                    currentPreset.effectSlots[1].isActive = !currentPreset.effectSlots[1].isActive;
-                    DrawEffectBlock(1);
-                }
-            }
-            else
-            {
-                if (sx1509_buttons.isFallingEdge(ENC_1_SW))
-                {
-                    SelectEffectPage(0);
-                }
-                if (sx1509_buttons.isFallingEdge(ENC_4_SW))
-                {
-                    SelectEffectPage(1);
-                }
-            }
-        }
-        else if (currentPage == MenuPage::MAIN_PAGE)
-        {
-            for (size_t i = 0; i < 4; i++)
-            { 
-                if (sx1509_buttons.isFallingEdge(ENC_1_SW + i))
-                {
-                    currentPreset.mainSlots[i].isEditMode = !currentPreset.mainSlots[i].isEditMode;
-                    if (!currentPreset.mainSlots[i].isEditMode)
-                    {
-                        DrawOneParamBlock(i, currentPreset.mainSlots[i].target_param, WHITE, BLACK);
-                    }
-                } else if (shift_pressed && currentPreset.mainSlots[i].isEditMode)
-                {
-                    currentPreset.mainSlots[i].isEditMode = false;
-                    DrawOneParamBlock(i, currentPreset.mainSlots[i].target_param, WHITE, BLACK);
-                }
-            }
-        }
-
-        if (shift_pressed)
-        {
-            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1))
-            {
-                bool osc_active_1 = paramManager.GetValue(P::OSC_ACTIVE_1);
-                paramManager.SetBool(P::OSC_ACTIVE_1, !osc_active_1);
-                UpdateLeds();
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2))
-            {
-                bool osc_active_2 = paramManager.GetValue(P::OSC_ACTIVE_2);
-                paramManager.SetBool(P::OSC_ACTIVE_2, !osc_active_2);
-                UpdateLeds();
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3))
-            {
-                bool osc_active_3 = paramManager.GetValue(P::OSC_ACTIVE_3);
-                paramManager.SetBool(P::OSC_ACTIVE_3, !osc_active_3);
-                UpdateLeds();
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_STORE))
-            {
-                page_need_update = true;
-                ResetPreset(currentPreset.number);
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_MTX))
-            {
-                SetPage(MenuPage::SETTINGS_PAGE);
-            }
-        }
-        else
-        {
-            if (sx1509_buttons.isFallingEdge(BUTTON_EXIT))
-            {
-                SetPage(MenuPage::MAIN_PAGE);
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_1))
-            {
-                if (currentPage == MenuPage::OSCILLATOR_1_PAGE)
-                {
-                    ToggleActiveRow(); // Перемикання між рядами на тій же сторінці
-                }
-                else
-                {
-                    SetPage(MenuPage::OSCILLATOR_1_PAGE);
-                }
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_2))
-            {
-                if (currentPage == MenuPage::OSCILLATOR_2_PAGE)
-                {
-                    ToggleActiveRow();
-                }
-                else
-                {
-                    SetPage(MenuPage::OSCILLATOR_2_PAGE);
-                }
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_OSC_3))
-            {
-                if (currentPage == MenuPage::OSCILLATOR_3_PAGE)
-                {
-                    ToggleActiveRow();
-                }
-                else
-                {
-                    SetPage(MenuPage::OSCILLATOR_3_PAGE);
-                }
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_FLT))
-            {
-                if (currentPage == MenuPage::FILTER_PAGE)
-                {
-                    ToggleActiveRow();
-                }
-                else
-                {
-                    SetPage(MenuPage::FILTER_PAGE);
-                }
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_AMP))
-            {
-                if (currentPage == MenuPage::AMPLIFIER_PAGE)
-                {
-                    ToggleActiveRow();
-                }
-                else
-                {
-                    SetPage(MenuPage::AMPLIFIER_PAGE);
-                }
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_FX))
-            {
-                SetPage(MenuPage::FX_PAGE);
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_LFO))
-            {
-                if (currentPage == MenuPage::LFO_PAGE)
-                {
-                    ToggleActiveRow();
-                }
-                else
-                {
-                    SetPage(MenuPage::LFO_PAGE);
-                }
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_MTX))
-            {
-                SetPage(MenuPage::MOD_MATRIX_PAGE);
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_SETTINGS))
-            {
-                SetPage(MenuPage::SETTINGS_PAGE);
-            }
-            if (sx1509_buttons.isFallingEdge(BUTTON_STORE))
-            {
-                isStoreMode = true;
-                old_preset_number = currentPreset.number;
-                DrawStoreBlock();                    
-            }
-        }
-    }
-}
-void ProcessEncoders()
-{
-
-    bool any_pin_change = sx1509_encoders.ReadAllPins();
-
-    if (any_pin_change)
-    {
-        encoderIncs[0] = EncoderInc(ENC_1_A, ENC_1_B);
-        encoderIncs[1] = EncoderInc(ENC_2_A, ENC_2_B);
-        encoderIncs[2] = EncoderInc(ENC_3_A, ENC_3_B);
-        encoderIncs[3] = EncoderInc(ENC_4_A, ENC_4_B);
-        encoderIncs[4] = EncoderInc(ENC_DIAL_A, ENC_DIAL_B);
-    }
-
-    if (!isStoreMode)
-    {
-        if (encoderIncs[4] != 0)
-        {
-            uint8_t newPresetNum = currentPreset.number + encoderIncs[4];
-            if (newPresetNum < 0 || newPresetNum > PRESET_NUM - 1)
-            {
-                return;
-            }
-            else
-            {
-                ApplyPreset(newPresetNum);
-            }
-            encoderIncs[4] = 0;
-            }
-        switch (currentPage)
-        {
-        case MAIN_PAGE:
-            for (size_t i = 0; i < NUM_ENCODERS; i++)
-            { // Only 4 encoders
-                if (encoderIncs[i] != 0)
-                {
-                    currentPreset.mainSlots[i].need_update = true;
-                }
-            }
-            break;
-        case FX_PAGE:
-            if (encoderIncs[0] != 0)
-            {
-                currentPreset.effectSlots[0].need_update = true;
-            }
-            if (encoderIncs[3] != 0)
-            {
-                currentPreset.effectSlots[1].need_update = true;
-            }
-            break;
-        case MOD_MATRIX_PAGE:
-        
-            if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
-            {
-                isModMatrixNeedUpdate = true;
-            }
-            break;
-        case SETTINGS_PAGE:
-            if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
-            {
-                isSettingsNeedUpdate = true;
-            }
-            break;
-        default:
-            for (size_t i = 0; i < 4; i++)
-            { // Only 4 encoders
-                if (encoderIncs[i] != 0)
-                {
-                    uint8_t paramIndex = GetActiveParamIndex(i); // Get index of active parameter
-                    paramSlots[paramIndex].need_update = true;
-                }
-            }
-            break;
-        }
+        process_type = static_cast<ProcessType>((process_type + 1) % 3);
     }
 }
 
@@ -461,7 +175,6 @@ void Callback500ms(void *data)
 void Callback1ms(void *data)
 {
     update_1ms = true;
-
 }
 
 void Timer1ms()
@@ -500,58 +213,67 @@ void Timer500ms()
     System::Delay(10);
 }
 
-void CpuUsageDisplay()
+void ProcessScope(float sig)
 {
-
-    // float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-    // UartPrintf("CPU load: ", cpu_avg_load);
-    if (currentPage == SETTINGS_PAGE)
+    if (!scope_triggered && 
+        scope_prev_sample <= scope_trigger_level && 
+        sig > scope_trigger_level)
     {
-        Paint_NewImage(cpu_load_block_data.data, CPU_LOAD_BLOCK_WIDTH, CPU_LOAD_BLOCK_HEIGHT, 0, BLACK);
-        Paint_Clear(BLACK);
-        float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
-        Paint_NumCentered(cpu_avg_load, 0, CPU_LOAD_BLOCK_WIDTH, 0, 1, &Regular_8, WHITE, BLACK);
-        OLED_Transmit_DMA_Part(&cpu_load_block_data, 236, 0, 256, 16);
-        // UartPrint("CPU load: ", cpu_avg_load);
+        scope_triggered = true;
+        scope_data_index = 0;
+        scope_trigger_delay = 0;
     }
     
-    // else
-    // {
-    //     Paint_NewImage(cpu_load_block_data.data, 24, 24, 0, BLACK);
-    //     Paint_Clear(BLACK);
-    //     OLED_Part_Transmit_DMA(&cpu_load_block_data, 104, 0, 128, 24);
-    // }
-}
-
-void DrawVoicesBlock()
-{
-    Paint_NewImage(voices_block_data.data, VOICES_BLOCK_WIDTH, VOICES_BLOCK_HEIGHT, 0, BLACK);
-    Paint_Clear(BLACK);
-    
-    static bool voice_active[VOICE_NUM] = {false};
-    static uint8_t voice_num = 1;
-    int x1 = 1, x2 = 1;
-    for (size_t i = 0; i < VOICE_NUM; i++)
+    if (scope_triggered)
     {
-        if (voice_active[i] != voice[i].active) 
-        { 
-            voice_active[i] = voice[i].active; voice_num = voice_num + (voice[i].active ? 1 : -1); 
-            return; 
-        }
-        x2 = x1 + 6;
-        
-        if (voice[i].active)
+        if (scope_trigger_delay > 2)
         {
-            Paint_DrawRectangle(x1, 2, x2, 22, 0x08, DOT_PIXEL_1X1, DRAW_FILL_FULL);
-        } else {
-            Paint_DrawRectangle(x1, 2, x2, 22, 0x08, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+            scope_data[scope_data_index] = sig;
+            scope_data_index++;
+            
+            if (scope_data_index >= 128)
+            {
+                scope_data_ready = true;
+                scope_triggered = false;
+                scope_data_index = 0;
+            }
         }
-        x1 += 8;
-        voice_num += voice[i].active ? 1 : 0;
+        scope_trigger_delay++;
     }
-    if (voice_num > 0) 
-    {
-        OLED_Transmit_DMA_Part(&voices_block_data, 0, 0, VOICES_BLOCK_WIDTH, VOICES_BLOCK_HEIGHT);
-        voice_num = 0; 
-    }
+    
+    scope_prev_sample = sig;
 }
+
+
+// void DrawVoicesBlock()
+// {
+//     Paint_NewImage(voices_block_data.data, VOICES_BLOCK_WIDTH, VOICES_BLOCK_HEIGHT, 0, BLACK);
+//     Paint_Clear(BLACK);
+    
+//     static bool voice_active[VOICE_NUM] = {false};
+//     static uint8_t voice_num = 1;
+//     int x1 = 1, x2 = 1;
+//     for (size_t i = 0; i < VOICE_NUM; i++)
+//     {
+//         if (voice_active[i] != voice[i].active) 
+//         { 
+//             voice_active[i] = voice[i].active; voice_num = voice_num + (voice[i].active ? 1 : -1); 
+//             return; 
+//         }
+//         x2 = x1 + 6;
+        
+//         if (voice[i].active)
+//         {
+//             Paint_DrawRectangle(x1, 2, x2, 22, 0x08, DOT_PIXEL_1X1, DRAW_FILL_FULL);
+//         } else {
+//             Paint_DrawRectangle(x1, 2, x2, 22, 0x08, DOT_PIXEL_1X1, DRAW_FILL_EMPTY);
+//         }
+//         x1 += 8;
+//         voice_num += voice[i].active ? 1 : 0;
+//     }
+//     if (voice_num > 0) 
+//     {
+//         OLED_Transmit_DMA_Part(&voices_block_data, 0, 0, VOICES_BLOCK_WIDTH, VOICES_BLOCK_HEIGHT);
+//         voice_num = 0; 
+//     }
+// }

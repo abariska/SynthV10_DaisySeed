@@ -23,11 +23,7 @@ enum ProcessType {
     PROCESS_DISPLAY
 };
 
-
 extern MenuPage currentPage;
-
-extern CpuLoadMeter cpu_load;
-extern int encoderIncs[5];
 extern SX1509 sx1509_buttons;
 extern SX1509 sx1509_encoders;
 extern SX1509 sx1509_leds;
@@ -41,13 +37,10 @@ extern ParameterManager paramManager;
 
 void Timer500ms();
 void Timer1ms();
-void ProcessButtons();
-void ProcessEncoders();
 void InitImages();
 void DrawIntroPage();
 void UpdateEncoderSwitches();
 void UpdateEncodersParams();
-void CpuUsageDisplay();
 void DrawVoicesBlock();
 
 #endif

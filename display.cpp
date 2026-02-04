@@ -6,6 +6,7 @@
 #include "parameters.h"
 #include "voice.h"
 
+CpuLoadMeter cpu_load;
 extern Preset currentPreset;
 extern float scope_data[128];
 extern int scope_data_index;
@@ -265,7 +266,7 @@ void DrawMainPage()
     // Paint_TextCentered(prog_name, 0, 127, 16, Font16, WHITE, BLACK);
     OLED_Transmit_DMA(&bg_black_data);
     DrawMainBlocks();
-    DrawScope();
+    // DrawScope();
 }
 
 void DrawParamPage(MenuPage page)
@@ -562,26 +563,19 @@ void DrawStoreBlock()
                            BLOCK_STORE_Y_END);
 }
 
-// void DrawIntroPage2(){
-//     while (1)
-//     {
-//         static int i = 0;
-//         char text[12];
-//         Paint_NewImage(param_block_data[0].data, 32, 32, 0, BLACK);
-//         Paint_Clear(BLACK);  
 
-//         sprintf(text, "%d", i);
-//         Paint_TextCentered(text, 0, 32, 0, Font8, WHITE, BLACK);
-//         Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
-//         OLED_Part_Transmit_DMA(&param_block_data[0], 40, 40, 72, 72);
-//         i++;
-//     }
+void DrawCpuUsage()
+{
 
-// Paint_NewImage(param_block_data2.data, 32, 46, 0, BLACK);
-// Paint_Clear(WHITE);
-
-// Paint_TextCentered("B", 0, 32, 0, Font12, WHITE, BLACK);
-// Paint_TextCentered("by", 0, 32, 16, Font8, WHITE, BLACK);
-
-// OLED_Part_Transmit_DMA(&param_block_data2, 80, 80, 112, 106);
-// }
+    // float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+    // UartPrintf("CPU load: ", cpu_avg_load);
+    if (currentPage == SETTINGS_PAGE)
+    {
+        Paint_NewImage(cpu_load_block_data.data, CPU_LOAD_BLOCK_WIDTH, CPU_LOAD_BLOCK_HEIGHT, 0, BLACK);
+        Paint_Clear(BLACK);
+        float cpu_avg_load = cpu_load.GetAvgCpuLoad() * 100;
+        Paint_NumCentered(cpu_avg_load, 0, CPU_LOAD_BLOCK_WIDTH, 0, 1, &Regular_8, WHITE, BLACK);
+        OLED_Transmit_DMA_Part(&cpu_load_block_data, 236, 0, 256, 16);
+        // UartPrint("CPU load: ", cpu_avg_load);
+    }
+}

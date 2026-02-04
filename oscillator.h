@@ -7,23 +7,24 @@
 /** Band Limited Oscillator
 
 */
+enum OscWaveforms
+{
+    SIN,
+    TRIANGLE,
+    SAW,
+    RAMP,
+    PULSE,
+    NOISE,
+    WAVE_COUNT,
+};
+
 class Osc
 {
 public:
     Osc() {}
     ~Osc() {}
 
-    enum Waveforms
-    {
-        WAVE_SIN,
-        WAVE_TRIANGLE,
-        WAVE_SAW,
-        WAVE_SQUARE,
-        WAVE_NOISE,
-        WAVE_COUNT,
-    };
-
-    void Init(float sample_rate, bool is_lfo = false);
+    void Init(float sample_rate);
 
     void SetPhaseOffset(float offset) { phaseOffset = offset; }
     void SetFreq(float freq) { targetFreq = freq; }
@@ -43,7 +44,7 @@ public:
 
 private:
     float sampleRate;
-
+    OscWaveforms wave;
     float currentFreq;
     float targetFreq;
     float slewRate;
@@ -61,8 +62,32 @@ private:
     uint32_t noiseState;
     float currentAmp;
     float targetAmp;
-    bool use_gain;
     bool active;
 };
 
+class OscLfo
+{
+public:
+    OscLfo() {}
+    ~OscLfo() {}
+
+    void Init(float sample_rate);
+
+    void SetFreq(float frequency) { freq = frequency; }
+    void SetAmp(float amplitude) { amp = amplitude; }
+    void SetWaveform(int wf) { wave = static_cast<OscWaveforms>(wf); }
+    void SyncPhaseToStart() { phase = 1.0f; }
+    float Process();
+
+private:
+    float sampleRate;
+    float freq;
+    float phase;
+    float phaseInc;
+    float amp;
+    uint32_t noiseState;
+    float noiseValue;
+    OscWaveforms wave;
+    uint32_t timer;
+};
 #endif

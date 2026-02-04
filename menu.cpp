@@ -9,6 +9,7 @@
 #include "GUI_Paint.h"
 #include "main.h"
 #include "log_uart.h"
+#include "globals.h"
 
 using P = ParamUnitName;
 using M = ModSource;
@@ -46,7 +47,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     Paint_Clear(bgColor);
     // Paint_DrawCircle(PARAM_BLOCK_WIDTH / 2, PARAM_BLOCK_HEIGHT / 2, PARAM_BLOCK_WIDTH / 2, 0x04, DOT_PIXEL_1X1, DRAW_FILL_FULL);
 
-    ParamUnit param_unit = paramManager.GetParam(target_param).GetUnit();
+    ParamUnit param_unit = paramManager.GetUnit(target_param);
 
     float value = 0;
     char value_str[10];
@@ -351,7 +352,7 @@ void UpdateMainSlots()
         {
             P paramName = currentPreset.mainSlots[i].target_param;
 
-            paramManager.GetParam(paramName).AdjustByIncrement(encoderIncs[i]);
+            paramManager.AdjustByIncrement(paramName, encoderIncs[i]); 
             DrawOneParamBlock(i, paramName, WHITE, BLACK);
             currentPreset.mainSlots[i].need_update = false;
             encoderIncs[i] = 0;
@@ -368,7 +369,7 @@ void UpdateParamSlots()
         if (paramSlots[paramIndex].need_update)
         {
             P paramName = paramSlots[paramIndex].target_param;
-            paramManager.GetParam(paramName).AdjustByIncrement(encoderIncs[i]);
+            paramManager.AdjustByIncrement(paramName, encoderIncs[i]);
 
             bool isActiveRow = (paramIndex < 4 && currentActiveRow == ROW_1) ||
                                (paramIndex >= 4 && currentActiveRow == ROW_2);
@@ -471,7 +472,7 @@ void AssignParamsForPage(MenuPage page)
         paramSlots[0].target_param = P::MOD_LFO_WAVEFORM;
         paramSlots[1].target_param = P::MOD_LFO_FREQ;
         paramSlots[2].target_param = P::MOD_LFO_DEPTH;
-        paramSlots[3].target_param = P::NONE;
+        paramSlots[3].target_param = P::MOD_LFO_TRIGGER;
         break;
     case FX_PAGE:
         SetPageName("Effects");
@@ -568,7 +569,7 @@ void EncoderChangeEffect()
             }
             else
             {
-                paramManager.GetParam(EFFECT_SLOT_DRYWET[i]).AdjustByIncrement(dir_enc_value[i]);
+                paramManager.AdjustByIncrement(EFFECT_SLOT_DRYWET[i], dir_enc_value[i]); 
             }
             DrawEffectBlock(i);
             currentPreset.effectSlots[i].need_update = false;
@@ -699,7 +700,7 @@ void EditSettingsBlock()
     {
         int dir = (encoderIncs[3] > 0) ? 1 : -1;
 
-        paramManager.GetParam(SETTINGS_PARAMS[selSettingsBlockIndex]).AdjustByIncrement(dir);
+        paramManager.AdjustByIncrement(SETTINGS_PARAMS[selSettingsBlockIndex], dir);
         encoderIncs[3] = 0;
     }
     DrawSettingsBlock(selSettingsBlockIndex);

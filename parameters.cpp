@@ -8,24 +8,26 @@
 #include "sys/dma.h"
 #include <stdint.h> 
 #include <cstdint>
+#include "voice.h"
 
 ParamSlot paramSlots[NUM_PARAM_BLOCKS];
 
 using namespace daisy;
 extern DaisySeed hw;
-extern bool page_need_update;
+extern bool page_need_update; 
 
 static const size_t PAGE_SIZE = 1024;           // округлюємо до 512 байт
 static const uint32_t FLASH_BASE_ADDR = 0x1000; // Починаємо пресети з 4KB
 static const uint32_t FLASH_BLOCK_4KB = 0x1000;
 
 Preset currentPreset;
+AudioParamsDirty dirty;
 float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0.0f,
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 1.0f, //Osc1
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 0.0f, //Osc2
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 0.0f, //Osc3
                                                                                0.0f, 0.1f, 0.0f, 0.01f, 0.01f, 0.1f, 0.5f, 0.01f, //Filter ADSR
-                                                                               0.0f, 0.01f, 1.0f, 0.0f, 0.01f, 0.1f, 0.5f, 0.01f, //Mod LFO ADSR
+                                                                               0.0f, 0.01f, 1.0f, 0.0f,0.0f, 0.01f, 0.1f, 0.5f, 0.01f, //Mod LFO ADSR
                                                                                0.0f, //Drive
                                                                                0.01f, 0.5f, 0.1f, 0.1f, //Chorus
                                                                                0.01f, 0.01f, 0.5f, 2.0f, 0.5f, //Compressor
@@ -76,13 +78,13 @@ void InitQSPI()
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
     uint32_t init_flag = *((uint32_t *)(0x90000000));
 
-    if (init_flag != 0xDEADBEED)
+    if (init_flag != 0xDEADBEE6)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
         uint8_t page[PAGE_SIZE];
         memset(page, 0xFF, sizeof(page));
-        uint32_t marker = 0xDEADBEED;
+        uint32_t marker = 0xDEADBEE6;
         memcpy(page, &marker, sizeof(marker));
 
         hw.qspi.Write(0, sizeof(page), page);
@@ -205,7 +207,7 @@ float SynthParameter::AdjustByIncrement(int inc)
     {
         if (unit == ParamUnit::BOOL)
         {
-            float newValue = static_cast<float>(GetNormalised());
+            float newValue = static_cast<float>(norm_value);
             newValue += inc;
             SetNormalized(newValue);
             return static_cast<float>(newValue);
@@ -302,7 +304,7 @@ float SynthParameter::GetValue()
         return value + ((m - value) * modifier_value);
         break;
     case ParamUnit::BOOL:
-        return static_cast<float>(GetBool());
+        return static_cast<float>(norm_value > 0.5f ? 1.0f : 0.0f);
         break;
     default:
         return 0.0f;
@@ -327,17 +329,6 @@ void SynthParameter::SetBool(bool value)
     SetNormalized(val);
 }
 
-// Getters
-float SynthParameter::GetNormalised() const { return norm_value; }
-bool SynthParameter::GetBool() const { return static_cast<float>(norm_value) > 0.5f; }
-const char *SynthParameter::GetFullLabel() const { return full_label; }
-const char *SynthParameter::GetShortLabel() const { return short_label; }
-ParamType SynthParameter::GetType() const { return type; }
-ParamUnit SynthParameter::GetUnit() const { return unit; }
-Curve SynthParameter::GetCurve() const { return curve; }
-float SynthParameter::GetPhysical() const { return physical_value; }
-float SynthParameter::GetModifier() const { return modifier_value; }
-
 //--------------------------------
 //--------------------------------
 
@@ -359,7 +350,7 @@ void SavePreset(uint8_t preset_num, const Preset &prst)
 
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
-        float v = paramManager.GetParam(static_cast<ParamUnitName>(i)).GetNormalised();
+        float v = paramManager.GetParam(static_cast<ParamUnitName>(i)).norm_value;
         p.type = PresetType::CUSTOM;
         p.number = prst.number;
         p.array[i] = v;
@@ -423,15 +414,25 @@ void ResetPreset(int presetNumber)
 /** --- ApplyPreset --- */
 void ApplyPreset(int presetNumber)
 {
+    ReadPreset(presetNumber, currentPreset);
+    for (size_t i = 0; i < VOICE_NUM; i++)
+    {
+        SynthVoiceReset(i);
+    }
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
-        currentPreset.modMtx[i].ResetMods();
+        ModMatrixReset(i);
     }
-    ReadPreset(presetNumber, currentPreset);
+
+    ResetModMatrixModulators();
+
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
         paramManager.GetParam(static_cast<ParamUnitName>(i)).SetNormalized(currentPreset.array[i]);
+        paramManager.GetParam(static_cast<ParamUnitName>(i)).modifier_value = 0.0f;
+        paramManager.GetParam(static_cast<ParamUnitName>(i)).isDirty = false;
     }
+    DirtyFlagsToTrue();
     page_need_update = true;
 }
 
@@ -446,21 +447,21 @@ using P = ParamUnitName;
 void ParameterManager::Init()
 {
     ADD_PARAM(P::NONE, 0, 0, "-", "-", Curve::LINEAR, ParamUnit::UNITLESS, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_WAVEFORM_1, 0, Osc::WAVE_COUNT - 1, "Wave 1", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_WAVEFORM_1, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 1", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::OSC_FREQ_1, 1.0f, 10000.0f, "Freq 1", "Freq", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
     ADD_PARAM(P::OSC_PITCH_1, -36, 36, "Pitch 1", "Pitch", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_DETUNE_1, -100, 100, "Tune 1", "Tune", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_AMP_1, 0.0f, 100.0f, "Amp 1", "Amp", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_PWM_1, -100, 100, "PWM 1", "PWM", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_ACTIVE_1, 0, 2, "Enbl Osc1", "Enbl", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_WAVEFORM_2, 0, Osc::WAVE_COUNT - 1, "Wave 2", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_WAVEFORM_2, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 2", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::OSC_FREQ_2, 1.0f, 10000.0f, "Freq 2", "Freq", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
     ADD_PARAM(P::OSC_PITCH_2, -36, 36, "Pitch 2", "Pitch", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_DETUNE_2, -100, 100, "Tune 2", "Tune", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_AMP_2, 0.0f, 100.0f, "Amp 2", "Amp", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_PWM_2, -100, 100, "PWM 2", "PWM", Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::OSC_ACTIVE_2, 0, 2, "Enbl Osc2", "Enbl", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE); 
-    ADD_PARAM(P::OSC_WAVEFORM_3, 0, Osc::WAVE_COUNT - 1, "Wave 3", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::OSC_WAVEFORM_3, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 3", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::OSC_FREQ_3, 1.0f, 10000.0f, "Freq 3", "Freq", Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
     ADD_PARAM(P::OSC_PITCH_3, -36, 36, "Pitch 3", "Pitch", Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::OSC_DETUNE_3, -100, 100, "Tune 3", "Tune", Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
@@ -475,9 +476,10 @@ void ParameterManager::Init()
     ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Decay", "Decay", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sustain", "Sustain", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::ADSR_RELEASE, 0.005f, 20.0f, "Release", "Release", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, Osc::WAVE_COUNT - 1, "Wave LFO", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, OscWaveforms::WAVE_COUNT - 1, "Wave LFO", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::MOD_LFO_FREQ, 0.01f, 100.0f, "Freq Lfo", "Freq", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Depth Lfo", "Depth", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::MOD_LFO_TRIGGER, 0, 2, "Trig Lfo", "Trigger", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::MOD_LFO_ACTIVE, 0, 2, "ActiveLFO", "Active", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::MOD_ADSR_ATTACK, 0.005f, 20.0f, "Atck Mod", "Attack", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::MOD_ADSR_DECAY, 0.005f, 20.0f, "Dec Mod", "Decay", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
@@ -512,6 +514,12 @@ void ParameterManager::Init()
     ADD_PARAM(P::GLOBAL_MASTER_VOLUME, 0.0f, 100.0f, "Master Volume", "Master Volume", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
 }
 
+void ParameterManager::AdjustByIncrement(ParamUnitName name, int inc) 
+{ 
+    params[static_cast<int>(name)].AdjustByIncrement(inc); 
+    SetAudioDirtyFlag(name);
+}
+
 Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::NONE, 0.0f, "-"},
     {ModSource::LFO, 0.0f, "LFO"},
@@ -521,3 +529,69 @@ Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::VELOCITY, 0.0f, "Velocity"},
     {ModSource::SWITCH_PEDAL, 0.0f, "SW Pedal"},
 };
+
+void ResetModMatrixModulators()
+{
+    for (size_t i = 0; i < static_cast<int>(ModSource::COUNT_MOD_SOURCES); i++)
+    {
+        modulators[i].value = 0.0f;
+    }
+}
+
+void SetAudioDirtyFlag(ParamUnitName param) {
+
+    paramManager.GetParam(param).isDirty = true;
+
+    if (param >= P::OSC_FREQ_1 && param <= P::OSC_ACTIVE_3) {
+        dirty.oscParams = true;
+    }
+    if (param >= P::ADSR_ATTACK && param <= P::ADSR_RELEASE) {
+        dirty.adsrParams = true;
+    }
+    else if (param >= P::FILTER_MODE && param <= P::FILTER_DRIVE) {
+        dirty.filterParams = true;
+    }
+    else if (param >= P::MOD_LFO_WAVEFORM && param <= P::MOD_LFO_ACTIVE) {
+        dirty.modLfoParams = true;
+    }
+    else if (param >= P::MOD_ADSR_ATTACK && param <= P::MOD_ADSR_RELEASE) {
+        dirty.modAdsrParams = true;
+    } 
+    else if (param >= P::EFFECT_FLANGER_FEEDBACK && param <= P::EFFECT_FLANGER_DELAY) {
+        dirty.flangerParams = true;
+    }
+    else if (param >= P::EFFECT_CHORUS_FREQ && param <= P::EFFECT_CHORUS_DELAY) {
+        dirty.chorusParams = true;
+    }
+    else if (param >= P::EFFECT_COMPRESSOR_ATTACK && param <= P::EFFECT_COMPRESSOR_MAKEUP) {
+        dirty.compressorParams = true;
+    }
+    else if (param >= P::EFFECT_REVERB_FEEDBACK && param <= P::EFFECT_REVERB_LPFREQ) {
+        dirty.reverbParams = true;
+    }
+    else if (param == P::EFFECT_OVERDRIVE_DRIVE) {
+        dirty.driveParams = true;
+    }
+    else if (param == P::EFFECT_AUTOWAH_WAH) {
+        dirty.wahParams = true;
+    }
+    else if (param >= P::GLOBAL_MONO && param <= P::GLOBAL_MASTER_VOLUME) {
+        dirty.globalParams = true;
+    }
+}
+
+void DirtyFlagsToTrue()
+{
+    dirty.oscParams = true;
+    dirty.adsrParams = true;
+    dirty.filterParams = true;
+    dirty.flangerParams = true;
+    dirty.chorusParams = true;
+    dirty.compressorParams = true;
+    dirty.reverbParams = true;
+    dirty.driveParams = true;
+    dirty.wahParams = true;
+    dirty.modLfoParams = true;
+    dirty.modAdsrParams = true;
+    dirty.globalParams = true;
+}

@@ -8,7 +8,6 @@
 #include "parameters.h"
 #include "display.h"
 #include "sx1509_expander.h"
-
 #include <cstdint>
 
 using namespace daisy;
@@ -22,7 +21,6 @@ extern bool isBlink;
 extern bool blinkStateChanged;
 extern bool isStoreMode;
 extern bool page_need_update;
-extern bool shift_pressed;
 extern bool isModMatrixNeedUpdate;
 extern uint8_t selModBlockIndex;
 extern uint8_t selSettingsBlockIndex;
