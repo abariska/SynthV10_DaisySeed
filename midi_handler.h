@@ -9,12 +9,10 @@
 using namespace daisy;
 using namespace daisysp;
 
-extern MidiUartHandler midiUart;
-extern MidiUsbHandler midiUsb;
-extern bool midi_note_led;
 extern float mod_wheel_value;
 extern float pitch_bend_multiplier;
 extern float aftertouch_value;
+extern bool isMidiData;
 extern float GetPitchBendTableValue(int index);
 
 extern bool is_midi_host_usb;

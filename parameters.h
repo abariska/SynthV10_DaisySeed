@@ -23,7 +23,8 @@ extern float GetFreqModTableValue(int index);
 void SetAudioDirtyFlag(ParamUnitName param);
 void SynthVoiceReset(uint8_t voice_num);
 void ModMatrixReset(uint8_t mod_matrix_num);
-void ResetDirtyFlags();
+void DirtyFlagsToTrue();
+void ResetModMatrixModulators();
 template <typename T>
 constexpr const T &clamp(const T &v, const T &lo, const T &hi)
 {
@@ -208,6 +209,7 @@ public:
     // Геттери
     float GetValue();
     int GetInt() const;
+    float GetModifier(ParamUnitName name) { return modifier_value; }
     void SetBool(bool value);
     void SetFromCurrentPreset();
     void SetModifier(float value);
@@ -236,6 +238,7 @@ public:
     float GetValue(ParamUnitName name) { return GetParam(name).GetValue(); }
     UseInMain GetUseInMain(ParamUnitName name) { return GetParam(name).useInMain; }
     UseInMod GetUseInMod(ParamUnitName name) { return GetParam(name).useInMod; }
+    float GetModifier(ParamUnitName name) { return GetParam(name).modifier_value; }
 };
 
 extern ParameterManager paramManager;
@@ -339,6 +342,7 @@ public:
             modValue = modValue * ratio;
         }
         paramManager.SetModifier(modTarget, modValue);
+        SetAudioDirtyFlag(modTarget);
     }
     
 private:

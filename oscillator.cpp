@@ -61,6 +61,9 @@ float Osc::Process()
     currentAmp += (targetAmp - currentAmp) * 0.1f;
     phaseOsc += phaseInc;
     phaseOsc -= (phaseOsc >= 1.0f) ? 1.0f : 0.0f;
+    
+    float phase = phaseOsc + phaseOffset;
+    phase -= (phase >= 1.0f) ? 1.0f : 0.0f;
 
     float out = 0.0f;
     float gain = kWaveGain[mode] * 0.5f;
@@ -68,19 +71,19 @@ float Osc::Process()
     switch (mode)
     {
     case SIN:
-        out = sinf((phaseOsc + 0.25f) * 2.0f * M_PI); // +0.25f - offset to avoid DC offset
+        out = sinf((phase + 0.25f) * 2.0f * M_PI); // +0.25f - offset to avoid DC offset
         break;
     case TRIANGLE:
-        out = 4.0f * (fabsf(phaseOsc - 0.5f) - 0.25f);
+        out = 4.0f * (fabsf(phase - 0.5f) - 0.25f);
         break;
     case SAW:
-        out = 1.0f - 2.0f * phaseOsc;
-        out += poly_blep(phaseOsc, phaseInc) * blepGain;
+        out = 1.0f - 2.0f * phase;
+        out += poly_blep(phase, phaseInc) * blepGain;
         break;
     case PULSE:
-        out = phaseOsc < pw ? 1.0f : -1.0f;
-        out += poly_blep(phaseOsc, phaseInc) * blepGain;
-        out -= poly_blep(fmodf(phaseOsc + (1.0f - pw), 1.0f), phaseInc) * blepGain;
+        out = phase < pw ? 1.0f : -1.0f;
+        out += poly_blep(phase, phaseInc) * blepGain;
+        out -= poly_blep(fmodf(phase + (1.0f - pw), 1.0f), phaseInc) * blepGain;
         break;
     case NOISE:
         noiseState = noiseState * 1664525U + 1013904223U;

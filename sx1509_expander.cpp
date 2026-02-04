@@ -5,6 +5,7 @@
 #include "menu.h"
 #include "log_uart.h"
 #include "voice.h"
+#include "globals.h"
 
 using namespace std;
 
@@ -169,6 +170,18 @@ void UpdateLeds()
 void UpdatePWMLeds()
 {
     sx1509_leds.WritePWM(LED_LFO, 255 - (int)(lfo_value * 255));
+}
+void UpdateVoiceLeds()
+{
+    static bool voiceStatusChanged[VOICE_NUM] = {false};
+    for (size_t i = 0; i < VOICE_NUM; i++)
+    {
+        if (voiceStatusChanged[i] != isVoiceActive[i])
+        {
+            voiceStatusChanged[i] = isVoiceActive[i];
+            sx1509_leds.WritePin(LED_1 + i, voiceStatusChanged[i] ? 1 : 0);
+        }
+    }
 }
 
 void UpdateStoreLed()

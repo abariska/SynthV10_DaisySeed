@@ -9,6 +9,7 @@
 #include "GUI_Paint.h"
 #include "main.h"
 #include "log_uart.h"
+#include "globals.h"
 
 using P = ParamUnitName;
 using M = ModSource;

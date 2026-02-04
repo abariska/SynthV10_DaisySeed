@@ -85,7 +85,7 @@ enum MenuPage
     EMPTY
 };
 extern MenuPage currentPage;
-
+extern CpuLoadMeter cpu_load;
 // Константи для двох рядів параметрів
 #define BLOCK_ROW1_TOP_Y = 25;
 #define BLOCK_ROW1_BOTTOM_Y = 70;
@@ -155,5 +155,5 @@ void DrawModMatrixBlocks();
 void DrawSettingsPage();
 void DrawSettingsBlock(uint8_t blockIndex);
 void DrawStoreBlock();
-
+void DrawCpuUsage();
 #endif

@@ -52,6 +52,6 @@ void UartPrint(const char *text, int num)
 void UartPrintf(const char *text, float num)
 {
     char test[40];
-    sprintf(test, "%s %.3f\r\n", text, num);
+    sprintf(test, "%s %.6f\r\n", text, num);
     uart_serial.BlockingTransmit((uint8_t *)test, strlen(test), 1000);
 }

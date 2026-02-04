@@ -15,7 +15,7 @@ using M = ModSource;
 Adsr adsrMod;
 LadderFilter flt[2];
 OscLfo lfo;
-Random rnd[OSC_NUM * VOICE_NUM];
+Random rnd;
 ModMatrix modMatrix[MOD_MATRIX_NUM];
 Voice voice[VOICE_NUM];
 
@@ -51,24 +51,28 @@ float panningTable[PANNING_TABLE_SIZE][2] = {{0.0f}};
 
 uint8_t noteNum = 60;
 float frequency = 0;
-float prev_freq[OSC_NUM * VOICE_NUM] = {0.0f};
 bool is_any_voice_active = false;
 bool polyToMonoSwitch = false;
 
-bool isOscSyncNeeded[OSC_NUM * VOICE_NUM] = {false};
+bool isOscSyncNeeded[OSC_NUM] = {true};
 bool gate = false;
 float lfo_value = 0.0f;
+bool isVoiceActive[VOICE_NUM] = {false};
+int isModAffectsOscFreq = 0;
 
 void SynthInit(float samplerate, int blocksize)
 {
     InitPitchTables();
     InitPanningTable();
+    rnd.Init();
     for (size_t i = 0; i < VOICE_NUM; i++)
     {
+        voice[i].phaseOffset = rnd.GetFloat(0.0f, 0.5f);
         for (size_t j = 0; j < OSC_NUM; j++)
         {
             voice[i].osc[j].Init(samplerate);
             voice[i].rnd[j].Init();
+            voice[i].osc[j].SetPhaseOffset(voice[i].phaseOffset);
         }
         voice[i].adsr.Init(samplerate, blocksize);
         
@@ -210,7 +214,8 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
     }
     dirty.oscParams = true;
     dirty.adsrParams = true;
-    sx1509_leds.WritePin(LED_1 + v, 1);
+    isVoiceActive[v] = true;
+    isModAffectsOscFreq++;
 }
 
 
@@ -251,7 +256,7 @@ void HandleNoteOff(uint8_t note_in)
         {
             voice[v].active = false;
             voice[v].gate = false;
-            sx1509_leds.WritePin(LED_1 + v, 0);
+            isVoiceActive[v] = false;
             break;
         }
     }
@@ -317,11 +322,23 @@ void UpdateSynthParams()
             is_any_voice_active = false;
             gate = false;
             polyToMonoSwitch = false;
-        } else {
+        } 
+        else {
             for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
             {
-                cached_pitch[oscId] = GetPitchTableValue(paramManager.GetValue(OSC_PITCH[oscId]));
-                cached_detune[oscId] = GetDetuneTableValue(paramManager.GetValue(OSC_DETUNE[oscId]));   
+                static float osc_data_prev[OSC_NUM] = {0.0f};
+                float osc_pitch = paramManager.GetValue(OSC_PITCH[oscId]);
+                float osc_detune = paramManager.GetValue(OSC_DETUNE[oscId]);
+                float osc_data = osc_pitch + osc_detune + pitch_bend_multiplier;
+
+                if (fabsf(osc_data - osc_data_prev[oscId]) > 0.000001f)
+                {
+                    isOscSyncNeeded[oscId] = true;
+                } 
+                osc_data_prev[oscId] = osc_data;
+
+                cached_pitch[oscId] = GetPitchTableValue(osc_pitch);
+                cached_detune[oscId] = GetDetuneTableValue(osc_detune);   
                 osc_freq_factor[oscId] = cached_pitch[oscId] * cached_detune[oscId] * pitch_bend_multiplier;
 
                 cached_waveform[oscId] = static_cast<int>(paramManager.GetValue(OSC_WAVEFORM[oscId]));
@@ -344,11 +361,6 @@ void UpdateSynthParams()
                     voice[v].final_freq[oscId] = paramManager.GetValue(OSC_FREQ[oscId]);
                     voice[v].final_amp[oscId] = cached_amp[oscId] * voice[v].vel;
                     __enable_irq();
-                    // if (voice[v].final_freq[oscId] != prev_freq[v * OSC_NUM + oscId])
-                    // {
-                    //     isOscSyncNeeded[v * OSC_NUM + oscId] = true;
-                    //     prev_freq[v * OSC_NUM + oscId] = voice[v].final_freq[oscId];
-                    // }
                 }   
                 if (dirty.adsrParams)
                 {
@@ -431,25 +443,30 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
 {
     float outL = 0.0f;
     float outR = 0.0f;
-    float phase = voice[0].osc[0].GetPhase();
+
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {   
+        float phase = voice[v].osc[0].GetPhase();
         float voice_out = 0.0f;
+
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
-            if (isOscSyncNeeded[v * OSC_NUM + oscId])
-            {
-                if ((oscId != 0) && (phase == 0.0f))
-                { 
-                    voice[v].osc[oscId].SyncPhase(phase);
-                    isOscSyncNeeded[v * OSC_NUM + oscId] = false; 
-                }
-            }
             voice[v].osc[oscId].SetFreq(voice[v].final_freq[oscId]);
             voice[v].osc[oscId].SetAmp(voice[v].final_amp[oscId]);
+            if (isOscSyncNeeded[0] || isOscSyncNeeded[oscId] || isModAffectsOscFreq > 0)
+            {
+                if (oscId != 0)
+                { 
+                    voice[v].osc[oscId].SyncPhase(phase);
+                }
+                if (v == VOICE_NUM - 1) 
+                {
+                    isOscSyncNeeded[oscId] = false; 
+                }
+            }
 
-            float process_out = voice[v].osc[oscId].Process();
-            voice_out += process_out;
+            float osc_out = voice[v].osc[oscId].Process();
+            voice_out += osc_out;
         }
         float env = voice[v].adsr.Process(voice[v].gate);
         float voice_out_env = voice_out * env / VOICE_NUM;
@@ -465,6 +482,7 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
             voice[v].active = false;
         }
     }
+    isModAffectsOscFreq = 0;
     
     outL = flt[0].Process(outL);   
     outR = flt[1].Process(outR);
@@ -578,7 +596,7 @@ void SynthVoiceReset(uint8_t voice_num){
     voice[voice_num].freq = 0.0f;
     voice[voice_num].vel = 0.0f;
     voice[voice_num].timestamp = 0;
-    sx1509_leds.WritePin(LED_1 + voice_num, 0);
+    isVoiceActive[voice_num] = false;
 }
 
 void ModMatrixReset(uint8_t mod_matrix_num){

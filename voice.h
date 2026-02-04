@@ -9,6 +9,7 @@
 #include "daisy.h"
 #include "daisysp.h"
 #include "daisysp-lgpl.h"
+#include "globals.h"
 
 #define SEMITONE_RATIO 1.0594630943592953f
 #define CENT_RATIO 1.0005777895065549f
@@ -20,7 +21,6 @@
 #define PITCH_BEND_CENTER_INDEX 200
 #define FREQ_MOD_TABLE_SIZE 101
 #define PANNING_TABLE_SIZE 101
-#define VOICE_NUM 5 
 
 #define MAX_NOTE_STACK 10
 
@@ -35,8 +35,7 @@ extern float midiNoteToFreqTable[128];
 extern float pitchTable[PITCH_TABLE_SIZE];
 extern float detuneTable[DETUNE_TABLE_SIZE];
 extern float pitchBendTable[PITCH_BEND_TABLE_SIZE];
-extern bool isOscSyncNeeded[OSC_NUM * VOICE_NUM];
-
+extern bool isOscSyncNeeded[OSC_NUM];
 extern float cached_master_volume;
 
 struct Voice
@@ -44,7 +43,7 @@ struct Voice
     Osc     osc[OSC_NUM];
     Adsr    adsr;
     Random  rnd[OSC_NUM];
-    float   phaseOffset[OSC_NUM];
+    float   phaseOffset;
     float   pitch_correction[OSC_NUM];
     float   detune_correction[OSC_NUM];
     float   final_freq[OSC_NUM];

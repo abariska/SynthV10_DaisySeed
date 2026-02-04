@@ -61,5 +61,5 @@ int8_t EncoderInc(uint8_t pin_a, uint8_t pin_b);
 void UpdateLeds();
 void UpdatePWMLeds();
 void UpdateStoreLed();
-
+void UpdateVoiceLeds();
 #endif

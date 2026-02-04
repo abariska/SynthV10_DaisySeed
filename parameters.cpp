@@ -423,11 +423,16 @@ void ApplyPreset(int presetNumber)
     {
         ModMatrixReset(i);
     }
+
+    ResetModMatrixModulators();
+
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
         paramManager.GetParam(static_cast<ParamUnitName>(i)).SetNormalized(currentPreset.array[i]);
+        paramManager.GetParam(static_cast<ParamUnitName>(i)).modifier_value = 0.0f;
+        paramManager.GetParam(static_cast<ParamUnitName>(i)).isDirty = false;
     }
-    ResetDirtyFlags();
+    DirtyFlagsToTrue();
     page_need_update = true;
 }
 
@@ -525,11 +530,19 @@ Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::SWITCH_PEDAL, 0.0f, "SW Pedal"},
 };
 
+void ResetModMatrixModulators()
+{
+    for (size_t i = 0; i < static_cast<int>(ModSource::COUNT_MOD_SOURCES); i++)
+    {
+        modulators[i].value = 0.0f;
+    }
+}
+
 void SetAudioDirtyFlag(ParamUnitName param) {
 
     paramManager.GetParam(param).isDirty = true;
 
-    if (param >= P::OSC_PITCH_1 && param <= P::OSC_ACTIVE_3) {
+    if (param >= P::OSC_FREQ_1 && param <= P::OSC_ACTIVE_3) {
         dirty.oscParams = true;
     }
     if (param >= P::ADSR_ATTACK && param <= P::ADSR_RELEASE) {
@@ -567,7 +580,7 @@ void SetAudioDirtyFlag(ParamUnitName param) {
     }
 }
 
-void ResetDirtyFlags()
+void DirtyFlagsToTrue()
 {
     dirty.oscParams = true;
     dirty.adsrParams = true;

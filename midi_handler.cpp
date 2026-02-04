@@ -9,10 +9,10 @@ MidiUsbHandler midiUsb;
 USBHostHandle usbHost;
 
 bool is_midi_host_usb = false;
-bool midi_note_led = false;
 float mod_wheel_value = 0.0f;
 float pitch_bend_multiplier = 1.0f;
 float aftertouch_value = 0.0f;
+bool isMidiData = false;
 
 void USBH_ClassActive(void* data)
 {
@@ -64,7 +64,7 @@ void MidiInit()
     midi_uart_cfg.transport_config.periph = UartHandler::Config::Peripheral::UART_5;
     midi_uart_cfg.transport_config.rx = Pin(PORTB, 5); 
     midiUart.Init(midi_uart_cfg);
-
+    midiUart.StartReceive();
     
 }
 
@@ -77,14 +77,12 @@ void HandleMidiMessage(MidiEvent m)
     {
         auto note = m.AsNoteOn();
         HandleNoteOn(note.note, note.velocity);
-        midi_note_led = true;
     }
     break;
     case NoteOff:
     {
         auto note = m.AsNoteOff();
         HandleNoteOff(note.note);
-        midi_note_led = false;
     }
     break;
     case PitchBend:
@@ -108,6 +106,7 @@ void HandleMidiMessage(MidiEvent m)
     default:
         break;
     }
+    isMidiData = true;
 }
 
 void UartMidiProcess()
