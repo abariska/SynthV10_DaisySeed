@@ -11,8 +11,8 @@ enum OscWaveforms
 {
     SIN,
     TRIANGLE,
-    SAW,
-    RAMP,
+    SAW_DOWN,
+    SAW_UP,
     PULSE,
     NOISE,
     WAVE_COUNT,

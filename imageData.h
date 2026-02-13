@@ -35,7 +35,8 @@
 extern const unsigned char sin_wave[];
 extern const unsigned char tri_wave[];
 extern const unsigned char sqr_wave[];
-extern const unsigned char saw_wave[];
+extern const unsigned char saw_down_wave[];
+extern const unsigned char saw_up_wave[];
 extern const unsigned char noise_wave[];
 
 #endif

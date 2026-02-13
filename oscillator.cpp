@@ -25,8 +25,9 @@ static constexpr float kWaveGain[] = {
     0.8f, // WAVE_SIN
     0.95f, // WAVE_TRIANGLE
     1.0f, // WAVE_SAW
+    1.0f, // WAVE_SAW_UP
     0.6f, // WAVE_SQUARE
-    0.8f  // WAVE_NOISE (рівномірний)
+    0.8f  // WAVE_NOISE 
 };
 
 // Osc
@@ -76,8 +77,12 @@ float Osc::Process()
     case TRIANGLE:
         out = 4.0f * (fabsf(phase - 0.5f) - 0.25f);
         break;
-    case SAW:
+    case SAW_DOWN:
         out = 1.0f - 2.0f * phase;
+        out += poly_blep(phase, phaseInc) * blepGain;
+        break;
+    case SAW_UP:
+        out = 2.0f * phase;
         out += poly_blep(phase, phaseInc) * blepGain;
         break;
     case PULSE:
@@ -130,10 +135,10 @@ float OscLfo::Process()
     case TRIANGLE:
         out = phase < 0.5f ? 2.0f * phase : 2.0f * (1.0f - phase);
         break;
-    case SAW:
+    case SAW_DOWN:
         out = 1.0f - phase;
         break;
-    case RAMP:
+    case SAW_UP:
         out = phase;
         break;
     case PULSE:

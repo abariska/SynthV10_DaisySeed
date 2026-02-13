@@ -455,13 +455,16 @@ void DrawWaveformImage(int waveform, bool custom_color, UBYTE color)
     case 1: // TRI
         Paint_BitMapCentered(tri_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
-    case 2: // SAW
-        Paint_BitMapCentered(saw_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
+    case 2: // SAW DOWN
+        Paint_BitMapCentered(saw_down_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
-    case 3: // SQR
+    case 3: // SAW UP
+        Paint_BitMapCentered(saw_up_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
+        break;
+    case 4: // SQR
         Paint_BitMapCentered(sqr_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
-    case 4: // NOISE
+    case 5: // NOISE
         Paint_BitMapCentered(noise_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     default:
