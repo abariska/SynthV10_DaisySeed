@@ -49,7 +49,7 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
-        currentPreset.modMtx[i].RunMod();
+        // currentPreset.modMtx[i].RunMod();
         P modTarget = currentPreset.modMtx[i].GetModTarget();
         if (modTarget == P::OSC_FREQ_1 || modTarget == P::OSC_FREQ_2 || modTarget == P::OSC_FREQ_3)
         {

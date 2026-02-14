@@ -27,7 +27,6 @@
 using namespace daisy;
 using namespace daisysp;
 
-extern LadderFilter flt[2];
 extern OscLfo lfo;
 extern float samplerate;
 extern float lfo_value;
@@ -42,6 +41,8 @@ struct Voice
 {
     Osc     osc[OSC_NUM];
     Adsr    adsr;
+    Adsr    adsrMod;
+    LadderFilter flt;
     Random  rnd[OSC_NUM];
     float   phaseOffset;
     float   pitch_correction[OSC_NUM];
@@ -78,4 +79,5 @@ extern float panningTable[101][2];
 inline void InitPanningTable();
 void SynthVoiceReset(uint8_t voice_num);
 void ModMatrixReset(uint8_t mod_matrix_num);
+
 #endif

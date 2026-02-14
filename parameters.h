@@ -295,6 +295,7 @@ struct Modulator
     ModSource source;
     float value;
     const char *label;
+    bool isVoiceRelated;
 };
 
 extern Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)];
@@ -307,13 +308,24 @@ public:
         modSource.source = ModSource::NONE;
         modSource.value = 0.0f;
         modSource.label = "-";
+        modSource.isVoiceRelated = false;
         modTarget = ParamUnitName::NONE;
         modAmount = 0.0f;
     }
 
 public:
 
-    void SetModSource(ModSource source) { modSource.source = modulators[static_cast<int>(source)].source; }
+    void SetModSource(ModSource source) { 
+        modSource.source = modulators[static_cast<int>(source)].source;
+        if (modulators[static_cast<int>(source)].isVoiceRelated)
+        {
+            modSource.isVoiceRelated = true;
+        }
+        else
+        {
+            modSource.isVoiceRelated = false;
+        }
+    }
     void SetModTarget(ParamUnitName target) { modTarget = target; }
     void SetModAmount(float amount) { modAmount = amount; }
 
@@ -323,6 +335,7 @@ public:
     const char *GetModSourceLabel() const { return modulators[static_cast<int>(modSource.source)].label; }
     ParamUnitName GetModTarget() const { return modTarget; }
     const char *GetModTargetLabel() const { return paramManager.GetFullLabel(modTarget); }
+    bool IsModSourceVoiceRelated() const { return modSource.isVoiceRelated; }
     void ResetMods() 
     {
         modSource.value = 0.0f;

@@ -12,9 +12,8 @@ using P = ParamUnitName;
 using namespace daisy;
 using M = ModSource;
 
-Adsr adsrMod;
-LadderFilter flt[2];
 OscLfo lfo;
+Adsr adsrModulator;
 Random rnd;
 ModMatrix modMatrix[MOD_MATRIX_NUM];
 Voice voice[VOICE_NUM];
@@ -37,6 +36,7 @@ static bool cached_mono = false;
 static bool cached_legato = false;
 static float cached_pan = 0.0f;
 static bool cached_lfo_trigger = false;
+static float cached_adsr_mod_value[VOICE_NUM] = {0.0f};
 float cached_master_volume = 0.0f;
 
 static int cached_waveform[OSC_NUM];
@@ -55,7 +55,7 @@ bool is_any_voice_active = false;
 bool polyToMonoSwitch = false;
 
 bool isOscSyncNeeded[OSC_NUM] = {true};
-bool gate = false;
+bool globalGate = false;
 float lfo_value = 0.0f;
 bool isVoiceActive[VOICE_NUM] = {false};
 int isModAffectsOscFreq = 0;
@@ -75,20 +75,23 @@ void SynthInit(float samplerate, int blocksize)
             voice[i].osc[j].SetPhaseOffset(voice[i].phaseOffset);
         }
         voice[i].adsr.Init(samplerate, blocksize);
-        
+        voice[i].flt.Init(samplerate);
+        voice[i].adsrMod.Init(samplerate, blocksize);
     }
-    flt[0].Init(samplerate);
-    flt[1].Init(samplerate);
-    adsrMod.Init(samplerate, blocksize);
     lfo.Init(samplerate);
+    adsrModulator.Init(samplerate, blocksize);
     EffectsInit(samplerate);
 }
 
 void ModSourcesProcess()
 {
-    lfo_value = lfo.Process();
+    lfo_value = lfo.Process(); 
     modulators[static_cast<int>(M::LFO)].value = lfo_value;
-    modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(gate);
+    for (size_t v = 0; v < VOICE_NUM; v++)
+    {
+        cached_adsr_mod_value[v] = voice[v].adsrMod.Process(voice[v].gate);
+    }
+    modulators[static_cast<int>(M::ADSR)].value = adsrModulator.Process(globalGate);
 
     modulators[static_cast<int>(M::MOD_WHEEL)].value = mod_wheel_value;
     modulators[static_cast<int>(M::AFTERTOUCH)].value = aftertouch_value;
@@ -105,10 +108,22 @@ void UpdateModSourcesParams()
         dirty.modLfoParams = false;
     }
     else if (dirty.modAdsrParams) {
-        adsrMod.SetAttackTime(paramManager.GetValue(P::MOD_ADSR_ATTACK), 1.0f);
-        adsrMod.SetDecayTime(paramManager.GetValue(P::MOD_ADSR_DECAY));
-        adsrMod.SetSustainLevel(paramManager.GetValue(P::MOD_ADSR_SUSTAIN));
-        adsrMod.SetReleaseTime(paramManager.GetValue(P::MOD_ADSR_RELEASE));
+        float attack = paramManager.GetValue(P::MOD_ADSR_ATTACK);
+        float decay = paramManager.GetValue(P::MOD_ADSR_DECAY);
+        float sustain = paramManager.GetValue(P::MOD_ADSR_SUSTAIN);
+        float release = paramManager.GetValue(P::MOD_ADSR_RELEASE);
+        for (size_t i = 0; i < VOICE_NUM; i++)
+        {
+            voice[i].adsr.SetAttackTime(attack, 1.0f);
+            voice[i].adsr.SetDecayTime(decay);
+            voice[i].adsr.SetSustainLevel(sustain);
+            voice[i].adsr.SetReleaseTime(release);
+        }
+        adsrModulator.SetAttackTime(attack, 1.0f);
+        adsrModulator.SetDecayTime(decay);
+        adsrModulator.SetSustainLevel(sustain);
+        adsrModulator.SetReleaseTime(release);
+
         dirty.modAdsrParams = false;
     }
 }
@@ -192,7 +207,7 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
     }
 
     is_any_voice_active = true;
-    gate = true;
+    globalGate = true;
 
     if (cached_mono)
     {
@@ -210,7 +225,8 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
     if (!cached_legato)
     {
         voice[v].adsr.Retrigger(false);
-        adsrMod.Retrigger(false);
+        voice[v].adsrMod.Retrigger(false);
+        adsrModulator.Retrigger(false);
     }
     dirty.oscParams = true;
     dirty.adsrParams = true;
@@ -242,10 +258,12 @@ void HandleNoteOff(uint8_t note_in)
             if (!cached_legato)
             {
                 voice[0].adsr.Retrigger(false);
+                voice[0].adsrMod.Retrigger(false);
+                adsrModulator.Retrigger(false);
             }
             dirty.adsrParams = true; 
             dirty.oscParams = true;
-            gate = true;
+            globalGate = true;
             return;
         }
     }
@@ -276,7 +294,7 @@ void HandleNoteOff(uint8_t note_in)
     } else {
         is_any_voice_active = false;
     }
-    gate = is_any_voice_active;
+    globalGate = is_any_voice_active;
 }
 
 void UpdateSynthParams()
@@ -320,7 +338,7 @@ void UpdateSynthParams()
             }
             notesInStack = 0;
             is_any_voice_active = false;
-            gate = false;
+            globalGate = false;
             polyToMonoSwitch = false;
         } 
         else {
@@ -357,10 +375,6 @@ void UpdateSynthParams()
                     voice[v].osc[oscId].SetPw(cached_pw[oscId]);
                     voice[v].osc[oscId].SetPortamento(cached_portamento);
                     paramManager.SetValue(OSC_FREQ[oscId], voice[v].freq * osc_freq_factor[oscId]);
-                    __disable_irq();
-                    voice[v].final_freq[oscId] = paramManager.GetValue(OSC_FREQ[oscId]);
-                    voice[v].final_amp[oscId] = cached_amp[oscId] * voice[v].vel;
-                    __enable_irq();
                 }   
                 if (dirty.adsrParams)
                 {
@@ -385,13 +399,13 @@ void UpdateSynthParams()
         float filter_drive = paramManager.GetValue(P::FILTER_DRIVE);
         float input_drive = 1.0f + (filter_drive * 4.0f);
 
-        for (int i = 0; i < 2; i++)
+        for (int i = 0; i < VOICE_NUM; i++)
         {
-            flt[i].SetFilterMode(mode);
-            flt[i].SetFreq(filter_cutoff);
-            flt[i].SetRes(filter_resonance);
-            flt[i].SetPassbandGain(0.5f);
-            flt[i].SetInputDrive(input_drive);
+            voice[i].flt.SetFilterMode(mode);
+            voice[i].flt.SetFreq(filter_cutoff);
+            voice[i].flt.SetRes(filter_resonance);
+            voice[i].flt.SetPassbandGain(0.5f);
+            voice[i].flt.SetInputDrive(input_drive);
         }
         dirty.filterParams = false;
     }
@@ -449,8 +463,21 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
         float phase = voice[v].osc[0].GetPhase();
         float voice_out = 0.0f;
 
+
+        // for (size_t m = 0; m < MOD_MATRIX_NUM; m++)
+        // {
+        //     if (currentPreset.modMtx[m].IsModSourceVoiceRelated())
+        //     {
+        //         modulators[static_cast<int>(M::ADSR)].value = cached_adsr_mod_value[v];
+        //         currentPreset.modMtx[m].RunMod();
+        //     }
+            
+        // }
+
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
+            voice[v].final_freq[oscId] = paramManager.GetValue(OSC_FREQ[oscId]);
+            voice[v].final_amp[oscId] = cached_amp[oscId] * voice[v].vel;
             voice[v].osc[oscId].SetFreq(voice[v].final_freq[oscId]);
             voice[v].osc[oscId].SetAmp(voice[v].final_amp[oscId]);
             if (isOscSyncNeeded[0] || isOscSyncNeeded[oscId] || isModAffectsOscFreq > 0)
@@ -469,7 +496,9 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
             voice_out += osc_out;
         }
         float env = voice[v].adsr.Process(voice[v].gate);
+
         float voice_out_env = voice_out * env / VOICE_NUM;
+        voice_out_env = voice[v].flt.Process(voice_out_env);
         float voiceL, voiceR;
         VoicePanning(v, voice_out_env, voiceL, voiceR);
         outL += voiceL;
@@ -484,8 +513,8 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
     }
     isModAffectsOscFreq = 0;
     
-    outL = flt[0].Process(outL);   
-    outR = flt[1].Process(outR);
+    // outL = flt[0].Process(outL);   
+    // outR = flt[1].Process(outR);
 
     outL = softClip(outL);
     outR = softClip(outR);   
