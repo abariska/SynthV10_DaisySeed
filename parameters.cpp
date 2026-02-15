@@ -79,13 +79,13 @@ void InitQSPI()
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(BASE_ADDR), PAGE_SIZE);
     uint32_t init_flag = *((uint32_t *)(BASE_ADDR));
 
-    if (init_flag != 0xDEADBEE4)
+    if (init_flag != 0xDEADBEEF)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
         uint8_t page[PAGE_SIZE];
         memset(page, 0xFF, sizeof(page));  
-        uint32_t marker = 0xDEADBEE4;
+        uint32_t marker = 0xDEADBEEF;
         memcpy(page, &marker, sizeof(marker));
 
         hw.qspi.Write(0, sizeof(page), page);
@@ -472,7 +472,7 @@ void ParameterManager::Init()
     ADD_PARAM(P::FILTER_MODE, 0, 5, "Mode", "Mode", Curve::LINEAR, ParamUnit::TEXT, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::FILTER_CUTOFF, 5.0f, 20000.0f, "Cutoff", "Cutoff", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::FILTER_RESONANCE, 0.0f, 100.0f, "Res", "Res", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::FILTER_DRIVE, 0.0f, 100.0f, "Drive", "Drive", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
+    ADD_PARAM(P::FILTER_DRIVE, 0.0f, 100.0f, "Drive", "Drive", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::ADSR_ATTACK, 0.005f, 20.0f, "Attack", "Attack", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Decay", "Decay", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sustain", "Sustain", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
@@ -522,13 +522,13 @@ void ParameterManager::AdjustByIncrement(ParamUnitName name, int inc)
 }
 
 Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
-    {ModSource::NONE, 0.0f, "-", false},
-    {ModSource::LFO, 0.0f, "LFO", false},
-    {ModSource::ADSR, 0.0f, "ADSR", true},
-    {ModSource::MOD_WHEEL, 0.0f, "ModWheel", false},
-    {ModSource::AFTERTOUCH, 0.0f, "Aftertouch", false},
-    {ModSource::VELOCITY, 0.0f, "Velocity", false},
-    {ModSource::SWITCH_PEDAL, 0.0f, "SW Pedal", false},
+    {ModSource::NONE, 0.0f, {0.0f}, "-", false},
+    {ModSource::LFO, 0.0f, {0.0f}, "LFO", false},
+    {ModSource::ADSR, 0.0f, {0.0f}, "ADSR", true},
+    {ModSource::MOD_WHEEL, 0.0f, {0.0f}, "ModWheel", false},
+    {ModSource::AFTERTOUCH, 0.0f, {0.0f}, "Aftertouch", false},
+    {ModSource::VELOCITY, 0.0f, {0.0f}, "Velocity", false},
+    {ModSource::SWITCH_PEDAL, 0.0f, {0.0f}, "SW Pedal", false},
 };
 
 void ResetModMatrixModulators()
@@ -536,6 +536,10 @@ void ResetModMatrixModulators()
     for (size_t i = 0; i < static_cast<int>(ModSource::COUNT_MOD_SOURCES); i++)
     {
         modulators[i].value = 0.0f;
+        for (size_t j = 0; j < VOICE_NUM; j++)
+        {
+            modulators[i].valueVoices[j] = 0.0f;
+        }
     }
 }
 

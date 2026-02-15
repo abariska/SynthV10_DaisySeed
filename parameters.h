@@ -8,6 +8,7 @@
 #include "oscillator.h"
 #include "display.h"
 #include "effects.h"
+#include "globals.h"
 
 // Required for array structures
 #define OSC_NUM 3
@@ -114,6 +115,17 @@ const P OSC_DETUNE[OSC_NUM] = {P::OSC_DETUNE_1, P::OSC_DETUNE_2, P::OSC_DETUNE_3
 const P OSC_AMP[OSC_NUM] = {P::OSC_AMP_1, P::OSC_AMP_2, P::OSC_AMP_3};
 const P OSC_PWM[OSC_NUM] = {P::OSC_PWM_1, P::OSC_PWM_2, P::OSC_PWM_3};
 const P OSC_ACTIVE[OSC_NUM] = {P::OSC_ACTIVE_1, P::OSC_ACTIVE_2, P::OSC_ACTIVE_3};
+
+const P FILTER[] = {P::FILTER_MODE, P::FILTER_CUTOFF, P::FILTER_RESONANCE, P::FILTER_DRIVE};
+const P ADSR[] = {P::ADSR_ATTACK, P::ADSR_DECAY, P::ADSR_SUSTAIN, P::ADSR_RELEASE};
+const P MOD_LFO[] = {P::MOD_LFO_WAVEFORM, P::MOD_LFO_FREQ, P::MOD_LFO_DEPTH, P::MOD_LFO_TRIGGER, P::MOD_LFO_ACTIVE};
+const P MOD_ADSR[] = {P::MOD_ADSR_ATTACK, P::MOD_ADSR_DECAY, P::MOD_ADSR_SUSTAIN, P::MOD_ADSR_RELEASE};
+const P OVERDRIVE[] = {P::EFFECT_OVERDRIVE_DRIVE};
+const P CHORUS[] = {P::EFFECT_CHORUS_FREQ, P::EFFECT_CHORUS_DEPTH, P::EFFECT_CHORUS_FBK, P::EFFECT_CHORUS_DELAY};
+const P COMPRESSOR[] = {P::EFFECT_COMPRESSOR_ATTACK, P::EFFECT_COMPRESSOR_RELEASE, P::EFFECT_COMPRESSOR_THRESHOLD, P::EFFECT_COMPRESSOR_RATIO, P::EFFECT_COMPRESSOR_MAKEUP};
+const P FLANGER[] = {P::EFFECT_FLANGER_FEEDBACK, P::EFFECT_FLANGER_LFO_DEPTH, P::EFFECT_FLANGER_LFO_FREQ, P::EFFECT_FLANGER_DELAY};
+const P AUTOWAH[] = {P::EFFECT_AUTOWAH_WAH, P::EFFECT_AUTOWAH_LEVEL};
+const P REVERB[] = {P::EFFECT_REVERB_FEEDBACK, P::EFFECT_REVERB_LPFREQ};
 
 const P EFFECT_SLOT_ACTIVE[2] = {P::EFFECT_SLOT_1_ACTIVE, P::EFFECT_SLOT_2_ACTIVE};
 const P EFFECT_SLOT_DRYWET[2] = {P::EFFECT_SLOT_1_DRYWET, P::EFFECT_SLOT_2_DRYWET};
@@ -294,6 +306,7 @@ struct Modulator
 {
     ModSource source;
     float value;
+    float valueVoices[VOICE_NUM];
     const char *label;
     bool isVoiceRelated;
 };
@@ -307,6 +320,10 @@ public:
     {
         modSource.source = ModSource::NONE;
         modSource.value = 0.0f;
+        for (size_t i = 0; i < VOICE_NUM; i++)
+        {
+            modSource.valueVoices[i] = 0.0f;
+        }
         modSource.label = "-";
         modSource.isVoiceRelated = false;
         modTarget = ParamUnitName::NONE;
@@ -340,21 +357,36 @@ public:
     {
         modSource.value = 0.0f;
         modAmount = 0.0f;
+        for (size_t i = 0; i < VOICE_NUM; i++)
+        {
+            modSource.valueVoices[i] = 0.0f;
+        }
     }
 
-    void RunMod()
+    void RunMod(uint8_t voice_num = 0)
     {
+        if (modSource.isVoiceRelated)
+        {
+            float modValue = modulators[static_cast<int>(modSource.source)].valueVoices[voice_num];
+            modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f
+                                                                : modValue;
+            modValue = modValue * modAmount;
+            if (paramManager.GetUnit(GetModTarget()) == ParamUnit::FREQ)
+            {
+                float ratio = GetFreqModTableValue(modAmount * 12.0f); 
+                modValue = modValue * ratio;
+            }
+            paramManager.SetModifier(modTarget, modValue);
+        }
+        else
+        {
         float modValue = GetModSourceValue();
         modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f
                                                                 : modValue;
 
         modValue = modValue * modAmount;
-        if (paramManager.GetUnit(GetModTarget()) == ParamUnit::FREQ)
-        {
-            float ratio = GetFreqModTableValue(modAmount * 12.0f); 
-            modValue = modValue * ratio;
-        }
         paramManager.SetModifier(modTarget, modValue);
+        }
         SetAudioDirtyFlag(modTarget);
     }
     

@@ -1,9 +1,8 @@
 #ifndef GLOBALS_H
 #define GLOBALS_H
 
-#include "log_uart.h"
-
-#define VOICE_NUM 5 
+#define VOICE_NUM 4
+#define OSC_NUM 3
 
 extern int encoderIncs[5];
 extern bool shift_pressed;

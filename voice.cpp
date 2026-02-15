@@ -36,7 +36,6 @@ static bool cached_mono = false;
 static bool cached_legato = false;
 static float cached_pan = 0.0f;
 static bool cached_lfo_trigger = false;
-static float cached_adsr_mod_value[VOICE_NUM] = {0.0f};
 float cached_master_volume = 0.0f;
 
 static int cached_waveform[OSC_NUM];
@@ -45,7 +44,7 @@ static float cached_pw[OSC_NUM];
 static float cached_amp[OSC_NUM];
 
 float voice_pan[VOICE_NUM] = {
-    0.0f, 0.5f, -0.5f, 1.0f, -1.0f};
+    0.0f, 0.5f, -0.5f, 1.0f};
 
 float panningTable[PANNING_TABLE_SIZE][2] = {{0.0f}}; 
 
@@ -89,7 +88,7 @@ void ModSourcesProcess()
     modulators[static_cast<int>(M::LFO)].value = lfo_value;
     for (size_t v = 0; v < VOICE_NUM; v++)
     {
-        cached_adsr_mod_value[v] = voice[v].adsrMod.Process(voice[v].gate);
+        modulators[static_cast<int>(M::ADSR)].valueVoices[v] = voice[v].adsrMod.Process(voice[v].gate);
     }
     modulators[static_cast<int>(M::ADSR)].value = adsrModulator.Process(globalGate);
 
@@ -362,7 +361,7 @@ void UpdateSynthParams()
                 cached_waveform[oscId] = static_cast<int>(paramManager.GetValue(OSC_WAVEFORM[oscId]));
                 cached_pw[oscId] = paramManager.GetValue(OSC_PWM[oscId]);
                 cached_active[oscId] = paramManager.GetValue(OSC_ACTIVE[oscId]);
-                cached_amp[oscId] = paramManager.GetValue(OSC_AMP[oscId]);
+                // cached_amp[oscId] = paramManager.GetValue(OSC_AMP[oscId]);
             }
 
             for (size_t v = 0; v < VOICE_NUM; ++v)
@@ -462,22 +461,61 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
     {   
         float phase = voice[v].osc[0].GetPhase();
         float voice_out = 0.0f;
+        float osc_amp[OSC_NUM] = {0.0f};
+        float osc_pw[OSC_NUM] = {0.0f};
+        float freq[OSC_NUM] = {0.0f};
 
-
-        // for (size_t m = 0; m < MOD_MATRIX_NUM; m++)
-        // {
-        //     if (currentPreset.modMtx[m].IsModSourceVoiceRelated())
-        //     {
-        //         modulators[static_cast<int>(M::ADSR)].value = cached_adsr_mod_value[v];
-        //         currentPreset.modMtx[m].RunMod();
-        //     }
-            
-        // }
+        for (size_t m = 0; m < MOD_MATRIX_NUM; m++)
+        {
+            if (currentPreset.modMtx[m].IsModSourceVoiceRelated())
+            {
+                currentPreset.modMtx[m].RunMod(v);
+                if (currentPreset.modMtx[m].GetModTarget() == P::FILTER_CUTOFF)
+                {
+                    voice[v].flt.SetFreq(paramManager.GetValue(P::FILTER_CUTOFF));
+                } else if (currentPreset.modMtx[m].GetModTarget() == P::FILTER_RESONANCE)
+                {
+                    voice[v].flt.SetRes(paramManager.GetValue(P::FILTER_RESONANCE));
+                } else if (currentPreset.modMtx[m].GetModTarget() == P::OSC_FREQ_1)
+                {
+                    voice[v].osc[0].SetFreq(paramManager.GetValue(P::OSC_FREQ_1));
+                } else if (currentPreset.modMtx[m].GetModTarget() == P::OSC_FREQ_2)
+                {
+                    voice[v].osc[1].SetFreq(paramManager.GetValue(P::OSC_FREQ_2));
+                } else if (currentPreset.modMtx[m].GetModTarget() == P::OSC_FREQ_3)
+                {
+                    voice[v].osc[2].SetFreq(paramManager.GetValue(P::OSC_FREQ_3));
+                } else if (currentPreset.modMtx[m].GetModTarget() == P::OSC_AMP_1)
+                {
+                    voice[v].osc[0].SetAmp(paramManager.GetValue(P::OSC_AMP_1) * voice[v].vel);
+                } else if (currentPreset.modMtx[m].GetModTarget() == P::OSC_AMP_2)
+                {
+                    voice[v].osc[1].SetAmp(paramManager.GetValue(P::OSC_AMP_2) * voice[v].vel);
+                } else if (currentPreset.modMtx[m].GetModTarget() == P::OSC_AMP_3)
+                {
+                    voice[v].osc[2].SetAmp(paramManager.GetValue(P::OSC_AMP_3) * voice[v].vel);
+                }
+                else if (currentPreset.modMtx[m].GetModTarget() == P::OSC_PWM_1)
+                {
+                    voice[v].osc[0].SetPw(paramManager.GetValue(P::OSC_PWM_1));
+                } else if (currentPreset.modMtx[m].GetModTarget() == P::OSC_PWM_2)
+                {
+                    voice[v].osc[1].SetPw(paramManager.GetValue(P::OSC_PWM_2));
+                } else if (currentPreset.modMtx[m].GetModTarget() == P::OSC_PWM_3)
+                {
+                    voice[v].osc[2].SetPw(paramManager.GetValue(P::OSC_PWM_3));
+                }
+            } 
+            else
+            {
+                currentPreset.modMtx[m].RunMod();
+            }
+        }
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
             voice[v].final_freq[oscId] = paramManager.GetValue(OSC_FREQ[oscId]);
-            voice[v].final_amp[oscId] = cached_amp[oscId] * voice[v].vel;
+            voice[v].final_amp[oscId] = paramManager.GetValue(OSC_AMP[oscId]) * voice[v].vel;
             voice[v].osc[oscId].SetFreq(voice[v].final_freq[oscId]);
             voice[v].osc[oscId].SetAmp(voice[v].final_amp[oscId]);
             if (isOscSyncNeeded[0] || isOscSyncNeeded[oscId] || isModAffectsOscFreq > 0)
