@@ -644,9 +644,15 @@ void EditModBlock()
             target += dir;
             shift += dir;
             
-            if (target <= (int)P::NONE || target >= (int)P::COUNT_PARAMS - 1)
+            if (target <= (int)P::NONE)
+            {
+                target = (int)P::NONE;
+                break;
+            } 
+            else if (target >= (int)P::COUNT_PARAMS - 1)
             {
                 target = oldTarget;
+                break;
             }
         }
 

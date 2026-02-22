@@ -296,7 +296,7 @@ float SynthParameter::GetValue()
     case ParamUnit::PICTURE:
     case ParamUnit::TEXT:
     case ParamUnit::UNITLESS:
-        return static_cast<float>(GetInt());
+        return GetInt();
         break;
     case ParamUnit::PERCENT:
         value = norm_value;
@@ -572,7 +572,7 @@ void SetAudioDirtyFlag(ParamUnitName param) {
     else if (param == P::EFFECT_OVERDRIVE_DRIVE) {
         dirty.driveParams = true;
     }
-    else if (param == P::EFFECT_AUTOWAH_WAH) {
+    else if (param >= P::EFFECT_AUTOWAH_WAH && param <= P::EFFECT_AUTOWAH_LEVEL) {
         dirty.wahParams = true;
     }
     else if (param >= P::GLOBAL_MONO && param <= P::GLOBAL_MASTER_VOLUME) {

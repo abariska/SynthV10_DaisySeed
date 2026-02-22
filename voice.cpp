@@ -329,7 +329,7 @@ void UpdateSynthParams()
                 static float osc_data_prev[OSC_NUM] = {0.0f};
                 float osc_pitch = paramManager.GetValue(OSC_PITCH[oscId]);
                 float osc_detune = paramManager.GetValue(OSC_DETUNE[oscId]);
-                float osc_data = osc_pitch + osc_detune + pitch_bend_multiplier;
+                float osc_data = osc_pitch + osc_detune;
 
                 if (fabsf(osc_data - osc_data_prev[oscId]) > 0.000001f)
                 {
@@ -339,9 +339,9 @@ void UpdateSynthParams()
 
                 cached_pitch[oscId] = GetPitchTableValue(osc_pitch);
                 cached_detune[oscId] = GetDetuneTableValue(osc_detune);   
-                osc_freq_factor[oscId] = cached_pitch[oscId] * cached_detune[oscId] * pitch_bend_multiplier;
+                osc_freq_factor[oscId] = cached_pitch[oscId] * cached_detune[oscId];
 
-                cached_waveform[oscId] = static_cast<int>(paramManager.GetValue(OSC_WAVEFORM[oscId]));
+                cached_waveform[oscId] = (paramManager.GetValue(OSC_WAVEFORM[oscId]));
                 cached_pw[oscId] = paramManager.GetValue(OSC_PWM[oscId]);
                 cached_active[oscId] = paramManager.GetValue(OSC_ACTIVE[oscId]);
                 cached_amp[oscId] = paramManager.GetValue(OSC_AMP[oscId]);
@@ -356,11 +356,6 @@ void UpdateSynthParams()
                     voice[v].osc[oscId].SetWaveform(cached_waveform[oscId]);
                     voice[v].osc[oscId].SetPw(cached_pw[oscId]);
                     voice[v].osc[oscId].SetPortamento(cached_portamento);
-                    paramManager.SetValue(OSC_FREQ[oscId], voice[v].freq * osc_freq_factor[oscId]);
-                    __disable_irq();
-                    voice[v].final_freq[oscId] = paramManager.GetValue(OSC_FREQ[oscId]);
-                    voice[v].final_amp[oscId] = cached_amp[oscId] * voice[v].vel;
-                    __enable_irq();
                 }   
                 if (dirty.adsrParams)
                 {
@@ -395,7 +390,7 @@ void UpdateSynthParams()
         }
         dirty.filterParams = false;
     }
-    else if (dirty.flangerParams)
+    if (dirty.flangerParams)
     {
         fx.flanger.SetFeedback(paramManager.GetValue(P::EFFECT_FLANGER_FEEDBACK));
         fx.flanger.SetLfoDepth(paramManager.GetValue(P::EFFECT_FLANGER_LFO_DEPTH));
@@ -403,18 +398,18 @@ void UpdateSynthParams()
         fx.flanger.SetDelay(paramManager.GetValue(P::EFFECT_FLANGER_DELAY));
         dirty.flangerParams = false;
     }
-    else if (dirty.wahParams)
+    if (dirty.wahParams)
     {
         fx.wah.SetWah(paramManager.GetValue(P::EFFECT_AUTOWAH_WAH));
         fx.wah.SetLevel(paramManager.GetValue(P::EFFECT_AUTOWAH_LEVEL));
         dirty.wahParams = false;
     }
-    else if (dirty.driveParams)
+    if (dirty.driveParams)
     {
         fx.drive.SetDrive(paramManager.GetValue(P::EFFECT_OVERDRIVE_DRIVE));
         dirty.driveParams = false;
     }
-    else if (dirty.chorusParams)
+    if (dirty.chorusParams)
     {
         fx.chorus.SetLfoFreq(paramManager.GetValue(P::EFFECT_CHORUS_FREQ));
         fx.chorus.SetLfoDepth(paramManager.GetValue(P::EFFECT_CHORUS_DEPTH));
@@ -422,7 +417,7 @@ void UpdateSynthParams()
         fx.chorus.SetDelay(paramManager.GetValue(P::EFFECT_CHORUS_DELAY));
         dirty.chorusParams = false;
     }
-    else if (dirty.compressorParams)
+    if (dirty.compressorParams)
     {
         fx.compressor.SetAttack(paramManager.GetValue(P::EFFECT_COMPRESSOR_ATTACK));
         fx.compressor.SetRelease(paramManager.GetValue(P::EFFECT_COMPRESSOR_RELEASE));
@@ -431,7 +426,7 @@ void UpdateSynthParams()
         fx.compressor.SetMakeup(paramManager.GetValue(P::EFFECT_COMPRESSOR_MAKEUP));
         dirty.compressorParams = false;
     }
-    else if (dirty.reverbParams)
+    if (dirty.reverbParams)
     {
         fx.reverb.SetFeedback(paramManager.GetValue(P::EFFECT_REVERB_FEEDBACK));
         fx.reverb.SetLpFreq(paramManager.GetValue(P::EFFECT_REVERB_LPFREQ));
@@ -451,8 +446,9 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
-            voice[v].osc[oscId].SetFreq(voice[v].final_freq[oscId]);
-            voice[v].osc[oscId].SetAmp(voice[v].final_amp[oscId]);
+            paramManager.SetValue(OSC_FREQ[oscId], voice[v].freq * osc_freq_factor[oscId] * pitch_bend_multiplier);
+            voice[v].osc[oscId].SetFreq(paramManager.GetValue(OSC_FREQ[oscId]));
+            voice[v].osc[oscId].SetAmp(cached_amp[oscId] * voice[v].vel);
             if (isOscSyncNeeded[0] || isOscSyncNeeded[oscId] || isModAffectsOscFreq > 0)
             {
                 if (oscId != 0)
