@@ -4,6 +4,7 @@
 #include "log_uart.h"
 
 #define VOICE_NUM 5 
+#define OSC_NUM 3
 
 extern int encoderIncs[5];
 extern bool shift_pressed;

@@ -47,21 +47,6 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
     UsbMidiProcess(); 
     UartMidiProcess();
 
-    for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
-    {
-        currentPreset.modMtx[i].RunMod();
-        P modTarget = currentPreset.modMtx[i].GetModTarget();
-        if (modTarget == P::OSC_FREQ_1 || modTarget == P::OSC_FREQ_2 || modTarget == P::OSC_FREQ_3)
-        {
-            static float oldModAmt = 0.0f;
-            float modAmt = currentPreset.modMtx[i].GetModAmount();
-            if (fabsf(modAmt - oldModAmt) > 0.000001f) {
-                isModAffectsOscFreq++;
-            } 
-            oldModAmt = modAmt;
-        }
-    }
-
     for (size_t i = 0; i < size; i += 2)
     {
         float outL = 0.0f;
@@ -69,7 +54,7 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         float inL = in[i] * 0.5f;
         float inR = in[i+1] * 0.5f;
 
-        ModSourcesProcess();
+        ModProcess();
         VoiceProcess(outL, outR); 
         float fx1_outL = 0.0f;
         float fx1_outR = 0.0f;

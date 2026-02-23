@@ -30,18 +30,22 @@ using namespace daisysp;
 extern LadderFilter flt[2];
 extern OscLfo lfo;
 extern float samplerate;
-extern float lfo_value;
+extern float lfo_output;
 extern float midiNoteToFreqTable[128];
 extern float pitchTable[PITCH_TABLE_SIZE];
 extern float detuneTable[DETUNE_TABLE_SIZE];
 extern float pitchBendTable[PITCH_BEND_TABLE_SIZE];
 extern bool isOscSyncNeeded[OSC_NUM];
 extern float cached_master_volume;
+extern float freq_mod[VOICE_NUM];
+extern float filter_mod[VOICE_NUM];
+extern float amp_mod[VOICE_NUM];
 
 struct Voice
 {
     Osc     osc[OSC_NUM];
     Adsr    adsr;
+    Adsr    mod_adsr;
     Random  rnd[OSC_NUM];
     float   phaseOffset;
     float   pitch_correction[OSC_NUM];
@@ -55,6 +59,7 @@ struct Voice
     int16_t  note       = -1;
     float    freq       = 0.0f;
     float    vel        = 1.0f;
+    float modulation = 1.0f;
     std::uint32_t timestamp  = 0;
 };
 
@@ -68,7 +73,7 @@ void SynthInit(float samplerate, int blocksize);
 void VoiceProcess(float &out_sigL, float &out_sigR);
 inline void VoicePanning(uint8_t voice_num, float &voice_sig, float &out_L, float &out_R);
 inline float softClip(float x);
-void ModSourcesProcess();
+void ModProcess();
 inline void InitPitchTables();
 void UpdateModSourcesParams();
 void UpdateSynthParams();

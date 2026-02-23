@@ -56,9 +56,12 @@ bool polyToMonoSwitch = false;
 
 bool isOscSyncNeeded[OSC_NUM] = {true};
 bool gate = false;
-float lfo_value = 0.0f;
+float lfo_output = 0.0f;
 bool isVoiceActive[VOICE_NUM] = {false};
 int isModAffectsOscFreq = 0;
+float freq_mod[VOICE_NUM] = {1.0f};
+float filter_mod[VOICE_NUM] = {1.0f};
+float amp_mod[VOICE_NUM] = {1.0f};
 
 void SynthInit(float samplerate, int blocksize)
 {
@@ -75,7 +78,7 @@ void SynthInit(float samplerate, int blocksize)
             voice[i].osc[j].SetPhaseOffset(voice[i].phaseOffset);
         }
         voice[i].adsr.Init(samplerate, blocksize);
-        
+        voice[i].mod_adsr.Init(samplerate, blocksize);
     }
     flt[0].Init(samplerate);
     flt[1].Init(samplerate);
@@ -84,14 +87,60 @@ void SynthInit(float samplerate, int blocksize)
     EffectsInit(samplerate);
 }
 
-void ModSourcesProcess()
+void ModProcess()
 {
-    lfo_value = lfo.Process();
+    // float lfo_value = 1.0f;
+    // float adsr_value = 1.0f;
+    // float mod_wheel_value = 1.0f;
+    // float aftertouch_value = 1.0f;
+    // float velocity_value = 1.0f;
+
+    float lfo_value = lfo.Process();
+    lfo_output = lfo_value;
     modulators[static_cast<int>(M::LFO)].value = lfo_value;
     modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(gate);
+    for (size_t i = 0; i < VOICE_NUM; i++)
+    {
+        modulators[static_cast<int>(M::ADSR)].voice_related_value[i] = voice[i].adsr.Process(voice[i].gate);
+        modulators[static_cast<int>(M::VELOCITY)].voice_related_value[i] = voice[i].vel;
+    }
 
     modulators[static_cast<int>(M::MOD_WHEEL)].value = mod_wheel_value;
     modulators[static_cast<int>(M::AFTERTOUCH)].value = aftertouch_value;
+
+
+    for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
+    { 
+        P modTarget = currentPreset.modMtx[i].GetModTarget();
+        if (modTarget == P::NONE) continue;
+
+        M modSource = currentPreset.modMtx[i].GetModSource();
+        if (modMatrix[i].isVoiceRelated)
+        {
+            for (size_t v = 0; v < VOICE_NUM; v++)
+            {
+                freq_mod[v] = currentPreset.modMtx[i].GetModSourceValue(v);
+                filter_mod[v] = currentPreset.modMtx[i].GetModSourceValue(v);
+                amp_mod[v] = currentPreset.modMtx[i].GetModSourceValue(v);
+            }
+        }
+        else {
+            freq_mod[i] = 1.0f;
+            filter_mod[i] = 1.0f;
+            amp_mod[i] = 1.0f;
+        }
+
+        currentPreset.modMtx[i].RunMod();        
+        if (modTarget == P::OSC_FREQ_1 || modTarget == P::OSC_FREQ_2 || modTarget == P::OSC_FREQ_3)
+        {
+            static float oldModAmt = 0.0f;
+            float modAmt = currentPreset.modMtx[i].GetModAmount();
+            if (fabsf(modAmt - oldModAmt) > 0.000001f) {
+                isModAffectsOscFreq++;
+            } 
+            oldModAmt = modAmt;
+        }
+    }
 }
 
 void UpdateModSourcesParams()
@@ -447,8 +496,8 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
             paramManager.SetValue(OSC_FREQ[oscId], voice[v].freq * osc_freq_factor[oscId] * pitch_bend_multiplier);
-            voice[v].osc[oscId].SetFreq(paramManager.GetValue(OSC_FREQ[oscId]));
-            voice[v].osc[oscId].SetAmp(cached_amp[oscId] * voice[v].vel);
+            voice[v].osc[oscId].SetFreq(paramManager.GetValue(OSC_FREQ[oscId]) * freq_mod[v]);
+            voice[v].osc[oscId].SetAmp(cached_amp[oscId] * amp_mod[v]);
             if (isOscSyncNeeded[0] || isOscSyncNeeded[oscId] || isModAffectsOscFreq > 0)
             {
                 if (oscId != 0)
@@ -462,8 +511,9 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
             }
 
             float osc_out = voice[v].osc[oscId].Process();
-            voice_out += osc_out;
+            voice_out += flt[0].Process(osc_out) * filter_mod[v];  
         }
+        
         float env = voice[v].adsr.Process(voice[v].gate);
         float voice_out_env = voice_out * env / VOICE_NUM;
         float voiceL, voiceR;
@@ -480,8 +530,8 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
     }
     isModAffectsOscFreq = 0;
     
-    outL = flt[0].Process(outL);   
-    outR = flt[1].Process(outR);
+
+
 
     outL = softClip(outL);
     outR = softClip(outR);   

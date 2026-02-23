@@ -169,7 +169,7 @@ void UpdateLeds()
 }
 void UpdatePWMLeds()
 {
-    sx1509_leds.WritePWM(LED_LFO, 255 - (int)(lfo_value * 255));
+    sx1509_leds.WritePWM(LED_LFO, 255 - (int)(lfo_output * 255));
 }
 void UpdateVoiceLeds()
 {
