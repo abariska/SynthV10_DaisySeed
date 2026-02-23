@@ -86,10 +86,14 @@ float Osc::Process()
         out += poly_blep(phase, phaseInc) * blepGain;
         break;
     case PULSE:
+    {
         out = phase < pw ? 1.0f : -1.0f;
         out += poly_blep(phase, phaseInc) * blepGain;
-        out -= poly_blep(fmodf(phase + (1.0f - pw), 1.0f), phaseInc) * blepGain;
+        float phase2 = phase + (1.0f - pw);
+        phase2 -= (phase2 >= 1.0f) ? 1.0f : 0.0f;
+        out -= poly_blep(phase2, phaseInc) * blepGain;
         break;
+    }
     case NOISE:
         noiseState = noiseState * 1664525U + 1013904223U;
         out = (int32_t(noiseState)) / 2147483648.0f;
