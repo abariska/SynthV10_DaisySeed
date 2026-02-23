@@ -16,9 +16,6 @@
 
 enum class ParamUnitName; 
 
-extern float GetPitchTableValue(int index);
-extern float GetDetuneTableValue(int index);
-extern float GetPitchBendTableValue(int index);
 extern float GetFreqModTableValue(int index);
 void SetAudioDirtyFlag(ParamUnitName param);
 void SynthVoiceReset(uint8_t voice_num);

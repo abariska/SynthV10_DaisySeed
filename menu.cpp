@@ -1,15 +1,6 @@
 #include "menu.h"
-#include "OLED_Greyscale_Daisy/fonts.h"
-#include "display.h"
-
-#include "parameters.h"
-#include "effects.h"
-#include "sx1509_expander.h"
 #include "midi_handler.h"
-#include "GUI_Paint.h"
 #include "main.h"
-#include "log_uart.h"
-#include "globals.h"
 
 using P = ParamUnitName;
 using M = ModSource;

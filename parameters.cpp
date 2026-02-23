@@ -1,13 +1,6 @@
 #include "parameters.h"
-#include "daisy_seed.h"
-#include "daisysp.h" // Add for using constants
-#include "oscillator.h"
-#include "display.h"
-#include "log_uart.h"
 #include "per/qspi.h"
 #include "sys/dma.h"
-#include <stdint.h> 
-#include <cstdint>
 #include "voice.h"
 
 ParamSlot paramSlots[NUM_PARAM_BLOCKS];
@@ -542,7 +535,7 @@ void SetAudioDirtyFlag(ParamUnitName param) {
 
     paramManager.GetParam(param).isDirty = true;
 
-    if (param >= P::OSC_FREQ_1 && param <= P::OSC_ACTIVE_3) {
+    if (param >= P::OSC_WAVEFORM_1 && param <= P::OSC_ACTIVE_3) {
         dirty.oscParams = true;
     }
     if (param >= P::ADSR_ATTACK && param <= P::ADSR_RELEASE) {

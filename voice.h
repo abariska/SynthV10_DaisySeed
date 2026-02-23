@@ -1,14 +1,7 @@
 #ifndef VOICE_H
 #define VOICE_H
 
-#include <array>
-#include <stdint.h>
-#include <cmath>
-#include "oscillator.h"
 #include "parameters.h"
-#include "daisy.h"
-#include "daisysp.h"
-#include "daisysp-lgpl.h"
 #include "globals.h"
 
 #define SEMITONE_RATIO 1.0594630943592953f
@@ -70,6 +63,10 @@ inline void VoicePanning(uint8_t voice_num, float &voice_sig, float &out_L, floa
 inline float softClip(float x);
 void ModSourcesProcess();
 inline void InitPitchTables();
+float GetPitchTableValue(int index);
+float GetDetuneTableValue(int index);
+float GetPitchBendTableValue(int index);
+float GetVelocityToAmpTableValue(uint8_t velocity);
 void UpdateModSourcesParams();
 void UpdateSynthParams();
 inline void PushNote(uint8_t note);

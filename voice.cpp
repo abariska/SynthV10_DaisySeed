@@ -1,9 +1,5 @@
 #include "voice.h"
-#include "daisy_seed.h"
-#include "oscillator.h"
-#include "parameters.h"
 #include "midi_handler.h"
-#include "sx1509_expander.h"
 
 
 #define DTCM __attribute__((section(".dtcmram_bss")))

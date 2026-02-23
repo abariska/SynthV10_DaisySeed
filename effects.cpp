@@ -1,6 +1,5 @@
 #include "effects.h"
 #include "parameters.h"
-#include "reverb.h"
 
 FXParam fx;
 

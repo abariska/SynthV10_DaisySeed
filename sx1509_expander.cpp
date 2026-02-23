@@ -1,11 +1,7 @@
-#include <stdint.h>
 #include "sx1509_expander.h"
-#include "daisy_core.h"
 #include "parameters.h"
 #include "menu.h"
-#include "log_uart.h"
 #include "voice.h"
-#include "globals.h"
 
 using namespace std;
 

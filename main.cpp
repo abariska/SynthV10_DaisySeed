@@ -1,14 +1,6 @@
 #include "main.h"
-#include "daisy.h"
-#include "sx1509_expander.h"
-#include "midi_handler.h"
-#include "oscillator.h"
-#include "display.h"
-#include "log_uart.h"
-#include "parameters.h"
-#include "display.h"
-#include "globals.h"
 #include "controls.h"
+#include "log_uart.h"
 
 using namespace daisy;
 
@@ -20,9 +12,6 @@ TimerHandle timer_500ms;
 TimerHandle timer_1ms;
 ProcessType process_type;
 
-extern Preset currentPreset;
-
-int test = 123;
 float samplerate = 0;
 float scope_data[128];
 int scope_data_index = 0;

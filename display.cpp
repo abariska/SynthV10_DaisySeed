@@ -1,9 +1,6 @@
 
 #include "display.h"
 #include "menu.h"
-
-#include "effects.h"
-#include "parameters.h"
 #include "voice.h"
 
 CpuLoadMeter cpu_load;
