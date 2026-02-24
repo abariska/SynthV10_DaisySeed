@@ -72,6 +72,12 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, FONT_LIGHT_16, textColor, bgColor);
         DrawFilterModeText(value);
     }
+    else if (param_unit == ParamUnit::BOOL)
+    {
+        value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, FONT_LIGHT_16, textColor, bgColor);
+        Paint_TextCentered(value ? "On" : "Off", 0, PARAM_BLOCK_WIDTH, yBlockValue, FONT_BOLD_18, textColor, bgColor);
+    }
     else
     {
         switch (param_unit)
