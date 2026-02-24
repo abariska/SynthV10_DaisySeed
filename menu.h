@@ -48,7 +48,6 @@ void SetPageName(const char *name);
 void ToggleActiveRow();
 void EncoderChangeStore();
 void UpdateStoreLed();
-void DrawWaveformImage(int waveform, bool custom_color = false, UBYTE color = 0xFF);
 void DrawFilterModeText(int mode);
 
 uint8_t GetActiveParamIndex(uint8_t encoderIndex); // Повертає індекс активного параметра для енкодера

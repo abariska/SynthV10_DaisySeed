@@ -64,7 +64,7 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     {
         value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, FONT_LIGHT_16, textColor, bgColor);
-        DrawWaveformImage(value, true, (UBYTE)textColor);
+        DrawWaveformImage(paramSlots[blockIndex].target_param, (int)value, true, (UBYTE)textColor);
     }
     else if (param_unit == ParamUnit::TEXT)
     {

@@ -11,11 +11,21 @@ enum OscWaveforms
 {
     SIN,
     TRIANGLE,
-    SAW_DOWN,
-    SAW_UP,
+    SAW,
     PULSE,
     NOISE,
     WAVE_COUNT,
+};
+
+enum OscWaveformsLfo
+{
+    LFO_SIN,
+    LFO_TRIANGLE,
+    LFO_SAW_DOWN,
+    LFO_SAW_UP,
+    LFO_PULSE,
+    LFO_NOISE,
+    LFO_WAVE_COUNT,
 };
 
 class Osc
@@ -75,7 +85,7 @@ public:
 
     void SetFreq(float frequency) { freq = frequency; }
     void SetAmp(float amplitude) { amp = amplitude; }
-    void SetWaveform(int wf) { wave = static_cast<OscWaveforms>(wf); }
+    void SetWaveform(int wf) { wave = static_cast<OscWaveformsLfo>(wf); }
     void SyncPhaseToStart() { phase = 1.0f; }
     float Process();
 
@@ -87,7 +97,7 @@ private:
     float amp;
     uint32_t noiseState;
     float noiseValue;
-    OscWaveforms wave;
+    OscWaveformsLfo wave;
     uint32_t timer;
 };
 #endif

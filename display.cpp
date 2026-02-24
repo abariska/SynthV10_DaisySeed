@@ -4,6 +4,7 @@
 #include "voice.h"
 
 CpuLoadMeter cpu_load;
+static const int oscToDisplay[] = {0, 1, 2, 4, 5}; // SIN, TRI, SAW_DOWN, PULSE→4, NOISE→5 
 extern Preset currentPreset;
 extern float scope_data[128];
 extern int scope_data_index;
@@ -441,27 +442,31 @@ void DrawModMatrixPage()
     DrawModMatrixBlocks(); 
 }
 
-void DrawWaveformImage(int waveform, bool custom_color, UBYTE color)
+void DrawWaveformImage(ParamUnitName param, int waveform, bool custom_color, UBYTE color)
 {
+    if (param != P::MOD_LFO_WAVEFORM)
+    {
+        waveform = oscToDisplay[static_cast<int>(waveform)];
+    }
 
     switch (waveform)
     {
-    case 0: // SIN
+    case 0:
         Paint_BitMapCentered(sin_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
-    case 1: // TRI
+    case 1:
         Paint_BitMapCentered(tri_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
-    case 2: // SAW DOWN
+    case 2:
         Paint_BitMapCentered(saw_down_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
-    case 3: // SAW UP
+    case 3:
         Paint_BitMapCentered(saw_up_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
-    case 4: // SQR
+    case 4:
         Paint_BitMapCentered(sqr_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
-    case 5: // NOISE
+    case 5:
         Paint_BitMapCentered(noise_wave, WAVE_BUFFER_WIDTH, WAVE_BUFFER_HEIGHT, 4, PARAM_BLOCK_WIDTH, yBlockValue, custom_color, color);
         break;
     default:
