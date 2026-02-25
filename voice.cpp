@@ -39,11 +39,11 @@ static int cached_waveform[OSC_NUM];
 static bool cached_active[OSC_NUM];
 static float cached_pw[OSC_NUM];
 static float cached_amp[OSC_NUM];
-
-float voice_pan[VOICE_NUM] = {
-    0.0f, 0.5f, -0.5f, 1.0f, -1.0f};
+static float cached_pan_correction[VOICE_NUM][2]; // 0 - left, 1 - right
 
 float panningTable[PANNING_TABLE_SIZE][2] = {{0.0f}}; 
+float voice_pan_range[VOICE_NUM] = {
+    0.0f, 0.5f, -0.5f, 1.0f, -1.0f};
 
 uint8_t noteNum = 60;
 float frequency = 0;
@@ -302,6 +302,7 @@ void UpdateSynthParams()
 
         cached_legato = paramManager.GetBool(P::GLOBAL_LEGATO);
         cached_pan = paramManager.GetValue(P::GLOBAL_PAN);
+        VoicePanning();
         cached_master_volume = paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
         dirty.globalParams = false;
     }
@@ -443,7 +444,9 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
             paramManager.SetValue(OSC_FREQ[oscId], voice[v].freq * osc_freq_factor[oscId] * pitch_bend_multiplier);
-            voice[v].osc[oscId].SetFreq(paramManager.GetValue(OSC_FREQ[oscId]));
+            float freq = voice[v].freq * osc_freq_factor[oscId] * pitch_bend_multiplier;
+            float mod = paramManager.GetModifier(OSC_FREQ[oscId]);
+            voice[v].osc[oscId].SetFreq(freq * (1.0f + mod));
             voice[v].osc[oscId].SetAmp(cached_amp[oscId] * voice[v].vel);
             if (isOscSyncNeeded[0] || isOscSyncNeeded[oscId] || isModAffectsOscFreq > 0)
             {
@@ -462,10 +465,8 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
         }
         float env = voice[v].adsr.Process(voice[v].gate);
         float voice_out_env = voice_out * env / VOICE_NUM;
-        float voiceL, voiceR;
-        VoicePanning(v, voice_out_env, voiceL, voiceR);
-        outL += voiceL;
-        outR += voiceR;
+        outL += voice_out_env * cached_pan_correction[v][0];
+        outR += voice_out_env * cached_pan_correction[v][1];
         
         // if the voice is not active and the envelope is below 0.00001f, kill the voice
         if (!(voice[v].active && voice[v].gate) && env <= 0.000001f) 
@@ -558,27 +559,24 @@ inline float softClip(float x)
 inline void InitPanningTable()
 {
     for (int i = 0; i < PANNING_TABLE_SIZE; i++) {
-        float t = (float)i / PANNING_TABLE_SIZE;
-        panningTable[i][0] = sqrtf(t);
-        panningTable[i][1] = sqrtf(1.0f - t);
+        float t = (float)i / (PANNING_TABLE_SIZE - 1);
+        panningTable[i][0] = sqrtf(1.0f - t);
+        panningTable[i][1] = sqrtf(t);
     }
 }
 
-inline void VoicePanning(uint8_t voice_num, float &voice_sig, float &out_L, float &out_R)
+inline void VoicePanning()
 {
-    float globalPan = cached_pan;
-    
-    // Обчислити фінальну позицію: voice_pan * globalPan
-    float panPos = voice_pan[voice_num] * globalPan;  // -1..1
-    
-    // Конвертувати -1..1 → 0..1 для sqrt
-    float panNorm = (panPos + 1.0f) * 0.5f;  // 0..1
-    
-    int idx = (int)(panNorm * PANNING_TABLE_SIZE); 
-    
-    // З таблиці
-    out_L = voice_sig * panningTable[idx][0];
-    out_R = voice_sig * panningTable[idx][1];
+    for (size_t v = 0; v < VOICE_NUM; ++v)
+    {
+        // Обчислити фінальну позицію: voice_pan * globalPan
+        float panPos = voice_pan_range[v] * cached_pan;  // -1..1
+        // Конвертувати -1..1 → 0..1 для sqrt
+        float panNorm = (panPos + 1.0f) * 0.5f;  // 0..1
+        int idx = (int)(panNorm * (PANNING_TABLE_SIZE - 1)); 
+        cached_pan_correction[v][0] = panningTable[idx][0];
+        cached_pan_correction[v][1] = panningTable[idx][1];
+    }
 }
 
 void SynthVoiceReset(uint8_t voice_num){
