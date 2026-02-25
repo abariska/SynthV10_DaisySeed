@@ -59,7 +59,7 @@ void HandleNoteOff(uint8_t note_in);
 inline void HandlePitchBend(int16_t pitch_bend); 
 void SynthInit(float samplerate, int blocksize);
 void VoiceProcess(float &out_sigL, float &out_sigR);
-inline void VoicePanning();
+inline void VoicePanningInit();
 inline float softClip(float x);
 void ModSourcesProcess();
 inline void InitPitchTables();

@@ -78,6 +78,7 @@ void SynthInit(float samplerate, int blocksize)
     adsrMod.Init(samplerate, blocksize);
     lfo.Init(samplerate);
     EffectsInit(samplerate);
+    VoicePanningInit();
 }
 
 void ModSourcesProcess()
@@ -284,7 +285,7 @@ void UpdateSynthParams()
             cached_portamento = paramManager.GetValue(P::GLOBAL_PORTAMENTO);
             paramManager.GetParam(P::GLOBAL_PORTAMENTO).isDirty = false;
             dirty.oscParams = true;
-        } else cached_portamento = paramManager.GetValue(P::GLOBAL_PORTAMENTO);
+        } 
         
         if (paramManager.GetParam(P::GLOBAL_MONO).isDirty)
         {
@@ -296,13 +297,16 @@ void UpdateSynthParams()
             }
             paramManager.GetParam(P::GLOBAL_MONO).isDirty = false;
             dirty.oscParams = true;
-        } else {
-            cached_mono = paramManager.GetBool(P::GLOBAL_MONO);
         }
 
+        if (paramManager.GetParam(P::GLOBAL_PAN).isDirty)
+        {
+            cached_pan = paramManager.GetValue(P::GLOBAL_PAN);
+            paramManager.GetParam(P::GLOBAL_PAN).isDirty = false;
+            VoicePanningInit();
+        }
+        
         cached_legato = paramManager.GetBool(P::GLOBAL_LEGATO);
-        cached_pan = paramManager.GetValue(P::GLOBAL_PAN);
-        VoicePanning();
         cached_master_volume = paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
         dirty.globalParams = false;
     }
@@ -331,6 +335,11 @@ void UpdateSynthParams()
                 if (fabsf(osc_data - osc_data_prev[oscId]) > 0.000001f)
                 {
                     isOscSyncNeeded[oscId] = true;
+                    if (oscId == 0) 
+                    {
+                        isOscSyncNeeded[1] = true;
+                        isOscSyncNeeded[2] = true;
+                    }
                 } 
                 osc_data_prev[oscId] = osc_data;
 
@@ -436,6 +445,14 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
     float outL = 0.0f;
     float outR = 0.0f;
 
+    float modifier[OSC_NUM] = {0.0f};
+    float freq_factor[OSC_NUM] = {0.0f};
+    for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
+    {
+        modifier[oscId] = paramManager.GetModifier(OSC_FREQ[oscId]);
+        freq_factor[oscId] = osc_freq_factor[oscId] * pitch_bend_multiplier * modifier[oscId];
+    }
+
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {   
         float phase = voice[v].osc[0].GetPhase();
@@ -443,12 +460,10 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
 
         for (size_t oscId = 0; oscId < OSC_NUM; ++oscId)
         {
-            paramManager.SetValue(OSC_FREQ[oscId], voice[v].freq * osc_freq_factor[oscId] * pitch_bend_multiplier);
-            float freq = voice[v].freq * osc_freq_factor[oscId] * pitch_bend_multiplier;
-            float mod = paramManager.GetModifier(OSC_FREQ[oscId]);
-            voice[v].osc[oscId].SetFreq(freq * (1.0f + mod));
+            float freq = voice[v].freq * freq_factor[oscId];
+            voice[v].osc[oscId].SetFreq(freq);
             voice[v].osc[oscId].SetAmp(cached_amp[oscId] * voice[v].vel);
-            if (isOscSyncNeeded[0] || isOscSyncNeeded[oscId] || isModAffectsOscFreq > 0)
+            if (isOscSyncNeeded[oscId] || isModAffectsOscFreq > 0)
             {
                 if (oscId != 0)
                 { 
@@ -565,7 +580,7 @@ inline void InitPanningTable()
     }
 }
 
-inline void VoicePanning()
+inline void VoicePanningInit()
 {
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {
