@@ -8,9 +8,9 @@
 #include "oscillator.h"
 #include "display.h"
 #include "effects.h"
+#include "globals.h"
 
 // Required for array structures
-#define OSC_NUM 3
 #define PRESET_NUM 40
 #define MOD_MATRIX_NUM 7
 
@@ -291,6 +291,7 @@ struct Modulator
 {
     ModSource source;
     float value;
+    float voice_related_value[VOICE_NUM];
     const char *label;
 };
 
@@ -303,13 +304,17 @@ public:
     {
         modSource.source = ModSource::NONE;
         modSource.value = 0.0f;
+        for (size_t i = 0; i < VOICE_NUM; i++)
+        {
+            modSource.voice_related_value[i] = 0.0f;
+        }
         modSource.label = "-";
         modTarget = ParamUnitName::NONE;
         modAmount = 0.0f;
     }
 
 public:
-
+    bool isVoiceRelated = false;
     void SetModSource(ModSource source) { modSource.source = modulators[static_cast<int>(source)].source; }
     void SetModTarget(ParamUnitName target) { modTarget = target; }
     void SetModAmount(float amount) { modAmount = amount; }
@@ -317,6 +322,7 @@ public:
     float GetModAmount() const { return modAmount; }
     ModSource GetModSource() const{ return modSource.source; }
     float GetModSourceValue() const { return modulators[static_cast<int>(modSource.source)].value; }
+    float GetModSourceValue(size_t voice_num) const { return modulators[static_cast<int>(modSource.source)].voice_related_value[voice_num]; }
     const char *GetModSourceLabel() const { return modulators[static_cast<int>(modSource.source)].label; }
     ParamUnitName GetModTarget() const { return modTarget; }
     const char *GetModTargetLabel() const { return paramManager.GetFullLabel(modTarget); }
@@ -328,18 +334,30 @@ public:
 
     void RunMod()
     {
-        float modValue = GetModSourceValue();
-        modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f
-                                                                : modValue;
-
-        modValue = modValue * modAmount;
-        if (paramManager.GetUnit(GetModTarget()) == ParamUnit::FREQ)
+        if (isVoiceRelated)
         {
-            float ratio = GetFreqModTableValue(modAmount * 12.0f); 
-            modValue = modValue * ratio;
+            float modValue[VOICE_NUM] = {0.0f};
+            for (size_t i = 0; i < VOICE_NUM; i++)
+            {
+                modValue[i] = modulators[static_cast<int>(modSource.source)].voice_related_value[i];
+                modValue[i] = (modValue[i] < 0.0f) ? 0.0f : (modValue[i] > 1.0f) ? 1.0f : modValue[i];
+                modulators[static_cast<int>(modSource.source)].voice_related_value[i] = modValue[i] * modAmount;
+            }
         }
-        paramManager.SetModifier(modTarget, modValue);
-        SetAudioDirtyFlag(modTarget);
+        else
+        {
+            float modValue = modulators[static_cast<int>(modSource.source)].value;
+            modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f : modValue;
+
+            modValue = modValue * modAmount;
+            if (paramManager.GetUnit(GetModTarget()) == ParamUnit::FREQ)
+            {
+                float ratio = GetFreqModTableValue(modAmount * 12.0f); 
+                modValue = modValue * ratio;
+            }
+            paramManager.SetModifier(modTarget, modValue);
+            SetAudioDirtyFlag(modTarget);
+        }
     }
     
 private:

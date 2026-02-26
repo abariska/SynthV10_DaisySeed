@@ -12,6 +12,7 @@ extern bool page_need_update;
 static const size_t PAGE_SIZE = 1024;           // округлюємо до 512 байт
 static const uint32_t FLASH_BASE_ADDR = 0x1000; // Починаємо пресети з 4KB
 static const uint32_t FLASH_BLOCK_4KB = 0x1000;
+static const uint32_t ADDRESS_BASE = 0x90001000;
 
 Preset currentPreset;
 AudioParamsDirty dirty;
@@ -68,23 +69,23 @@ void ResetPreset(int presetNumber);
 void InitQSPI()
 {
     // Зчитуємо init_flag
-    dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
-    uint32_t init_flag = *((uint32_t *)(0x90000000));
+    dsy_dma_invalidate_cache_for_buffer((uint8_t *)(ADDRESS_BASE), PAGE_SIZE);
+    uint32_t init_flag = *((uint32_t *)(ADDRESS_BASE));
 
-    if (init_flag != 0xDEADBEE6)
+    if (init_flag != 0xDEADBEE5)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
         uint8_t page[PAGE_SIZE];
         memset(page, 0xFF, sizeof(page));
-        uint32_t marker = 0xDEADBEE6;
+        uint32_t marker = 0xDEADBEE5;
         memcpy(page, &marker, sizeof(marker));
 
         hw.qspi.Write(0, sizeof(page), page);
 
         System::Delay(10);
 
-        dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
+        dsy_dma_invalidate_cache_for_buffer((uint8_t *)(ADDRESS_BASE), PAGE_SIZE);
         hw.qspi.Erase(FLASH_BASE_ADDR, PRESET_NUM * FLASH_BLOCK_4KB);
 
         for (size_t i = 0; i < PRESET_NUM; i++)
@@ -96,7 +97,7 @@ void InitQSPI()
             memcpy(page, &preset, sizeof(preset));
 
             hw.qspi.Write(addr, sizeof(page), page);
-            dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000) + addr, sizeof(page));
+            dsy_dma_invalidate_cache_for_buffer((uint8_t *)(ADDRESS_BASE) + addr, sizeof(page));
         }
     }
 }
@@ -361,7 +362,7 @@ void SavePreset(uint8_t preset_num, const Preset &prst)
     *reinterpret_cast<Preset *>(page) = p;
 
     hw.qspi.Write(addr, sizeof(page), page);
-    dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000) + addr, sizeof(page));
+    dsy_dma_invalidate_cache_for_buffer((uint8_t *)(ADDRESS_BASE) + addr, sizeof(page));
     System::Delay(10);
 }
 
@@ -371,7 +372,7 @@ void ReadPreset(uint8_t preset_num, Preset &prst)
     uint32_t addr = FLASH_BASE_ADDR + preset_num * FLASH_BLOCK_4KB;
 
     uint8_t page[PAGE_SIZE];
-    dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000) + addr, sizeof(page));
+    dsy_dma_invalidate_cache_for_buffer((uint8_t *)(ADDRESS_BASE) + addr, sizeof(page));
     memcpy(&page, hw.qspi.GetData(addr), sizeof(page));
     prst = *reinterpret_cast<const Preset *>(page);
 
@@ -390,7 +391,7 @@ void ResetPreset(int presetNumber)
     *reinterpret_cast<Preset *>(page) = preset;
 
     hw.qspi.Write(addr, sizeof(page), page);
-    dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000) + addr, sizeof(page));
+    dsy_dma_invalidate_cache_for_buffer((uint8_t *)(ADDRESS_BASE) + addr, sizeof(page));
     System::Delay(10);
 
     ReadPreset(presetNumber, currentPreset);
@@ -514,13 +515,13 @@ void ParameterManager::AdjustByIncrement(ParamUnitName name, int inc)
 }
 
 Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
-    {ModSource::NONE, 0.0f, "-"},
-    {ModSource::LFO, 0.0f, "LFO"},
-    {ModSource::ADSR, 0.0f, "ADSR"},
-    {ModSource::MOD_WHEEL, 0.0f, "ModWheel"},
-    {ModSource::AFTERTOUCH, 0.0f, "Aftertouch"},
-    {ModSource::VELOCITY, 0.0f, "Velocity"},
-    {ModSource::SWITCH_PEDAL, 0.0f, "SW Pedal"},
+    {ModSource::NONE, 0.0f, {0.0f}, "-"},
+    {ModSource::LFO, 0.0f, {0.0f}, "LFO"},
+    {ModSource::ADSR, 0.0f, {0.0f}, "ADSR"},
+    {ModSource::MOD_WHEEL, 0.0f, {0.0f}, "ModWheel"},
+    {ModSource::AFTERTOUCH, 0.0f, {0.0f}, "Aftertouch"},
+    {ModSource::VELOCITY, 0.0f, {0.0f}, "Velocity"},
+    {ModSource::SWITCH_PEDAL, 0.0f, {0.0f}, "SW Pedal"},
 };
 
 void ResetModMatrixModulators()
