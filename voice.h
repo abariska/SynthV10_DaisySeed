@@ -20,7 +20,7 @@
 using namespace daisy;
 using namespace daisysp;
 
-extern LadderFilter flt[2];
+
 extern OscLfo lfo;
 extern float samplerate;
 extern float lfo_value;
@@ -34,7 +34,8 @@ extern float cached_master_volume;
 struct Voice
 {
     Osc     osc[OSC_NUM];
-    Adsr    adsr;
+    Adsr    adsr, adsrMod;
+    LadderFilter flt;
     Random  rnd[OSC_NUM];
     float   phaseOffset;
     float   pitch_correction[OSC_NUM];

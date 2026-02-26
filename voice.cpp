@@ -8,8 +8,6 @@ using P = ParamUnitName;
 using namespace daisy;
 using M = ModSource;
 
-Adsr adsrMod;
-LadderFilter flt[2];
 OscLfo lfo;
 Random rnd;
 ModMatrix modMatrix[MOD_MATRIX_NUM];
@@ -71,11 +69,9 @@ void SynthInit(float samplerate, int blocksize)
             voice[i].osc[j].SetPhaseOffset(voice[i].phaseOffset);
         }
         voice[i].adsr.Init(samplerate, blocksize);
-        
+        voice[i].adsrMod.Init(samplerate, blocksize);
+        voice[i].flt.Init(samplerate);
     }
-    flt[0].Init(samplerate);
-    flt[1].Init(samplerate);
-    adsrMod.Init(samplerate, blocksize);
     lfo.Init(samplerate);
     EffectsInit(samplerate);
     VoicePanningInit();
@@ -85,7 +81,10 @@ void ModSourcesProcess()
 {
     lfo_value = lfo.Process();
     modulators[static_cast<int>(M::LFO)].value = lfo_value;
-    modulators[static_cast<int>(M::ADSR)].value = adsrMod.Process(gate);
+    for (size_t v = 0; v < VOICE_NUM; ++v)
+    {
+        modulators[static_cast<int>(M::ADSR)].value = voice[v].adsrMod.Process(voice[v].gate);
+    }
 
     modulators[static_cast<int>(M::MOD_WHEEL)].value = mod_wheel_value;
     modulators[static_cast<int>(M::AFTERTOUCH)].value = aftertouch_value;
@@ -102,10 +101,13 @@ void UpdateModSourcesParams()
         dirty.modLfoParams = false;
     }
     else if (dirty.modAdsrParams) {
-        adsrMod.SetAttackTime(paramManager.GetValue(P::MOD_ADSR_ATTACK), 1.0f);
-        adsrMod.SetDecayTime(paramManager.GetValue(P::MOD_ADSR_DECAY));
-        adsrMod.SetSustainLevel(paramManager.GetValue(P::MOD_ADSR_SUSTAIN));
-        adsrMod.SetReleaseTime(paramManager.GetValue(P::MOD_ADSR_RELEASE));
+        for (size_t v = 0; v < VOICE_NUM; ++v)
+        {
+            voice[v].adsrMod.SetAttackTime(paramManager.GetValue(P::MOD_ADSR_ATTACK), 1.0f);
+            voice[v].adsrMod.SetDecayTime(paramManager.GetValue(P::MOD_ADSR_DECAY));
+            voice[v].adsrMod.SetSustainLevel(paramManager.GetValue(P::MOD_ADSR_SUSTAIN));
+            voice[v].adsrMod.SetReleaseTime(paramManager.GetValue(P::MOD_ADSR_RELEASE));
+        }
         dirty.modAdsrParams = false;
     }
 }
@@ -207,7 +209,7 @@ void HandleNoteOn(uint8_t note_in, uint8_t velocity)
     if (!cached_legato)
     {
         voice[v].adsr.Retrigger(false);
-        adsrMod.Retrigger(false);
+        voice[v].adsrMod.Retrigger(false);
     }
     dirty.oscParams = true;
     dirty.adsrParams = true;
@@ -239,6 +241,7 @@ void HandleNoteOff(uint8_t note_in)
             if (!cached_legato)
             {
                 voice[0].adsr.Retrigger(false);
+                voice[0].adsrMod.Retrigger(false);
             }
             dirty.adsrParams = true; 
             dirty.oscParams = true;
@@ -305,7 +308,7 @@ void UpdateSynthParams()
             paramManager.GetParam(P::GLOBAL_PAN).isDirty = false;
             VoicePanningInit();
         }
-        
+
         cached_legato = paramManager.GetBool(P::GLOBAL_LEGATO);
         cached_master_volume = paramManager.GetValue(P::GLOBAL_MASTER_VOLUME);
         dirty.globalParams = false;
@@ -369,6 +372,25 @@ void UpdateSynthParams()
                     voice[v].adsr.SetDecayTime(paramManager.GetValue(P::ADSR_DECAY));
                     voice[v].adsr.SetSustainLevel(paramManager.GetValue(P::ADSR_SUSTAIN));
                     voice[v].adsr.SetReleaseTime(paramManager.GetValue(P::ADSR_RELEASE));
+                    voice[v].adsrMod.SetAttackTime(paramManager.GetValue(P::MOD_ADSR_ATTACK), 1.0f);
+                    voice[v].adsrMod.SetDecayTime(paramManager.GetValue(P::MOD_ADSR_DECAY));
+                    voice[v].adsrMod.SetSustainLevel(paramManager.GetValue(P::MOD_ADSR_SUSTAIN));
+                    voice[v].adsrMod.SetReleaseTime(paramManager.GetValue(P::MOD_ADSR_RELEASE));
+                }
+                if (dirty.filterParams)
+                {
+                    LadderFilter::FilterMode mode = static_cast<LadderFilter::FilterMode>(paramManager.GetValue(P::FILTER_MODE));
+                    float filter_cutoff = paramManager.GetValue(P::FILTER_CUTOFF);
+                    float filter_resonance = paramManager.GetValue(P::FILTER_RESONANCE);
+                    float filter_drive = paramManager.GetValue(P::FILTER_DRIVE);
+                    float input_drive = 1.0f + (filter_drive * 4.0f);
+
+                    voice[v].flt.SetFilterMode(mode);
+                    voice[v].flt.SetFreq(filter_cutoff);
+                    voice[v].flt.SetRes(filter_resonance);
+                    voice[v].flt.SetPassbandGain(0.5f);
+                    voice[v].flt.SetInputDrive(input_drive);
+                    
                 }
                 
             }
@@ -377,25 +399,8 @@ void UpdateSynthParams()
     }
     dirty.oscParams = false;
     dirty.adsrParams = false;
+    dirty.filterParams = false;
     
-    if (dirty.filterParams)
-    {
-        LadderFilter::FilterMode mode = static_cast<LadderFilter::FilterMode>(paramManager.GetValue(P::FILTER_MODE));
-        float filter_cutoff = paramManager.GetValue(P::FILTER_CUTOFF);
-        float filter_resonance = paramManager.GetValue(P::FILTER_RESONANCE);
-        float filter_drive = paramManager.GetValue(P::FILTER_DRIVE);
-        float input_drive = 1.0f + (filter_drive * 4.0f);
-
-        for (int i = 0; i < 2; i++)
-        {
-            flt[i].SetFilterMode(mode);
-            flt[i].SetFreq(filter_cutoff);
-            flt[i].SetRes(filter_resonance);
-            flt[i].SetPassbandGain(0.5f);
-            flt[i].SetInputDrive(input_drive);
-        }
-        dirty.filterParams = false;
-    }
     if (dirty.flangerParams)
     {
         fx.flanger.SetFeedback(paramManager.GetValue(P::EFFECT_FLANGER_FEEDBACK));
@@ -479,7 +484,10 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
             voice_out += osc_out;
         }
         float env = voice[v].adsr.Process(voice[v].gate);
-        float voice_out_env = voice_out * env / VOICE_NUM;
+        float envMod = voice[v].adsrMod.Process(voice[v].gate);
+        float flt_out = voice[v].flt.Process(voice_out * envMod);
+        float voice_out_env = flt_out * env / VOICE_NUM;
+        
         outL += voice_out_env * cached_pan_correction[v][0];
         outR += voice_out_env * cached_pan_correction[v][1];
         
@@ -492,9 +500,6 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
     }
     isModAffectsOscFreq = 0;
     
-    outL = flt[0].Process(outL);   
-    outR = flt[1].Process(outR);
-
     outL = softClip(outL);
     outR = softClip(outR);   
 
