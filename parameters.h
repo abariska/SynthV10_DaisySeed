@@ -16,9 +16,6 @@
 
 enum class ParamUnitName; 
 
-extern float GetPitchTableValue(int index);
-extern float GetDetuneTableValue(int index);
-extern float GetPitchBendTableValue(int index);
 extern float GetFreqModTableValue(int index);
 void SetAudioDirtyFlag(ParamUnitName param);
 void SynthVoiceReset(uint8_t voice_num);
@@ -238,7 +235,7 @@ public:
     float GetValue(ParamUnitName name) { return GetParam(name).GetValue(); }
     UseInMain GetUseInMain(ParamUnitName name) { return GetParam(name).useInMain; }
     UseInMod GetUseInMod(ParamUnitName name) { return GetParam(name).useInMod; }
-    float GetModifier(ParamUnitName name) { return GetParam(name).modifier_value; }
+    float GetModifier(ParamUnitName name) { return ( 1.0f + GetParam(name).modifier_value); }
 };
 
 extern ParameterManager paramManager;

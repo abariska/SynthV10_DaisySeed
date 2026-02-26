@@ -1,15 +1,6 @@
 #include "menu.h"
-#include "OLED_Greyscale_Daisy/fonts.h"
-#include "display.h"
-
-#include "parameters.h"
-#include "effects.h"
-#include "sx1509_expander.h"
 #include "midi_handler.h"
-#include "GUI_Paint.h"
 #include "main.h"
-#include "log_uart.h"
-#include "globals.h"
 
 using P = ParamUnitName;
 using M = ModSource;
@@ -73,13 +64,19 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
     {
         value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, FONT_LIGHT_16, textColor, bgColor);
-        DrawWaveformImage(value, true, (UBYTE)textColor);
+        DrawWaveformImage(paramSlots[blockIndex].target_param, (int)value, true, (UBYTE)textColor);
     }
     else if (param_unit == ParamUnit::TEXT)
     {
         value = paramManager.GetValue(paramSlots[blockIndex].target_param);
         Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, FONT_LIGHT_16, textColor, bgColor);
         DrawFilterModeText(value);
+    }
+    else if (param_unit == ParamUnit::BOOL)
+    {
+        value = paramManager.GetPhysical(paramSlots[blockIndex].target_param);
+        Paint_TextCentered(label, 0, PARAM_BLOCK_WIDTH, yBlockLabel, FONT_LIGHT_16, textColor, bgColor);
+        Paint_TextCentered(value ? "On" : "Off", 0, PARAM_BLOCK_WIDTH, yBlockValue, FONT_BOLD_18, textColor, bgColor);
     }
     else
     {

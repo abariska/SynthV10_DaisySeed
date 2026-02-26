@@ -1,7 +1,5 @@
 #include "midi_handler.h"
-#include "voice.h"
 #include "log_uart.h"
-#include "daisy.h"
 #include "usbh_midi.h"
 
 MidiUartHandler midiUart;

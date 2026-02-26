@@ -1,13 +1,6 @@
 #include "parameters.h"
-#include "daisy_seed.h"
-#include "daisysp.h" // Add for using constants
-#include "oscillator.h"
-#include "display.h"
-#include "log_uart.h"
 #include "per/qspi.h"
 #include "sys/dma.h"
-#include <stdint.h> 
-#include <cstdint>
 #include "voice.h"
 
 ParamSlot paramSlots[NUM_PARAM_BLOCKS];
@@ -477,7 +470,7 @@ void ParameterManager::Init()
     ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Decay", "Decay", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sustain", "Sustain", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
     ADD_PARAM(P::ADSR_RELEASE, 0.005f, 20.0f, "Release", "Release", Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, OscWaveforms::WAVE_COUNT - 1, "Wave LFO", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
+    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, OscWaveformsLfo::LFO_WAVE_COUNT - 1, "Wave LFO", "Wave", Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
     ADD_PARAM(P::MOD_LFO_FREQ, 0.01f, 100.0f, "Freq Lfo", "Freq", Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Depth Lfo", "Depth", Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
     ADD_PARAM(P::MOD_LFO_TRIGGER, 0, 2, "Trig Lfo", "Trigger", Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
@@ -543,7 +536,7 @@ void SetAudioDirtyFlag(ParamUnitName param) {
 
     paramManager.GetParam(param).isDirty = true;
 
-    if (param >= P::OSC_FREQ_1 && param <= P::OSC_ACTIVE_3) {
+    if (param >= P::OSC_WAVEFORM_1 && param <= P::OSC_ACTIVE_3) {
         dirty.oscParams = true;
     }
     if (param >= P::ADSR_ATTACK && param <= P::ADSR_RELEASE) {

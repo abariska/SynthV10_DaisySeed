@@ -77,19 +77,19 @@ float Osc::Process()
     case TRIANGLE:
         out = 4.0f * (fabsf(phase - 0.5f) - 0.25f);
         break;
-    case SAW_DOWN:
+    case SAW:
         out = 1.0f - 2.0f * phase;
         out += poly_blep(phase, phaseInc) * blepGain;
         break;
-    case SAW_UP:
-        out = 2.0f * phase;
-        out += poly_blep(phase, phaseInc) * blepGain;
-        break;
     case PULSE:
+    {
         out = phase < pw ? 1.0f : -1.0f;
         out += poly_blep(phase, phaseInc) * blepGain;
-        out -= poly_blep(fmodf(phase + (1.0f - pw), 1.0f), phaseInc) * blepGain;
+        float phase2 = phase + (1.0f - pw);
+        phase2 -= (phase2 >= 1.0f) ? 1.0f : 0.0f;
+        out -= poly_blep(phase2, phaseInc) * blepGain;
         break;
+    }
     case NOISE:
         noiseState = noiseState * 1664525U + 1013904223U;
         out = (int32_t(noiseState)) / 2147483648.0f;
@@ -110,7 +110,7 @@ void OscLfo::Init(float sample_rate)
     sampleRate = sample_rate;
     freq = 1.0f;
     amp = 1.0f;
-    wave = SIN;
+    wave = LFO_SIN;
     phase = 0.0f;
     timer = 0;
     noiseState = 1;
@@ -129,22 +129,22 @@ float OscLfo::Process()
     float out = 0.0f;
     switch (wave)
     {
-    case SIN:
+    case LFO_SIN:
         out = (sinf((phase + 0.25f) * 2.0f * M_PI) + 1.0f) * 0.5f;
         break;
-    case TRIANGLE:
+    case LFO_TRIANGLE:
         out = phase < 0.5f ? 2.0f * phase : 2.0f * (1.0f - phase);
         break;
-    case SAW_DOWN:
-        out = 1.0f - phase;
-        break;
-    case SAW_UP:
+    case LFO_SAW_UP:
         out = phase;
         break;
-    case PULSE:
+    case LFO_SAW_DOWN:
+        out = 1.0f - phase;
+        break;
+    case LFO_PULSE:
         out = phase < 0.5f ? 0.0f : 1.0f;
         break;
-    case NOISE:
+    case LFO_NOISE:
         if (phaseExceeded) 
         {
             noiseState = noiseState * 1664525U + 1013904223U;

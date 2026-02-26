@@ -1,6 +1,5 @@
 #include <string.h>
 #include "daisy.h"
-#include "daisy_core.h"
 #include "log_uart.h"
 
 using namespace daisy;

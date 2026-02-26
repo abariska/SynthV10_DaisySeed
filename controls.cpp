@@ -1,6 +1,4 @@
 #include "controls.h"
-#include "sx1509_expander.h"
-#include "parameters.h"
 #include "menu.h"
 #include "globals.h"
 

@@ -64,6 +64,8 @@
 #define BLOCK_PARAM_Y_VALUE 16
 #define BLOCK_PARAM_Y_UNIT 32
 
+enum class ParamUnitName;
+
 enum MenuPage
 {
     MAIN_PAGE,
@@ -156,4 +158,6 @@ void DrawSettingsPage();
 void DrawSettingsBlock(uint8_t blockIndex);
 void DrawStoreBlock();
 void DrawCpuUsage();
+void DrawWaveformImage(ParamUnitName param, int waveform, bool custom_color, UBYTE color);
+
 #endif
