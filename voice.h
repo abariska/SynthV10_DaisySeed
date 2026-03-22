@@ -54,26 +54,26 @@ struct Voice
 
 extern Voice voice[VOICE_NUM];
 extern AudioParamsDirty dirty;
+extern Adsr adsrModGlobal;
 
 void HandleNoteOn(uint8_t note_in, uint8_t velocity);
 void HandleNoteOff(uint8_t note_in);
 inline void HandlePitchBend(int16_t pitch_bend); 
 void SynthInit(float samplerate, int blocksize);
 void VoiceProcess(float &out_sigL, float &out_sigR);
-inline void VoicePanningInit();
-inline float softClip(float x);
+void VoicePanningInit();
+float softClip(float x);
 void ModSourcesProcess();
-inline void InitPitchTables();
+void InitPitchTables();
 float GetPitchTableValue(int index);
 float GetDetuneTableValue(int index);
 float GetPitchBendTableValue(int index);
 float GetVelocityToAmpTableValue(uint8_t velocity);
-void UpdateModSourcesParams();
 void UpdateSynthParams();
-inline void PushNote(uint8_t note);
-inline uint8_t PopNote(uint8_t note);
+void PushNote(uint8_t note);
+uint8_t PopNote(uint8_t note);
 extern float panningTable[101][2];
-inline void InitPanningTable();
+void InitPanningTable();
 void SynthVoiceReset(uint8_t voice_num);
 void ModMatrixReset(uint8_t mod_matrix_num);
 #endif

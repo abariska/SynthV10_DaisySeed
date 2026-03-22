@@ -7,7 +7,6 @@
 #include "daisysp.h"
 #include "daisysp-lgpl.h"
 
-    
 using namespace daisysp;
 
 // Enumeration of effect types

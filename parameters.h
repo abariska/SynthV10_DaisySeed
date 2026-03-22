@@ -8,11 +8,7 @@
 #include "oscillator.h"
 #include "display.h"
 #include "effects.h"
-
-// Required for array structures
-#define OSC_NUM 3
-#define PRESET_NUM 40
-#define MOD_MATRIX_NUM 7
+#include "globals.h"
 
 enum class ParamUnitName; 
 
@@ -104,18 +100,23 @@ enum class ParamUnitName
 
 using P = ParamUnitName;
 
-const P OSC_WAVEFORM[OSC_NUM] = {P::OSC_WAVEFORM_1, P::OSC_WAVEFORM_2, P::OSC_WAVEFORM_3};
-const P OSC_FREQ[OSC_NUM] = {P::OSC_FREQ_1, P::OSC_FREQ_2, P::OSC_FREQ_3};
-const P OSC_PITCH[OSC_NUM] = {P::OSC_PITCH_1, P::OSC_PITCH_2, P::OSC_PITCH_3};
-const P OSC_DETUNE[OSC_NUM] = {P::OSC_DETUNE_1, P::OSC_DETUNE_2, P::OSC_DETUNE_3};
-const P OSC_AMP[OSC_NUM] = {P::OSC_AMP_1, P::OSC_AMP_2, P::OSC_AMP_3};
-const P OSC_PWM[OSC_NUM] = {P::OSC_PWM_1, P::OSC_PWM_2, P::OSC_PWM_3};
-const P OSC_ACTIVE[OSC_NUM] = {P::OSC_ACTIVE_1, P::OSC_ACTIVE_2, P::OSC_ACTIVE_3};
+constexpr P OSC_WAVEFORM[OSC_NUM] = {P::OSC_WAVEFORM_1, P::OSC_WAVEFORM_2, P::OSC_WAVEFORM_3};
+constexpr P OSC_FREQ[OSC_NUM] = {P::OSC_FREQ_1, P::OSC_FREQ_2, P::OSC_FREQ_3};
+constexpr P OSC_PITCH[OSC_NUM] = {P::OSC_PITCH_1, P::OSC_PITCH_2, P::OSC_PITCH_3};
+constexpr P OSC_DETUNE[OSC_NUM] = {P::OSC_DETUNE_1, P::OSC_DETUNE_2, P::OSC_DETUNE_3};
+constexpr P OSC_AMP[OSC_NUM] = {P::OSC_AMP_1, P::OSC_AMP_2, P::OSC_AMP_3};
+constexpr P OSC_PWM[OSC_NUM] = {P::OSC_PWM_1, P::OSC_PWM_2, P::OSC_PWM_3};
+constexpr P OSC_ACTIVE[OSC_NUM] = {P::OSC_ACTIVE_1, P::OSC_ACTIVE_2, P::OSC_ACTIVE_3};
 
-const P EFFECT_SLOT_ACTIVE[2] = {P::EFFECT_SLOT_1_ACTIVE, P::EFFECT_SLOT_2_ACTIVE};
-const P EFFECT_SLOT_DRYWET[2] = {P::EFFECT_SLOT_1_DRYWET, P::EFFECT_SLOT_2_DRYWET};
+constexpr P EFFECT_SLOT_ACTIVE[2] = {P::EFFECT_SLOT_1_ACTIVE, P::EFFECT_SLOT_2_ACTIVE};
+constexpr P EFFECT_SLOT_DRYWET[2] = {P::EFFECT_SLOT_1_DRYWET, P::EFFECT_SLOT_2_DRYWET};
 
-const P SETTINGS_PARAMS[SETTINGS_BLOCKS_NUM] = {P::GLOBAL_MONO, P::GLOBAL_LEGATO, P::GLOBAL_PORTAMENTO, P::GLOBAL_PAN, P::GLOBAL_MASTER_VOLUME};
+constexpr P SETTINGS_PARAMS[SETTINGS_BLOCKS_NUM] = {P::GLOBAL_MONO, P::GLOBAL_LEGATO, P::GLOBAL_PORTAMENTO, P::GLOBAL_PAN, P::GLOBAL_MASTER_VOLUME};
+
+// Flags for ParamDescriptor
+constexpr uint8_t FLAG_USE_IN_MAIN = 1 << 0;  // 0b00000001 = 1
+constexpr uint8_t FLAG_USE_IN_MOD  = 1 << 1;  // 0b00000010 = 2
+constexpr uint8_t FLAG_PER_VOICE   = 1 << 2;  // 0b00000100 = 4
 
 enum class Curve
 {
@@ -155,6 +156,94 @@ enum class UseInMain
     USED
 };
 
+struct ParamDescriptor {
+    ParamUnitName name;
+    float min, max;
+    const char *full_label, *short_label;
+    ParamUnit unit;
+    ParamType type;
+    uint8_t flags; // is_per_voice, useInMain, useInMod — біти
+};
+
+struct ParamState {
+    float norm_value;
+    float physical_value;
+};
+
+struct ParamModState {
+    float modifier;
+    float modifier_per_voice[VOICE_NUM];
+};
+
+static const ParamDescriptor descriptors[static_cast<int>(ParamUnitName::COUNT_PARAMS)] = {
+    {P::NONE, 0, 0, "-", "-", ParamUnit::UNITLESS, ParamType::CONTINUOUS, 0},
+    {P::OSC_WAVEFORM_1, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 1", "Wave", ParamUnit::PICTURE, ParamType::DISCRETE, 0},
+    {P::OSC_FREQ_1, 1.0f, 10000.0f, "Freq 1", "Freq", ParamUnit::FREQ, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MOD},
+    {P::OSC_PITCH_1, -36, 36, "Pitch 1", "Pitch", ParamUnit::SEMITONES, ParamType::DISCRETE, FLAG_PER_VOICE | FLAG_USE_IN_MAIN},
+    {P::OSC_DETUNE_1, -100, 100, "Tune 1", "Tune", ParamUnit::CENTS, ParamType::DISCRETE, FLAG_PER_VOICE | FLAG_USE_IN_MAIN},
+    {P::OSC_AMP_1, 0.0f, 100.0f, "Amp 1", "Amp", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::OSC_PWM_1, -100, 100, "PWM 1", "PWM", ParamUnit::PERCENT, ParamType::DISCRETE, FLAG_PER_VOICE | FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::OSC_ACTIVE_1, 0, 2, "Enbl Osc1", "Enbl", ParamUnit::BOOL, ParamType::DISCRETE, FLAG_PER_VOICE},
+    {P::OSC_WAVEFORM_2, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 2", "Wave", ParamUnit::PICTURE, ParamType::DISCRETE, FLAG_PER_VOICE},
+    {P::OSC_FREQ_2, 1.0f, 10000.0f, "Freq 2", "Freq", ParamUnit::FREQ, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MOD},
+    {P::OSC_PITCH_2, -36, 36, "Pitch 2", "Pitch", ParamUnit::SEMITONES, ParamType::DISCRETE, FLAG_PER_VOICE | FLAG_USE_IN_MAIN},
+    {P::OSC_DETUNE_2, -100, 100, "Tune 2", "Tune", ParamUnit::CENTS, ParamType::DISCRETE, FLAG_PER_VOICE | FLAG_USE_IN_MAIN},
+    {P::OSC_AMP_2, 0.0f, 100.0f, "Amp 2", "Amp", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::OSC_PWM_2, -100, 100, "PWM 2", "PWM", ParamUnit::PERCENT, ParamType::DISCRETE, FLAG_PER_VOICE | FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::OSC_ACTIVE_2, 0, 2, "Enbl Osc2", "Enbl", ParamUnit::BOOL, ParamType::DISCRETE, FLAG_PER_VOICE},
+    {P::OSC_WAVEFORM_3, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 3", "Wave", ParamUnit::PICTURE, ParamType::DISCRETE, FLAG_PER_VOICE},
+    {P::OSC_FREQ_3, 1.0f, 10000.0f, "Freq 3", "Freq", ParamUnit::FREQ, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MOD},
+    {P::OSC_PITCH_3, -36, 36, "Pitch 3", "Pitch", ParamUnit::SEMITONES, ParamType::DISCRETE, FLAG_PER_VOICE | FLAG_USE_IN_MAIN},
+    {P::OSC_DETUNE_3, -100, 100, "Tune 3", "Tune", ParamUnit::CENTS, ParamType::DISCRETE, FLAG_PER_VOICE | FLAG_USE_IN_MAIN},
+    {P::OSC_AMP_3, 0.0f, 100.0f, "Amp 3", "Amp", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::OSC_PWM_3, -100, 100, "PWM 3", "PWM", ParamUnit::PERCENT, ParamType::DISCRETE, FLAG_PER_VOICE | FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::OSC_ACTIVE_3, 0, 2, "Enbl Osc3", "Enbl", ParamUnit::UNITLESS, ParamType::DISCRETE, FLAG_PER_VOICE},
+    {P::FILTER_MODE, 0, 5, "Mode", "Mode", ParamUnit::TEXT, ParamType::DISCRETE, FLAG_PER_VOICE},
+    {P::FILTER_CUTOFF, 5.0f, 20000.0f, "Cutoff", "Cutoff", ParamUnit::HZ, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::FILTER_RESONANCE, 0.0f, 100.0f, "Res", "Res", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::FILTER_DRIVE, 0.0f, 100.0f, "Drive", "Drive", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MAIN},
+    {P::ADSR_ATTACK, 0.005f, 20.0f, "Attack", "Attack", ParamUnit::SECONDS, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MAIN},
+    {P::ADSR_DECAY, 0.005f, 20.0f, "Decay", "Decay", ParamUnit::SECONDS, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MAIN},
+    {P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sustain", "Sustain", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MAIN},
+    {P::ADSR_RELEASE, 0.005f, 20.0f, "Release", "Release", ParamUnit::SECONDS, ParamType::CONTINUOUS, FLAG_PER_VOICE | FLAG_USE_IN_MAIN},
+    {P::MOD_LFO_WAVEFORM, 0, OscWaveformsLfo::LFO_WAVE_COUNT - 1, "Wave LFO", "Wave", ParamUnit::PICTURE, ParamType::DISCRETE, 0},
+    {P::MOD_LFO_FREQ, 0.01f, 100.0f, "Freq Lfo", "Freq", ParamUnit::HZ, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Depth Lfo", "Depth", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::MOD_LFO_TRIGGER, 0, 2, "Trig Lfo", "Trigger", ParamUnit::BOOL, ParamType::DISCRETE, 0},
+    {P::MOD_LFO_ACTIVE, 0, 2, "ActiveLFO", "Active", ParamUnit::BOOL, ParamType::DISCRETE, 0},
+    {P::MOD_ADSR_ATTACK, 0.005f, 20.0f, "Atck Mod", "Attack", ParamUnit::SECONDS, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN},
+    {P::MOD_ADSR_DECAY, 0.005f, 20.0f, "Dec Mod", "Decay", ParamUnit::SECONDS, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN},
+    {P::MOD_ADSR_SUSTAIN, 0.0f, 100.0f, "Sus Mod", "Sustain", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN},
+    {P::MOD_ADSR_RELEASE, 0.005f, 20.0f, "Rel Mod", "Release", ParamUnit::SECONDS, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN},
+    {P::EFFECT_OVERDRIVE_DRIVE, 0.0f, 100.0f, "Drive", "Drive", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_CHORUS_FREQ, 0.1f, 100.0f, "Freq Chrs", "Freq", ParamUnit::HZ, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_CHORUS_DEPTH, 0.0f, 100.0f, "Dpth Chrs", "Depth", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_CHORUS_FBK, 0.0f, 100.0f, "Fbk Chrs", "Feedback", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_CHORUS_DELAY, 0.0f, 100.0f, "Dly Chrs", "Delay", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_COMPRESSOR_ATTACK, 0.001f, 10.0f, "Atck Com", "Attack", ParamUnit::SECONDS, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_COMPRESSOR_RELEASE, 0.001f, 10.0f, "Rel Com", "Release", ParamUnit::SECONDS, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_COMPRESSOR_THRESHOLD, -80.0f, 0.0f, "Thrs Com", "Thresh", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_COMPRESSOR_RATIO, 1.0f, 40.0f, "Rat Com", "Ratio", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_COMPRESSOR_MAKEUP, 0.0f, 80.0f, "Mkup Com", "Makeup", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_FLANGER_FEEDBACK, 0.0f, 100.0f, "Fdbk Flg", "Feedbck", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_FLANGER_LFO_DEPTH, 0.0f, 100.0f, "Dpth Flg", "Depth", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_FLANGER_LFO_FREQ, 0.1f, 100.0f, "Freq Flg", "Freq", ParamUnit::HZ, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_FLANGER_DELAY, 0.0f, 100.0f, "Dly Flg", "Delay", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_AUTOWAH_WAH, 0.0f, 100.0f, "Wah Aut", "Wah", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_AUTOWAH_LEVEL, 0.0f, 100.0f, "Lvl Aut", "Level", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_REVERB_FEEDBACK, 0.0f, 100.0f, "Fdbk Rvb", "Feedbck", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_REVERB_LPFREQ, 10.0f, 20000.0f, "Cut Rvb", "Cutoff", ParamUnit::HZ, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_SLOT_1_DRYWET, 0.0f, 100.0f, "FX1", "FX1", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_SLOT_1_ACTIVE, 0, 2, "Enbl FX1", "Enbl", ParamUnit::BOOL, ParamType::DISCRETE, 0},
+    {P::EFFECT_SLOT_2_DRYWET, 0.0f, 100.0f, "FX2", "FX2", ParamUnit::PERCENT, ParamType::CONTINUOUS, FLAG_USE_IN_MAIN | FLAG_USE_IN_MOD},
+    {P::EFFECT_SLOT_2_ACTIVE, 0, 2, "Enbl FX2", "Enbl", ParamUnit::BOOL, ParamType::DISCRETE, 0},
+    {P::GLOBAL_MONO, 0, 2, "Mono", "Mono", ParamUnit::BOOL, ParamType::DISCRETE, 0},
+    {P::GLOBAL_LEGATO, 0, 2, "Legato", "Legato", ParamUnit::BOOL, ParamType::DISCRETE, 0},
+    {P::GLOBAL_PORTAMENTO, 0.0f, 100.0f, "Portamento", "Portamento", ParamUnit::PERCENT, ParamType::CONTINUOUS, 0},
+    {P::GLOBAL_PAN, 0.0f, 100.0f, "Voices Pan", "Pan", ParamUnit::PERCENT, ParamType::CONTINUOUS, 0},
+    {P::GLOBAL_MASTER_VOLUME, 0.0f, 100.0f, "Master Volume", "Master Volume", ParamUnit::PERCENT, ParamType::CONTINUOUS, 0},
+};
+
 class SynthParameter
 {
 private:
@@ -173,14 +262,16 @@ public:
     UseInMod useInMod;
     ParamType type;
     float modifier_value = 0.0f;
+    float modifier_value_per_voice[VOICE_NUM] = {0.0f};
     float norm_value = 0.0f;
     float physical_value = 0.0f;
     bool isDirty = false;
+    bool is_mod_per_voice = false;
 
     SynthParameter() = default;
 
     SynthParameter(float min_value, float max_value,
-                   const char *full_label, const char *short_label, uint8_t index, float *array,
+                   const char *full_label, const char *short_label, uint8_t index, float *array, bool is_per_voice,
                    Curve defaultCurve,
                    ParamUnit param_unit,
                    ParamType type = ParamType::CONTINUOUS,
@@ -188,7 +279,7 @@ public:
                    UseInMod useInMod = UseInMod::NONE);
 
     SynthParameter(int min_vals, int max_vals,
-                   const char *full_label, const char *short_label, uint8_t index, float *array,
+                   const char *full_label, const char *short_label, uint8_t index, float *array, bool is_per_voice,
                    Curve defaultCurve = Curve::LINEAR,
                    ParamUnit param_unit = ParamUnit::UNITLESS,
                    ParamType type = ParamType::DISCRETE,
@@ -204,12 +295,14 @@ public:
     void SetNormValue(float value) { norm_value = value; }
 
     // Геттери
-    float GetValue();
+    float GetValue() const;
     int GetInt() const;
-    float GetModifier(ParamUnitName name) { return modifier_value; }
+    float GetModifier() const { return modifier_value; }
+    float GetModifierPerVoice(int voice_index, float mod_value_per_voice) const { return modifier_value_per_voice[voice_index]; }
     void SetBool(bool value);
     void SetFromCurrentPreset();
-    void SetModifier(float value);
+    void SetModifier(float value) { modifier_value = value; }
+    void SetModifierPerVoice(int voice_index, float mod_value_per_voice) { modifier_value_per_voice[voice_index] = mod_value_per_voice; }
 };
 
 class ParameterManager
@@ -220,22 +313,24 @@ private:
 public:
     void Init();
     SynthParameter &GetParam(ParamUnitName name) { return params[static_cast<int>(name)]; }
-    float GetNormalised(ParamUnitName name) { return GetParam(name).norm_value; }
-    float GetPhysical(ParamUnitName name) { return GetParam(name).physical_value; }
-    bool GetBool(ParamUnitName name) { return static_cast<float>(GetParam(name).norm_value) > 0.5f; }
-    const char *GetFullLabel(ParamUnitName name) { return GetParam(name).full_label; }
-    const char *GetShortLabel(ParamUnitName name) { return GetParam(name).short_label; }
-    ParamType GetType(ParamUnitName name) { return GetParam(name).type; } 
+    float GetNormalised(ParamUnitName name) const { return params[static_cast<int>(name)].norm_value; }
+    float GetPhysical(ParamUnitName name) const { return params[static_cast<int>(name)].physical_value; }
+    bool GetBool(ParamUnitName name) const { return static_cast<float>(params[static_cast<int>(name)].norm_value) > 0.5f; }
+    const char *GetFullLabel(ParamUnitName name) const { return params[static_cast<int>(name)].full_label; }
+    const char *GetShortLabel(ParamUnitName name) const { return params[static_cast<int>(name)].short_label; }
+    ParamType GetType(ParamUnitName name) const { return params[static_cast<int>(name)].type; } 
     void AdjustByIncrement(ParamUnitName name, int inc);
-    void SetModifier(ParamUnitName name, float mod_value) { GetParam(name).SetModifier(mod_value); }
-    void SetValue(ParamUnitName name, float value) { GetParam(name).SetPhysicalValue(value); }
-    void SetBool(ParamUnitName name, bool value) { GetParam(name).SetBool(value); }
-    ParamUnit GetUnit(ParamUnitName name) { return GetParam(name).unit; }
-    Curve GetCurve(ParamUnitName name) { return GetParam(name).curve; }
-    float GetValue(ParamUnitName name) { return GetParam(name).GetValue(); }
-    UseInMain GetUseInMain(ParamUnitName name) { return GetParam(name).useInMain; }
-    UseInMod GetUseInMod(ParamUnitName name) { return GetParam(name).useInMod; }
-    float GetModifier(ParamUnitName name) { return ( 1.0f + GetParam(name).modifier_value); }
+    void SetModifier(ParamUnitName name, float mod_value) { params[static_cast<int>(name)].modifier_value = mod_value; }
+    void SetModifierPerVoice(ParamUnitName name, int voice_index, float mod_value_per_voice) { params[static_cast<int>(name)].modifier_value_per_voice[voice_index] = mod_value_per_voice; }
+    void SetValue(ParamUnitName name, float value) { params[static_cast<int>(name)].SetPhysicalValue(value); }
+    void SetBool(ParamUnitName name, bool value) { params[static_cast<int>(name)].SetBool(value); }
+    ParamUnit GetUnit(ParamUnitName name) const { return params[static_cast<int>(name)].unit; }
+    Curve GetCurve(ParamUnitName name) const { return params[static_cast<int>(name)].curve; }
+    float GetValue(ParamUnitName name) const { return params[static_cast<int>(name)].GetValue(); }
+    UseInMain GetUseInMain(ParamUnitName name) const { return params[static_cast<int>(name)].useInMain; }
+    UseInMod GetUseInMod(ParamUnitName name) const { return params[static_cast<int>(name)].useInMod; }
+    float GetModifier(ParamUnitName name) const { return params[static_cast<int>(name)].modifier_value; }
+    float GetModifierPerVoice(ParamUnitName name, int voice_index) const { return params[static_cast<int>(name)].modifier_value_per_voice[voice_index]; }
 };
 
 extern ParameterManager paramManager;
@@ -291,7 +386,9 @@ struct Modulator
 {
     ModSource source;
     float value;
+    float value_per_voice[VOICE_NUM];
     const char *label;
+    bool is_per_voice;
 };
 
 extern Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)];
@@ -301,51 +398,70 @@ class ModMatrix
 public:
     ModMatrix()
     {
-        modSource.source = ModSource::NONE;
-        modSource.value = 0.0f;
-        modSource.label = "-";
-        modTarget = ParamUnitName::NONE;
-        modAmount = 0.0f;
+        ResetMods();
     }
 
-public:
-
-    void SetModSource(ModSource source) { modSource.source = modulators[static_cast<int>(source)].source; }
-    void SetModTarget(ParamUnitName target) { modTarget = target; }
+    void SetModSource(ModSource source) 
+    { 
+        modSourceIndex = source; 
+        isModPerVoice = modulators[static_cast<int>(source)].is_per_voice;
+    }
+    void SetModTarget(ParamUnitName target) 
+    { 
+        modTarget = target; 
+        isFreq = (paramManager.GetUnit(target) == ParamUnit::FREQ); 
+        isParamPerVoice = paramManager.GetParam(target).is_mod_per_voice;
+    }
     void SetModAmount(float amount) { modAmount = amount; }
 
     float GetModAmount() const { return modAmount; }
-    ModSource GetModSource() const{ return modSource.source; }
-    float GetModSourceValue() const { return modulators[static_cast<int>(modSource.source)].value; }
-    const char *GetModSourceLabel() const { return modulators[static_cast<int>(modSource.source)].label; }
+    ModSource GetModSource() const{ return modSourceIndex; }
+    float GetModSourceValue() const { return modulators[static_cast<int>(modSourceIndex)].value; }
+    float GetModSourceValuePerVoice(int voice_index) const { return modulators[static_cast<int>(modSourceIndex)].value_per_voice[voice_index]; }
+    const char *GetModSourceLabel() const { return modulators[static_cast<int>(modSourceIndex)].label; }
     ParamUnitName GetModTarget() const { return modTarget; }
     const char *GetModTargetLabel() const { return paramManager.GetFullLabel(modTarget); }
     void ResetMods() 
     {
-        modSource.value = 0.0f;
+        modSourceIndex = ModSource::NONE;
+        modTarget = ParamUnitName::NONE;
         modAmount = 0.0f;
     }
 
     void RunMod()
     {
-        float modValue = GetModSourceValue();
-        modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f
-                                                                : modValue;
-
-        modValue = modValue * modAmount;
-        if (paramManager.GetUnit(GetModTarget()) == ParamUnit::FREQ)
+        if (isModPerVoice && isParamPerVoice)
         {
-            float ratio = GetFreqModTableValue(modAmount * 12.0f); 
-            modValue = modValue * ratio;
+            float ratio = isFreq ? GetFreqModTableValue(modAmount * 12.0f) : 1.0f;
+            
+            for (size_t i = 0; i < VOICE_NUM; i++)
+            {   
+                float modValue = modulators[static_cast<int>(modSourceIndex)].value_per_voice[i] + 1.0f;
+                modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f : modValue;
+                modValue = modValue * modAmount;
+                if (isFreq) modValue *= ratio;
+                modulators[static_cast<int>(modSourceIndex)].value_per_voice[i] = modValue;
+                paramManager.SetModifierPerVoice(modTarget, i, modValue);
+            }
         }
-        paramManager.SetModifier(modTarget, modValue);
+        else
+        {
+            float modValue = modulators[static_cast<int>(modSourceIndex)].value + 1.0f;
+            modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f : modValue;
+            modValue = modValue * modAmount;
+            modulators[static_cast<int>(modSourceIndex)].value = modValue;
+            paramManager.SetModifier(modTarget, modValue);
+        }
         SetAudioDirtyFlag(modTarget);
     }
     
 private:
-    Modulator modSource;
+    ModSource modSourceIndex;
     ParamUnitName modTarget;
     float modAmount;
+    bool isFreq = false;
+    bool isParamPerVoice = false;
+    bool isModPerVoice = false;
 };
 
 struct Preset

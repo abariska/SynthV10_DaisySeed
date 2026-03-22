@@ -35,21 +35,26 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
 
     UsbMidiProcess(); 
     UartMidiProcess();
-
-    for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
+    if (isMidiData)
     {
-        currentPreset.modMtx[i].RunMod();
-        P modTarget = currentPreset.modMtx[i].GetModTarget();
-        if (modTarget == P::OSC_FREQ_1 || modTarget == P::OSC_FREQ_2 || modTarget == P::OSC_FREQ_3)
-        {
-            static float oldModAmt = 0.0f;
-            float modAmt = currentPreset.modMtx[i].GetModAmount();
-            if (fabsf(modAmt - oldModAmt) > 0.000001f) {
-                isModAffectsOscFreq++;
-            } 
-            oldModAmt = modAmt;
-        }
+        DirtyFlagsToTrue();
+        isMidiData = false;
     }
+
+    // for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
+    // {
+    //     currentPreset.modMtx[i].RunMod();
+    //     P modTarget = currentPreset.modMtx[i].GetModTarget();
+    //     if (modTarget == P::OSC_FREQ_1 || modTarget == P::OSC_FREQ_2 || modTarget == P::OSC_FREQ_3)
+    //     {
+    //         static float oldModAmt = 0.0f;
+    //         float modAmt = currentPreset.modMtx[i].GetModAmount();
+    //         if (fabsf(modAmt - oldModAmt) > 0.000001f) {
+    //             isModAffectsOscFreq++;
+    //         } 
+    //         oldModAmt = modAmt;
+    //     }
+    // }
 
     for (size_t i = 0; i < size; i += 2)
     {
@@ -58,7 +63,6 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         float inL = in[i] * 0.5f;
         float inR = in[i+1] * 0.5f;
 
-        ModSourcesProcess();
         VoiceProcess(outL, outR); 
         float fx1_outL = 0.0f;
         float fx1_outR = 0.0f;
@@ -72,8 +76,8 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         // out[i] = outL;
         // out[i + 1] = outR;
 
-        scope_out = outL + outR;
-        ProcessScope(scope_out);
+        // scope_out = outL + outR;
+        // ProcessScope(scope_out);
     }
 
     cpu_load.OnBlockEnd();
@@ -114,11 +118,8 @@ int main(void)
 
     while (1)
     {
-        if (isMidiData)
-        {
-            DirtyFlagsToTrue();
-            isMidiData = false;
-        }
+
+        
         switch (process_type)
         {
             case PROCESS_CONTROLS:
@@ -126,7 +127,6 @@ int main(void)
                 UpdateEncodersParams();
                 break;
             case UPDATE_PARAMS:
-                UpdateModSourcesParams();
                 UpdateSynthParams();
                 break;
             case PROCESS_DISPLAY:

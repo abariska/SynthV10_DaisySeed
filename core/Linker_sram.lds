@@ -48,6 +48,18 @@ SECTIONS
 
 	} > SRAM
 
+	.itcm_text :
+	{
+		. = ALIGN(4);
+		_sitcm_text = .;
+		*(.itcm_text)
+		*(.itcm_text*)
+		. = ALIGN(4);
+		_eitcm_text = .;
+	} > ITCMRAM AT > SRAM
+	
+	_siitcm_text = LOADADDR(.itcm_text);
+
 	.ARM.extab :
 	{
 		. = ALIGN(4);
@@ -116,7 +128,7 @@ SECTIONS
 		_edata = .;
 
 		PROVIDE(__data_end__ = _edata);
-	} > DTCMRAM AT > SRAM
+	} > SRAM AT > SRAM
 
 	_sidata = LOADADDR(.data);
 
@@ -135,19 +147,35 @@ SECTIONS
 		PROVIDE(__bss_end__ = _ebss);
 	} > SRAM
 
-	.dtcmram_bss (NOLOAD) :
+	.dtcm_bss (NOLOAD) :
 	{
 		. = ALIGN(4);
-		_sdtcmram_bss = .;
+		_sdtcm_bss = .;
 
-		PROVIDE(__dtcmram_bss_start__ = _sdtcmram_bss);
-		*(.dtcmram_bss)
-		*(.dtcmram_bss*)
+		PROVIDE(__dtcm_bss_start__ = _sdtcm_bss);
+		*(.dtcm_bss)
+		*(.dtcm_bss*)
 		. = ALIGN(4);
-		_edtcmram_bss = .;
+		_edtcm_bss = .;
 
-		PROVIDE(__dtcmram_bss_end__ = _edtcmram_bss);
+		PROVIDE(__dtcm_bss_end__ = _edtcm_bss);
 	} > DTCMRAM
+
+	.dtcm_data :
+	{
+		. = ALIGN(4);
+		_sdtcm_data = .;
+
+		PROVIDE(__dtcm_data_start__ = _sdtcm_data);
+		*(.dtcm_data)
+		*(.dtcm_data*)
+		. = ALIGN(4);
+		_edtcm_data = .;
+
+		PROVIDE(__dtcm_data_end__ = _edtcm_data);
+	} > DTCMRAM AT > SRAM
+
+	_sidtcm_data = LOADADDR(.dtcm_data);
 
 	/*
 	.sdram_text :

@@ -19,7 +19,7 @@
 #define M_PI 3.14159265358979323846 /* pi */
 #endif
 
-float DSY_SDRAM_BSS aux_[DSY_REVERBSC_MAX_SIZE];
+float  aux_[DSY_REVERBSC_MAX_SIZE];
 
 /* kReverbParams[n][0] = delay time (in seconds)                     */
 /* kReverbParams[n][1] = random variation in delay time (in seconds) */

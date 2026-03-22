@@ -22,13 +22,14 @@ CPP_SOURCES = main.cpp \
 
 C_SOURCES = imageData.c
 
-LDSCRIPT = ./Linker_sram.lds
+LDSCRIPT = core/Linker_sram.lds
+STARTUP_FILE = core/startup_stm32h750xx.c
 
 USE_DAISYSP_LGPL=1
 LDFLAGS += -u _printf_float
 APP_TYPE = BOOT_SRAM
 
-OPT = -Os    # Optimize for size замість -O2
+OPT = -Os    # Optimize for size замість -Os
 CPPFLAGS += -ffunction-sections -fdata-sections  # Кожна функція в окрему секцію
 LDFLAGS += -Wl,--gc-sections 
 
