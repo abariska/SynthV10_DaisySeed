@@ -13,7 +13,7 @@ static const size_t PAGE_SIZE = 1024;           // округлюємо до 512
 static const uint32_t FLASH_BASE_ADDR = 0x1000; // Починаємо пресети з 4KB
 static const uint32_t FLASH_BLOCK_4KB = 0x1000;
 
-DTCM Preset currentPreset;
+Preset currentPreset;
 AudioParamsDirty dirty;
 const float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0.0f,
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 1.0f, //Osc1
@@ -431,7 +431,7 @@ void ApplyPreset(int presetNumber)
         min_val, max_val, full_label, short_label, static_cast<int>(param_enum),                           \
         currentPreset.array, is_per_voice, curve, unit, type, useInMain, useInMod)
 
-DTCM ParameterManager paramManager;
+ParameterManager paramManager;
 using P = ParamUnitName;
 
 void ParameterManager::Init()
@@ -510,7 +510,7 @@ void ParameterManager::AdjustByIncrement(ParamUnitName name, int inc)
     SetAudioDirtyFlag(name);
 }
 
-DTCM Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
+Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::NONE, 0.0f, {0.0f}, "-", false},
     {ModSource::LFO, 0.0f, {0.0f}, "LFO", false},
     {ModSource::ADSR, 0.0f, {0.0f}, "ADSR", true},

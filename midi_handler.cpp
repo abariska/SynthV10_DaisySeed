@@ -7,9 +7,9 @@ MidiUsbHandler midiUsb;
 USBHostHandle usbHost;
 
 bool is_midi_host_usb = false;
-DTCM float mod_wheel_value = 0.0f;
-DTCM float pitch_bend_multiplier = 1.0f;
-DTCM float aftertouch_value = 0.0f;
+float mod_wheel_value = 0.0f;  
+float pitch_bend_multiplier = 1.0f;
+float aftertouch_value = 0.0f;
 bool isMidiData = false;
 
 void USBH_ClassActive(void* data)

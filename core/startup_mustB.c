@@ -1535,7 +1535,7 @@ extern void *_sidtcm_data, *_sdtcm_data, *_edtcm_data;
 extern void *_sdtcm_bss, *_edtcm_bss;
 extern void *_siitcm_text, *_sitcm_text, *_eitcm_text;
 
-void __attribute__((noreturn)) Reset_Handler()
+void __attribute__((noreturn, optimize("O0"))) Reset_Handler()
 {
 	//Normally the CPU should will setup the based on the value from the first entry in the vector table.
 	//If you encounter problems with accessing stack variables during initialization, ensure the line below is enabled.

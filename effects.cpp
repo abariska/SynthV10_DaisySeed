@@ -1,7 +1,7 @@
 #include "effects.h"
 #include "parameters.h"
 
-DTCM FXParam fx;
+FXParam fx;
 
 using P = ParamUnitName;
 

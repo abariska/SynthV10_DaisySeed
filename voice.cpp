@@ -5,67 +5,67 @@ using P = ParamUnitName;
 using namespace daisy;
 using M = ModSource;
 
-DTCM Adsr adsrModGlobal;
-DTCM OscLfo lfo;
-DTCM Random rnd;
-DTCM Voice voice[VOICE_NUM];
+Adsr adsrModGlobal;
+OscLfo lfo;
+Random rnd;
+Voice voice[VOICE_NUM];
 
-DTCM uint8_t noteStack[MAX_NOTE_STACK];
-DTCM uint8_t notesInStack;
+uint8_t noteStack[MAX_NOTE_STACK];
+uint8_t notesInStack;
 
-DTCM float midiNoteToFreqTable[128];
-DTCM float velocityToAmpTable[128];
-DTCM float pitchTable[PITCH_TABLE_SIZE];
-DTCM float detuneTable[DETUNE_TABLE_SIZE];
-DTCM float pitchBendTable[PITCH_BEND_TABLE_SIZE];
-DTCM float freqModTable[FREQ_MOD_TABLE_SIZE];
+float midiNoteToFreqTable[128];
+float velocityToAmpTable[128];
+float pitchTable[PITCH_TABLE_SIZE];
+float detuneTable[DETUNE_TABLE_SIZE];
+float pitchBendTable[PITCH_BEND_TABLE_SIZE];
+float freqModTable[FREQ_MOD_TABLE_SIZE];
 
-DTCM static float cached_pitch[OSC_NUM];
-DTCM static float cached_detune[OSC_NUM];
-DTCM static float osc_freq_factor[OSC_NUM];
-DTCM static float cached_portamento;
-DTCM static bool cached_mono = false;
-DTCM static bool cached_legato = false;
-DTCM static float cached_pan;
-DTCM static bool cached_lfo_trigger = false;
-DTCM float cached_master_volume;
+static float cached_pitch[OSC_NUM];
+static float cached_detune[OSC_NUM];
+static float osc_freq_factor[OSC_NUM];
+static float cached_portamento;
+static bool cached_mono = false;
+static bool cached_legato = false;
+static float cached_pan;
+static bool cached_lfo_trigger = false;
+float cached_master_volume;
 
-DTCM static int cached_waveform[OSC_NUM];
-DTCM static bool cached_active[OSC_NUM];
-DTCM static float cached_pw[OSC_NUM];
-DTCM static float cached_amp[OSC_NUM];
-DTCM static float cached_pan_correction[VOICE_NUM][2]; // 0 - left, 1 - right
-DTCM static float cached_filter_cutoff;
-DTCM static float cached_filter_resonance;
+static int cached_waveform[OSC_NUM];
+static bool cached_active[OSC_NUM];
+static float cached_pw[OSC_NUM];
+static float cached_amp[OSC_NUM];
+static float cached_pan_correction[VOICE_NUM][2]; // 0 - left, 1 - right
+static float cached_filter_cutoff;
+static float cached_filter_resonance;
 
-DTCM float panningTable[PANNING_TABLE_SIZE][2] = {{0.0f}}; 
+float panningTable[PANNING_TABLE_SIZE][2] = {{0.0f}}; 
 float voice_pan_range[VOICE_NUM] = {
     0.0f, 0.5f, -0.5f, 1.0f, -1.0f};
 
-DTCM static const float inv_voice_num = 1.0f / VOICE_NUM;
+static const float inv_voice_num = 1.0f / VOICE_NUM;
 
-DTCM static SynthParameter* p_freq[OSC_NUM];
-DTCM static SynthParameter* p_amp[OSC_NUM];
-DTCM static SynthParameter* p_pw[OSC_NUM];
-DTCM static SynthParameter* p_filter_cutoff;
-DTCM static SynthParameter* p_filter_resonance;
+static SynthParameter* p_freq[OSC_NUM];
+static SynthParameter* p_amp[OSC_NUM];
+static SynthParameter* p_pw[OSC_NUM];
+static SynthParameter* p_filter_cutoff;    
+static SynthParameter* p_filter_resonance;
 
 uint8_t noteNum = 60;
-DTCM float frequency;
-DTCM bool is_any_voice_active = false;
-DTCM bool polyToMonoSwitch = false;
+float frequency;
+bool is_any_voice_active = false;
+bool polyToMonoSwitch = false;
 
-DTCM bool isOscSyncNeeded[OSC_NUM] = {true};
-DTCM bool gate = false;
-DTCM float lfo_value;
-DTCM bool isVoiceActive[VOICE_NUM] = {false};
-DTCM int isModAffectsOscFreq = 0;
+bool isOscSyncNeeded[OSC_NUM] = {true};
+bool gate = false;
+float lfo_value;
+bool isVoiceActive[VOICE_NUM] = {false};
+int isModAffectsOscFreq = 0;
 
 void SynthInit(float samplerate, int blocksize)
 {
     InitPitchTables();
     InitPanningTable();
-    rnd.Init();
+    rnd.Init(); 
     for (size_t i = 0; i < VOICE_NUM; i++)
     {
         p_freq[0] = &paramManager.GetParam(OSC_FREQ[0]);
