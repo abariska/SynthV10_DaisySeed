@@ -20,8 +20,6 @@
 using namespace daisy;
 using namespace daisysp;
 
-
-extern OscLfo lfo;
 extern float samplerate;
 extern float lfo_value;
 extern float midiNoteToFreqTable[128];
@@ -29,7 +27,47 @@ extern float pitchTable[PITCH_TABLE_SIZE];
 extern float detuneTable[DETUNE_TABLE_SIZE];
 extern float pitchBendTable[PITCH_BEND_TABLE_SIZE];
 extern bool isOscSyncNeeded[OSC_NUM];
-extern float cached_master_volume;
+extern OscLfo lfo;
+
+struct GlobalCache
+{
+    float portamento = 0.0f;
+    bool mono = false;
+    bool legato = false;
+    float pan = 0.0f;
+    bool lfo_trigger = false;
+    float master_volume = 0.1f;
+};
+extern GlobalCache cache_global;
+
+struct OscCache
+{
+    int waveform;
+    float pitch;
+    float detune;
+    float freq_factor;
+    float amp;
+    float pw;
+    bool active;
+};
+extern OscCache cache_osc[OSC_NUM];
+
+struct VoiceCache
+{
+    float pan_correction[2];
+    float filter_cutoff;
+    float filter_resonance;
+};
+extern VoiceCache cache_voice[VOICE_NUM];
+
+struct ModCache
+{
+    float lfo_value = 1.0f;
+    float adsr_value = 1.0f;
+    float mod_wheel_value = 1.0f;
+    float aftertouch_value = 1.0f;
+};
+extern ModCache cache_mod;
 
 struct Voice
 {

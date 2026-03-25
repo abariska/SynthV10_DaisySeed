@@ -64,17 +64,17 @@ static void AudioCallback(AudioHandle::InterleavingInputBuffer in,
         float inR = in[i+1] * 0.5f;
 
         VoiceProcess(outL, outR); 
-        float fx1_outL = 0.0f;
-        float fx1_outR = 0.0f;
-        float fx2_outL = 0.0f;
-        float fx2_outR = 0.0f;
-        ProcessEffects(0, outL, outR, fx1_outL, fx1_outR);
-        ProcessEffects(1, fx1_outL, fx1_outR, fx2_outL, fx2_outR);
+        // float fx1_outL = 0.0f;
+        // float fx1_outR = 0.0f;
+        // float fx2_outL = 0.0f;
+        // float fx2_outR = 0.0f;
+        // ProcessEffects(0, outL, outR, fx1_outL, fx1_outR);
+        // ProcessEffects(1, fx1_outL, fx1_outR, fx2_outL, fx2_outR);
 
-        out[i] = (fx2_outL + inL) * cached_master_volume;
-        out[i + 1] = (fx2_outR + inR) * cached_master_volume;
-        // out[i] = outL;
-        // out[i + 1] = outR;
+        // out[i] = (fx2_outL + inL) * cache_global.master_volume;
+        // out[i + 1] = (fx2_outR + inR) * cache_global.master_volume;
+        out[i] = outL;
+        out[i + 1] = outR;
 
         // scope_out = outL + outR;
         // ProcessScope(scope_out);
