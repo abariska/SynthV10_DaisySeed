@@ -261,8 +261,8 @@ public:
     UseInMain useInMain;
     UseInMod useInMod;
     ParamType type;
-    float modifier_value = 0.0f;
-    float modifier_value_per_voice[VOICE_NUM] = {0.0f};
+    float modifier_value = 1.0f;
+    float modifier_value_per_voice[VOICE_NUM] = {1.0f};
     float norm_value = 0.0f;
     float physical_value = 0.0f;
     bool isDirty = false;

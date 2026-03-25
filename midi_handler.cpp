@@ -7,9 +7,9 @@ MidiUsbHandler midiUsb;
 USBHostHandle usbHost;
 
 bool is_midi_host_usb = false;
-float mod_wheel_value = 0.0f;  
+float mod_wheel_value = 1.0f;  
 float pitch_bend_multiplier = 1.0f;
-float aftertouch_value = 0.0f;
+float aftertouch_value = 1.0f;
 bool isMidiData = false;
 
 void USBH_ClassActive(void* data)
@@ -74,7 +74,11 @@ void HandleMidiMessage(MidiEvent m)
     case NoteOn:
     {
         auto note = m.AsNoteOn();
-        HandleNoteOn(note.note, note.velocity);
+            if (note.velocity > 0) {
+            HandleNoteOn(note.note, note.velocity);
+        } else {
+            HandleNoteOff(note.note);
+        }
     }
     break;
     case NoteOff:

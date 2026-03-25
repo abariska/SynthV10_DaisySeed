@@ -268,7 +268,7 @@ float SynthParameter::GetValue() const
 {
     float value = 0;
     float m = 0.0f;
-    float mod = is_mod_per_voice ? 0.0f : modifier_value; 
+    float mod = 0.0f; 
 
     switch (unit)
     {

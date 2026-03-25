@@ -54,9 +54,15 @@ extern OscCache cache_osc[OSC_NUM];
 
 struct VoiceCache
 {
+    float base_freq;
+    float base_amp;
     float pan_correction[2];
     float filter_cutoff;
     float filter_resonance;
+    float adsr_attack;
+    float adsr_decay;
+    float adsr_sustain;
+    float adsr_release;
 };
 extern VoiceCache cache_voice[VOICE_NUM];
 

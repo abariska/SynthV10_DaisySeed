@@ -172,9 +172,9 @@ void UpdateVoiceLeds()
     static bool voiceStatusChanged[VOICE_NUM] = {false};
     for (size_t i = 0; i < VOICE_NUM; i++)
     {
-        if (voiceStatusChanged[i] != isVoiceActive[i])
+        if (voiceStatusChanged[i] != voice[i].active)
         {
-            voiceStatusChanged[i] = isVoiceActive[i];
+            voiceStatusChanged[i] = voice[i].active;
             sx1509_leds.WritePin(LED_1 + i, voiceStatusChanged[i] ? 1 : 0);
         }
     }
