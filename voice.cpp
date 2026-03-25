@@ -456,7 +456,6 @@ void UpdateSynthParams()
     }
 }
 
-
 void VoiceProcess(float &out_sigL, float &out_sigR)
 {
     ModSourcesProcess();
@@ -470,9 +469,9 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
         {
             if (is_osc_dirty)
             {
-                float freq_osc_factor_value = cache_osc[oscId].freq_factor * pitch_bend_multiplier;
-                float amp_osc_factor_value = cache_osc[oscId].amp;
-                float pw_osc_factor_value = cache_osc[oscId].pw * p_pw[oscId]->modifier_value_per_voice[v];
+                float freq_osc_factor_value = cache_osc[oscId].freq_factor * pitch_bend_multiplier * paramManager.GetParam(OSC_FREQ[oscId]).modifier_value_per_voice[v];
+                float amp_osc_factor_value = cache_osc[oscId].amp * paramManager.GetParam(OSC_AMP[oscId]).modifier_value_per_voice[v]   ;
+                float pw_osc_factor_value = cache_osc[oscId].pw * paramManager.GetParam(OSC_PWM[oscId]).modifier_value_per_voice[v];
 
                 voice[v].osc[oscId].SetFreq(voice[v].freq * freq_osc_factor_value);
                 voice[v].osc[oscId].SetAmp(amp_osc_factor_value * voice[v].vel);
@@ -498,8 +497,10 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
         }
         if (is_flt_dirty)
         {
-            voice[v].flt.SetFreq(cache_voice[v].filter_cutoff);
-            voice[v].flt.SetRes(cache_voice[v].filter_resonance);
+            float filter_cutoff = cache_voice[v].filter_cutoff * paramManager.GetParam(P::FILTER_CUTOFF).modifier_value_per_voice[v];
+            float filter_resonance = cache_voice[v].filter_resonance * paramManager.GetParam(P::FILTER_RESONANCE).modifier_value_per_voice[v];
+            voice[v].flt.SetFreq(filter_cutoff);
+            voice[v].flt.SetRes(filter_resonance);
         }
         if (is_env_dirty)
         {
