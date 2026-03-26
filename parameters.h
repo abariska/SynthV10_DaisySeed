@@ -407,12 +407,12 @@ private:
 
 struct Preset
 {
-    PresetType type;
     uint8_t number;
-    float array[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
+    float values[static_cast<int>(ParamUnitName::COUNT_PARAMS)];
     ModMatrix modMtx[MOD_MATRIX_NUM];
     MainSlot mainSlots[NUM_MAIN_SLOTS];
     FXSlot effectSlots[NUM_FX_SLOTS];
+    PresetType type;
 };
 
 extern Preset currentPreset;

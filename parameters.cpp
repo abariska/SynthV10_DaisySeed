@@ -16,7 +16,7 @@ static const uint32_t FLASH_BLOCK_4KB = 0x1000;
 Preset currentPreset;
 ParameterManager paramManager;
 AudioParamsDirty dirty;
-const float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0.0f,
+const float default_preset_values[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0.0f,
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 1.0f, //Osc1
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 0.0f, //Osc2
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 0.0f, //Osc3
@@ -36,7 +36,7 @@ Preset GetDefaultPreset(int8_t presetNumber)
     Preset preset = {};
     preset.number = presetNumber;
     preset.type = PresetType::DEFAULT;
-    memcpy(preset.array, default_preset_array, sizeof(default_preset_array));
+    memcpy(preset.values, default_preset_values, sizeof(default_preset_values));
 
     for (size_t i = 0; i < NUM_MAIN_SLOTS; i++)
     {
@@ -300,7 +300,8 @@ void ParameterManager::SetBool(ParamUnitName name, bool value)
 
 void ParameterManager::SetFromCurrentPreset(ParamUnitName name) 
 { 
-    values[static_cast<int>(name)].normal = currentPreset.array[static_cast<int>(name)]; 
+    values[static_cast<int>(name)].normal = currentPreset.values[static_cast<int>(name)]; 
+    paramManager.SetNormalized(name, values[static_cast<int>(name)].normal);
 }
 
 //--------------------------------
@@ -325,7 +326,7 @@ void SavePreset(uint8_t preset_num, const Preset &prst)
     p.number = prst.number;
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
-        p.array[i] = paramManager.GetNormalised(static_cast<ParamUnitName>(i));
+        p.values[i] = paramManager.GetNormalised(static_cast<ParamUnitName>(i));
     }
     for (size_t j = 0; j < MOD_MATRIX_NUM; j++)
     {
@@ -376,7 +377,7 @@ void ResetPreset(int presetNumber)
 
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
-        paramManager.SetNormalized(static_cast<ParamUnitName>(i), currentPreset.array[i]);
+        paramManager.SetNormalized(static_cast<ParamUnitName>(i), currentPreset.values[i]);
     }
 
     page_need_update = true;
@@ -400,9 +401,10 @@ void ApplyPreset(int presetNumber)
 
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
-        paramManager.SetNormalized(static_cast<ParamUnitName>(i), currentPreset.array[i]);
-        paramManager.SetModifier(static_cast<ParamUnitName>(i), 0.0f);
-        paramManager.SetDirty(static_cast<ParamUnitName>(i), true);
+        ParamUnitName param = static_cast<ParamUnitName>(i);
+        paramManager.SetNormalized(param, currentPreset.values[i]);
+        paramManager.SetModifier(param, 0.0f);
+        paramManager.SetDirty(param, true);
     }
     DirtyFlagsToTrue();
     page_need_update = true;

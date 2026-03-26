@@ -317,6 +317,7 @@ void UpdateSynthParams()
         dirty.globalParams = false;
     }
 
+    dirty.oscParams = true;
     if (dirty.oscParams)
     {
         if (polyToMonoSwitch)
@@ -454,9 +455,9 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
         {
             if (is_osc_dirty)
             {
-                float freq_osc_factor_value = cache_osc[oscId].freq_factor * pitch_bend_multiplier * paramManager.GetModifierPerVoice(OSC_FREQ[oscId], v);
-                float amp_osc_factor_value = cache_osc[oscId].amp * paramManager.GetModifierPerVoice(OSC_AMP[oscId], v);
-                float pw_osc_factor_value = cache_osc[oscId].pw * paramManager.GetModifierPerVoice(OSC_PWM[oscId], v);
+                float freq_osc_factor_value = cache_osc[oscId].freq_factor * pitch_bend_multiplier;
+                float amp_osc_factor_value = cache_osc[oscId].amp;
+                float pw_osc_factor_value = cache_osc[oscId].pw ;
 
                 voice[v].osc[oscId].SetFreq(voice[v].freq * freq_osc_factor_value);
                 voice[v].osc[oscId].SetAmp(amp_osc_factor_value * voice[v].vel);
@@ -482,8 +483,8 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
         }
         if (is_flt_dirty)
         {
-            float filter_cutoff = cache_voice[v].filter_cutoff * paramManager.GetModifierPerVoice(P::FILTER_CUTOFF, v);
-            float filter_resonance = cache_voice[v].filter_resonance * paramManager.GetModifierPerVoice(P::FILTER_RESONANCE, v);
+            float filter_cutoff = cache_voice[v].filter_cutoff;
+            float filter_resonance = cache_voice[v].filter_resonance;
             voice[v].flt.SetFreq(filter_cutoff);
             voice[v].flt.SetRes(filter_resonance);
         }
