@@ -18,6 +18,6 @@ extern bool isOscSyncNeeded[OSC_NUM];
 extern float osc_data_prev[OSC_NUM];
 extern int isModAffectsOscFreq;
 
-extern Preset currentPreset;
+
 
 #endif

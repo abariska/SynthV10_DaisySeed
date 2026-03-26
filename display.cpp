@@ -2,10 +2,10 @@
 #include "display.h"
 #include "menu.h"
 #include "voice.h"
+#include "globals.h"
 
 CpuLoadMeter cpu_load;
 static const int oscToDisplay[] = {0, 1, 2, 4, 5}; // SIN, TRI, SAW_DOWN, PULSE→4, NOISE→5 
-extern Preset currentPreset;
 extern float scope_data[128];
 extern int scope_data_index;
 extern bool scope_data_ready;

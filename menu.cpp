@@ -5,8 +5,6 @@
 using P = ParamUnitName;
 using M = ModSource;
 
-extern ParameterManager paramManager;
-
 bool isBlink = false;
 bool blinkStateChanged = false;
 bool isStoreMode = false;
@@ -301,7 +299,7 @@ void EditBlockParam(uint8_t blockIndex)
         int temp_value = value;
         temp_value += dir;
 
-        while (paramManager.GetUseInMain(static_cast<P>(temp_value)) == UseInMain::NONE
+        while (!paramManager.GetUseInMain(static_cast<P>(temp_value))
             || isDuplicate(temp_value))
         {
             temp_value += dir;
@@ -636,7 +634,7 @@ void EditModBlock()
         target += dir;
         int shift = 0;
 
-        while (paramManager.GetUseInMod(static_cast<P>(target)) != UseInMod::USED)
+        while (!paramManager.GetUseInMod(static_cast<P>(target)))
         {
             target += dir;
             shift += dir;
@@ -662,7 +660,7 @@ void EditModBlock()
             target = (int)P::NONE;
         }
        
-        paramManager.GetParam(static_cast<P>(oldTarget)).SetModifier(0.0f);
+        paramManager.SetModifier(static_cast<P>(oldTarget), 0.0f);
         currentPreset.modMtx[selModBlockIndex].SetModTarget((ParamUnitName)target);
         encoderIncs[3] = 0;
     }

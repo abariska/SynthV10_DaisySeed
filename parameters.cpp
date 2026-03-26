@@ -14,6 +14,7 @@ static const uint32_t FLASH_BASE_ADDR = 0x1000; // Починаємо пресе
 static const uint32_t FLASH_BLOCK_4KB = 0x1000;
 
 Preset currentPreset;
+ParameterManager paramManager;
 AudioParamsDirty dirty;
 const float default_preset_array[(static_cast<int>(ParamUnitName::COUNT_PARAMS))] = {0.0f,
                                                                                0.0f, 0.0f, 0.5f, 0.5f, 0.5f, 0.5f, 1.0f, //Osc1
@@ -100,118 +101,92 @@ void InitQSPI()
         }
     }
 }
-
-// Continuous
-SynthParameter::SynthParameter(float min_value, float max_value, const char *full_label, const char *short_label,
-                               uint8_t index, float *array, bool is_per_voice, Curve defaultCurve, ParamUnit param_unit, ParamType paramType, UseInMain useInMain, UseInMod useInMod)
-    : full_label(full_label),
-      short_label(short_label),
-      param_index(index),
-      param_array(array),
-      min(min_value),
-      max(max_value),
-      curve(defaultCurve),
-      unit(param_unit),
-      useInMain(useInMain),
-      useInMod(useInMod),
-      type(paramType),
-      is_mod_per_voice(is_per_voice)
+// TODO
+void ParameterManager::Init()
 {
+    for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
+    {
+        dirty[i] = true;
+    }
 }
 
-// Discrete
-SynthParameter::SynthParameter(int min_vals, int max_vals, const char *full_label, const char *short_label,
-                               uint8_t index, float *array, bool is_per_voice, Curve defaultCurve, ParamUnit param_unit, ParamType paramType, UseInMain useInMain, UseInMod useInMod)
-    : full_label(full_label),
-      short_label(short_label),
-      param_index(index),
-      param_array(array),
-      min(min_vals),
-      max(max_vals),
-      curve(defaultCurve),
-      unit(param_unit),
-      useInMain(useInMain),
-      useInMod(useInMod),
-      type(paramType),
-      is_mod_per_voice(is_per_voice)
+float ParameterManager::SetNormalized(ParamUnitName name, float n)
 {
-}
-
-void SynthParameter::SetFromCurrentPreset()
-{
-    float n = currentPreset.array[param_index]; // Read from preset
-    SetNormalized(n);                           // Set normalized value
-}
-
-float SynthParameter::SetNormalized(float n)
-{
+    int param_index = static_cast<int>(name);
     n = clamp(n, 0.0f, 1.0f);
-    norm_value = n;
-    param_array[param_index] = norm_value;
-    if (type == ParamType::DISCRETE)
+    values[param_index].normal = n;
+    if (desc[param_index].type == ParamType::DISCRETE)
     {
-        if (unit == ParamUnit::BOOL)
+        if (desc[param_index].unit == ParamUnit::BOOL)
         {
-            physical_value = norm_value > 0.5f ? 1.0f : 0.0f;
+            values[param_index].physical = values[param_index].normal > 0.5f ? 1.0f : 0.0f;
         }
         else
         {
-            int num_values = static_cast<int>(max - min) + 1;
-            float exact_value = min + norm_value * (num_values - 1);
-            physical_value = roundf(exact_value);
-            norm_value = (physical_value - min) / (num_values - 1);
-            param_array[param_index] = norm_value;
+            int num_values = static_cast<int>(desc[param_index].max - desc[param_index].min) + 1;
+            float exact_value = desc[param_index].min + values[param_index].normal * (num_values - 1);
+            values[param_index].physical = roundf(exact_value);
+            values[param_index].normal = (values[param_index].physical - desc[param_index].min) / (num_values - 1);
         }
     }
     else
     {
-        physical_value = min + norm_value * (max - min); // min..max
+        values[param_index].physical = desc[param_index].min + values[param_index].normal * (desc[param_index].max - desc[param_index].min); // min..max
     }
-    return physical_value;
+    return values[param_index].physical;
 }
 
-float SynthParameter::SetPhysicalValue(float v)
+float ParameterManager::SetPhysicalValue(ParamUnitName name, float v)
 {
-    physical_value = clamp(v, min, max);
-    if (type == ParamType::DISCRETE)
+    int param_index = static_cast<int>(name);
+    values[param_index].physical = clamp(v, desc[param_index].min, desc[param_index].max);
+    if (desc[param_index].type == ParamType::DISCRETE)
     {
-        if (unit == ParamUnit::BOOL)
+        if (desc[param_index].unit == ParamUnit::BOOL)
         {
-            physical_value = v > 0.5f ? 1.0f : 0.0f;
-            norm_value = physical_value > 0.5f ? 1.0f : 0.0f;
+            values[param_index].physical = v > 0.5f ? 1.0f : 0.0f;
+            values[param_index].normal = values[param_index].physical > 0.5f ? 1.0f : 0.0f;
         }
         else
         {
-        physical_value = roundf(physical_value);
-        int num_values = static_cast<int>(max - min) + 1;
-            norm_value = (physical_value - min) / (num_values - 1);
-            param_array[param_index] = norm_value;
+        values[param_index].physical = roundf(values[param_index].physical);
+        int num_values = static_cast<int>(desc[param_index].max - desc[param_index].min) + 1;
+            values[param_index].normal = (values[param_index].physical - desc[param_index].min) / (num_values - 1);
         }
     }
     else
     {
-        norm_value = (physical_value - min) / (max - min);
+        values[param_index].normal = (values[param_index].physical - desc[param_index].min) / (desc[param_index].max - desc[param_index].min);
     }
-    param_array[param_index] = norm_value;
-    return norm_value;
+    return values[param_index].normal;
 }
 
-float SynthParameter::AdjustByIncrement(int inc)
+void ParameterManager::SetDirty(ParamUnitName name, bool isDirty)
 {
+    int param_index = static_cast<int>(name);
+    dirty[param_index] = isDirty;
+}
+
+float ParameterManager::AdjustByIncrement(ParamUnitName name, int inc)
+{
+    int param_index = static_cast<int>(name);
+    ParamUnit unit = desc[param_index].unit;
+    ParamType type = desc[param_index].type;
+    SetDirty(name, true);
     if (type == ParamType::DISCRETE )
     {
         if (unit == ParamUnit::BOOL)
         {
-            float newValue = static_cast<float>(norm_value);
+            float newValue = static_cast<float>(values[param_index].normal);
             newValue += inc;
-            SetNormalized(newValue);
+            SetNormalized(name, newValue);
             return static_cast<float>(newValue);
         }
         else
         {
-            int current_int = GetInt();
+            int current_int = static_cast<int>(values[param_index].physical);
             int new_int = current_int + inc;
-            return SetPhysicalValue(static_cast<float>(new_int));
+            return SetPhysicalValue(name, static_cast<float>(new_int));
         }
     }
 
@@ -221,66 +196,67 @@ float SynthParameter::AdjustByIncrement(int inc)
     case ParamUnit::FREQ:
     {
         float newValue = 0.0f;
-        if (physical_value >= 1.0f)
+        if (values[param_index].physical >= 1.0f)
         {
             float ratio = powf(2.0f, inc / 12.0f);
-            newValue = physical_value * ratio;
+            newValue = values[param_index].physical * ratio;
         }
         else
         {
-            if (physical_value >= 0.1f)
+            if (values[param_index].physical >= 0.1f)
             {
                 float ratio = powf(2.0f, inc / 6.0f);
-                newValue = physical_value * ratio;
+                newValue = values[param_index].physical * ratio;
             }
             else
             {
                 float ratio = powf(2.0f, inc / 2.0f);
-                newValue = physical_value * ratio;
+                newValue = values[param_index].physical * ratio;
             }
         }
-        return SetPhysicalValue(newValue);
+        return SetPhysicalValue(name, newValue);
     }
     case ParamUnit::SECONDS:
     {
         float newValue = 0.0f;
-        if (physical_value >= 0.1f)
+        if (values[param_index].physical >= 0.1f)
         {
             float ratio = powf(2.0f, inc / 12.0f);
-            newValue = physical_value * ratio;
+            newValue = values[param_index].physical * ratio;
         }
         else
         {
             float ratio = powf(2.0f, inc / 6.0f);
-            newValue = physical_value * ratio;
+            newValue = values[param_index].physical * ratio;
         }
-        return SetPhysicalValue(newValue);
+        return SetPhysicalValue(name, newValue);
     }
     default:
     {
-        float newValue = physical_value + inc;
-        return SetPhysicalValue(newValue);
+        float newValue = values[param_index].physical + inc;
+        return SetPhysicalValue(name, newValue);
     }
     }
 }
 
-float SynthParameter::GetValue() const
+float ParameterManager::GetValue(ParamUnitName name) const
 {
-    float value = 0;
-    float m = 0.0f;
-    float mod = 0.0f; 
+    int param_index = static_cast<int>(name);
+    float value = 0.0f;
+    float m = desc[param_index].max;
+    ParamUnit unit = desc[param_index].unit;
+    float mod_value = mod[param_index].mod_global;
 
     switch (unit)
     {
     case ParamUnit::FREQ:
-        value = physical_value;
-        return value + (value * mod);
+        value = values[param_index].physical;
+        return value + (value * mod_value);
         break;
     case ParamUnit::HZ:
     case ParamUnit::SECONDS:
-        value = physical_value;
-        m = max;
-        return value + ((m - value) * mod);
+        value = values[param_index].physical;
+        return value + ((m - value) * mod_value);
         break;
     
     case ParamUnit::SEMITONES:
@@ -288,15 +264,15 @@ float SynthParameter::GetValue() const
     case ParamUnit::PICTURE:
     case ParamUnit::TEXT:
     case ParamUnit::UNITLESS:
-        return GetInt();
+        return GetInt(name);
         break;
     case ParamUnit::PERCENT:
-        value = norm_value;
+        value = values[param_index].normal;
         m = 1.0f;
-        return value + ((m - value) * mod);
+        return value + ((m - value) * mod_value);
         break;
     case ParamUnit::BOOL:
-        return static_cast<float>(norm_value > 0.5f ? 1.0f : 0.0f);
+        return static_cast<float>(values[param_index].normal > 0.5f ? 1.0f : 0.0f);
         break;
     default:
         return 0.0f;
@@ -304,21 +280,27 @@ float SynthParameter::GetValue() const
     }
 }
 
-int SynthParameter::GetInt() const
+int ParameterManager::GetInt(ParamUnitName name) const
 {
-    if (type == ParamType::DISCRETE)
+    int param_index = static_cast<int>(name);
+    if (desc[param_index].type == ParamType::DISCRETE)
     {
-        int range = static_cast<int>(max - min);
-        int offset = static_cast<int>(roundf(norm_value * range));
-        return static_cast<int>(min) + offset;
+        int range = static_cast<int>(desc[param_index].max - desc[param_index].min);
+        int offset = static_cast<int>(roundf(values[param_index].normal * range));
+        return static_cast<int>(desc[param_index].min) + offset;
     }
-    return static_cast<int>(physical_value);
+    return static_cast<int>(values[param_index].physical);
 }
 
-void SynthParameter::SetBool(bool value)
+void ParameterManager::SetBool(ParamUnitName name, bool value)
 {
     float val = value ? 1.0f : 0.0f;
-    SetNormalized(val);
+    SetNormalized(name, val);
+}
+
+void ParameterManager::SetFromCurrentPreset(ParamUnitName name) 
+{ 
+    values[static_cast<int>(name)].normal = currentPreset.array[static_cast<int>(name)]; 
 }
 
 //--------------------------------
@@ -332,7 +314,7 @@ void InitSynthParams()
     paramManager.Init();
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
-        paramManager.GetParam(static_cast<ParamUnitName>(i)).SetFromCurrentPreset();
+        paramManager.SetFromCurrentPreset(static_cast<ParamUnitName>(i));
     }
 }
 /** --- SavePreset --- */
@@ -343,7 +325,7 @@ void SavePreset(uint8_t preset_num, const Preset &prst)
     p.number = prst.number;
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
-        p.array[i] = paramManager.GetParam(static_cast<ParamUnitName>(i)).norm_value;
+        p.array[i] = paramManager.GetNormalised(static_cast<ParamUnitName>(i));
     }
     for (size_t j = 0; j < MOD_MATRIX_NUM; j++)
     {
@@ -394,7 +376,7 @@ void ResetPreset(int presetNumber)
 
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
-        paramManager.GetParam(static_cast<ParamUnitName>(i)).SetNormalized(currentPreset.array[i]);
+        paramManager.SetNormalized(static_cast<ParamUnitName>(i), currentPreset.array[i]);
     }
 
     page_need_update = true;
@@ -418,96 +400,12 @@ void ApplyPreset(int presetNumber)
 
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
-        paramManager.GetParam(static_cast<ParamUnitName>(i)).SetNormalized(currentPreset.array[i]);
-        paramManager.GetParam(static_cast<ParamUnitName>(i)).modifier_value = 0.0f;
-        paramManager.GetParam(static_cast<ParamUnitName>(i)).isDirty = false;
+        paramManager.SetNormalized(static_cast<ParamUnitName>(i), currentPreset.array[i]);
+        paramManager.SetModifier(static_cast<ParamUnitName>(i), 0.0f);
+        paramManager.SetDirty(static_cast<ParamUnitName>(i), true);
     }
     DirtyFlagsToTrue();
     page_need_update = true;
-}
-
-#define ADD_PARAM(param_enum, min_val, max_val, full_label, short_label, is_per_voice, curve, unit, type, useInMain, useInMod) \
-    params[static_cast<int>(param_enum)] = SynthParameter(                               \
-        min_val, max_val, full_label, short_label, static_cast<int>(param_enum),                           \
-        currentPreset.array, is_per_voice, curve, unit, type, useInMain, useInMod)
-
-ParameterManager paramManager;
-using P = ParamUnitName;
-
-void ParameterManager::Init()
-{
-    ADD_PARAM(P::NONE, 0, 0, "-", "-", false, Curve::LINEAR, ParamUnit::UNITLESS, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_WAVEFORM_1, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 1", "Wave", false, Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_FREQ_1, 1.0f, 10000.0f, "Freq 1", "Freq", true, Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
-    ADD_PARAM(P::OSC_PITCH_1, -36, 36, "Pitch 1", "Pitch", true, Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_DETUNE_1, -100, 100, "Tune 1", "Tune", true, Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_AMP_1, 0.0f, 100.0f, "Amp 1", "Amp", true, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_PWM_1, -100, 100, "PWM 1", "PWM", true, Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_ACTIVE_1, 0, 2, "Enbl Osc1", "Enbl", true, Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_WAVEFORM_2, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 2", "Wave", true, Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_FREQ_2, 1.0f, 10000.0f, "Freq 2", "Freq", true, Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
-    ADD_PARAM(P::OSC_PITCH_2, -36, 36, "Pitch 2", "Pitch", true, Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_DETUNE_2, -100, 100, "Tune 2", "Tune", true, Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_AMP_2, 0.0f, 100.0f, "Amp 2", "Amp", true, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_PWM_2, -100, 100, "PWM 2", "PWM", true, Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_ACTIVE_2, 0, 2, "Enbl Osc2", "Enbl", true, Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE); 
-    ADD_PARAM(P::OSC_WAVEFORM_3, 0, OscWaveforms::WAVE_COUNT - 1, "Wave 3", "Wave", true, Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::OSC_FREQ_3, 1.0f, 10000.0f, "Freq 3", "Freq", true, Curve::EXPONENTIAL, ParamUnit::FREQ, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::USED);
-    ADD_PARAM(P::OSC_PITCH_3, -36, 36, "Pitch 3", "Pitch", true, Curve::LINEAR, ParamUnit::SEMITONES, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_DETUNE_3, -100, 100, "Tune 3", "Tune", true, Curve::LINEAR, ParamUnit::CENTS, ParamType::DISCRETE, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::OSC_AMP_3, 0.0f, 100.0f, "Amp 3", "Amp", true, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_PWM_3, -100, 100, "PWM 3", "PWM", true, Curve::LINEAR, ParamUnit::PERCENT, ParamType::DISCRETE, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::OSC_ACTIVE_3, 0, 2, "Enbl Osc3", "Enbl", true, Curve::LINEAR, ParamUnit::UNITLESS, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::FILTER_MODE, 0, 5, "Mode", "Mode", true,Curve::LINEAR, ParamUnit::TEXT, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::FILTER_CUTOFF, 5.0f, 20000.0f, "Cutoff", "Cutoff", true, Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::FILTER_RESONANCE, 0.0f, 100.0f, "Res", "Res", true, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::FILTER_DRIVE, 0.0f, 100.0f, "Drive", "Drive", true, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::ADSR_ATTACK, 0.005f, 20.0f, "Attack", "Attack", true, Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::ADSR_DECAY, 0.005f, 20.0f, "Decay", "Decay", true, Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::ADSR_SUSTAIN, 0.0f, 100.0f, "Sustain", "Sustain", true, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::ADSR_RELEASE, 0.005f, 20.0f, "Release", "Release", true, Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::MOD_LFO_WAVEFORM, 0, OscWaveformsLfo::LFO_WAVE_COUNT - 1, "Wave LFO", "Wave", false, Curve::LINEAR, ParamUnit::PICTURE, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::MOD_LFO_FREQ, 0.01f, 100.0f, "Freq Lfo", "Freq", false, Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::MOD_LFO_DEPTH, 0.0f, 100.0f, "Depth Lfo", "Depth", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::MOD_LFO_TRIGGER, 0, 2, "Trig Lfo", "Trigger", false, Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::MOD_LFO_ACTIVE, 0, 2, "ActiveLFO", "Active", false, Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::MOD_ADSR_ATTACK, 0.005f, 20.0f, "Atck Mod", "Attack", false, Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::MOD_ADSR_DECAY, 0.005f, 20.0f, "Dec Mod", "Decay", false, Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::MOD_ADSR_SUSTAIN, 0.0f, 100.0f, "Sus Mod", "Sustain", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::MOD_ADSR_RELEASE, 0.005f, 20.0f, "Rel Mod", "Release", false, Curve::EXPONENTIAL, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::NONE);
-    ADD_PARAM(P::EFFECT_OVERDRIVE_DRIVE, 0.0f, 100.0f, "Drive", "Drive", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_CHORUS_FREQ, 0.1f, 100.0f, "Freq Chrs", "Freq", false, Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_CHORUS_DEPTH, 0.0f, 100.0f, "Dpth Chrs", "Depth", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_CHORUS_FBK, 0.0f, 100.0f, "Fbk Chrs", "Feedback", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_CHORUS_DELAY, 0.0f, 100.0f, "Dly Chrs", "Delay", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_ATTACK, 0.001f, 10.0f, "Atck Com", "Attack", false, Curve::LINEAR, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_RELEASE, 0.001f, 10.0f, "Rel Com", "Release", false, Curve::LINEAR, ParamUnit::SECONDS, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_THRESHOLD, -80.0f, 0.0f, "Thrs Com", "Thresh", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_RATIO, 1.0f, 40.0f, "Rat Com", "Ratio", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_COMPRESSOR_MAKEUP, 0.0f, 80.0f, "Mkup Com", "Makeup", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_FLANGER_FEEDBACK, 0.0f, 100.0f, "Fdbk Flg", "Feedbck", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_FLANGER_LFO_DEPTH, 0.0f, 100.0f, "Dpth Flg", "Depth", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_FLANGER_LFO_FREQ, 0.1f, 100.0f, "Freq Flg", "Freq", false, Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_FLANGER_DELAY, 0.0f, 100.0f, "Dly Flg", "Delay", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_AUTOWAH_WAH, 0.0f, 100.0f, "Wah Aut", "Wah", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_AUTOWAH_LEVEL, 0.0f, 100.0f, "Lvl Aut", "Level", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_REVERB_FEEDBACK, 0.0f, 100.0f, "Fdbk Rvb", "Feedbck", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_REVERB_LPFREQ, 10.0f, 20000.0f, "Cut Rvb", "Cutoff", false, Curve::EXPONENTIAL, ParamUnit::HZ, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_SLOT_1_DRYWET, 0.0f, 100.0f, "FX1", "FX1", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_SLOT_1_ACTIVE, 0, 2, "Enbl FX1", "Enbl", false, Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::EFFECT_SLOT_2_DRYWET, 0.0f, 100.0f, "FX2", "FX2", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::USED, UseInMod::USED);
-    ADD_PARAM(P::EFFECT_SLOT_2_ACTIVE, 0, 2, "Enbl FX2", "Enbl", false, Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::GLOBAL_MONO, 0, 2, "Mono", "Mono", false, Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::GLOBAL_LEGATO, 0, 2, "Legato", "Legato", false, Curve::LINEAR, ParamUnit::BOOL, ParamType::DISCRETE, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::GLOBAL_PORTAMENTO, 0.0f, 100.0f, "Portamento", "Portamento", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::GLOBAL_PAN, 0.0f, 100.0f, "Voices Pan", "Pan", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
-    ADD_PARAM(P::GLOBAL_MASTER_VOLUME, 0.0f, 100.0f, "Master Volume", "Master Volume", false, Curve::LINEAR, ParamUnit::PERCENT, ParamType::CONTINUOUS, UseInMain::NONE, UseInMod::NONE);
-}
-
-void ParameterManager::AdjustByIncrement(ParamUnitName name, int inc) 
-{ 
-    params[static_cast<int>(name)].AdjustByIncrement(inc); 
-    SetAudioDirtyFlag(name);
 }
 
 Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
@@ -534,7 +432,7 @@ void ResetModMatrixModulators()
 
 void SetAudioDirtyFlag(ParamUnitName param) {
 
-    paramManager.GetParam(param).isDirty = true;
+    paramManager.SetDirty(param, true);
 
     if (param >= P::OSC_WAVEFORM_1 && param <= P::OSC_ACTIVE_3) {
         dirty.oscParams = true;
