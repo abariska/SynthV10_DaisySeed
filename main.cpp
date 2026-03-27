@@ -124,7 +124,6 @@ int main(void)
         {
             case PROCESS_CONTROLS:
                 ProcessEncoders();
-                UpdateEncodersParams();
                 break;
             case UPDATE_PARAMS:
                 UpdateSynthParams();

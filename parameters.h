@@ -258,8 +258,8 @@ public:
     const char *GetFullLabel(ParamUnitName name) const { return desc[static_cast<int>(name)].full_label; }
     const char *GetShortLabel(ParamUnitName name) const { return desc[static_cast<int>(name)].short_label; }
     ParamType GetType(ParamUnitName name) const { return desc[static_cast<int>(name)].type; } 
-    void SetModifier(ParamUnitName name, float mod_value) { mod[static_cast<int>(name)].mod_global = mod_value + 1.0f; }
-    void SetModifierPerVoice(ParamUnitName name, int voice_index, float mod_value_per_voice) { mod[static_cast<int>(name)].mod_per_voice[voice_index] = mod_value_per_voice + 1.0f; }
+    void SetModifier(ParamUnitName name, float mod_value) { mod[static_cast<int>(name)].mod_global = mod_value; }
+    void SetModifierPerVoice(ParamUnitName name, int voice_index, float mod_value_per_voice) { mod[static_cast<int>(name)].mod_per_voice[voice_index] = mod_value_per_voice; }
     float SetNormalized(ParamUnitName name, float n);
     float SetPhysicalValue(ParamUnitName name, float v);
     void SetValue(ParamUnitName name, float value) { values[static_cast<int>(name)].physical = value; }
@@ -268,6 +268,7 @@ public:
     float AdjustByIncrement(ParamUnitName name, int inc);
     ParamUnit GetUnit(ParamUnitName name) const { return desc[static_cast<int>(name)].unit; }
     float GetValue(ParamUnitName name) const;
+    float GetParamUpdate(ParamUnitName name) const;
     bool GetUseInMain(ParamUnitName name) const { return desc[static_cast<int>(name)].flags & FLAG_USE_IN_MAIN ? true : false; }
     bool GetUseInMod(ParamUnitName name) const { return desc[static_cast<int>(name)].flags & FLAG_USE_IN_MOD ? true : false; }
     bool GetIsPerVoice(ParamUnitName name) const { return desc[static_cast<int>(name)].flags & FLAG_PER_VOICE ? true : false; }

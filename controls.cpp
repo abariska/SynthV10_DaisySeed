@@ -219,7 +219,11 @@ void ProcessEncoders()
         encoderIncs[4] = EncoderInc(ENC_DIAL_A, ENC_DIAL_B);
     }
 
-    if (!isStoreMode)
+    if (isStoreMode)
+    {
+        EncoderChangeStore();
+    }
+    else
     {
         if (encoderIncs[4] != 0)
         {
@@ -244,6 +248,7 @@ void ProcessEncoders()
                     currentPreset.mainSlots[i].need_update = true;
                 }
             }
+            UpdateMainSlots();
             break;
         case FX_PAGE:
             if (encoderIncs[0] != 0)
@@ -254,19 +259,13 @@ void ProcessEncoders()
             {
                 currentPreset.effectSlots[1].need_update = true;
             }
+            EncoderChangeEffect();
             break;
         case MOD_MATRIX_PAGE:
-        
-            if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
-            {
-                isModMatrixNeedUpdate = true;
-            }
+            EditModBlock();
             break;
         case SETTINGS_PAGE:
-            if (encoderIncs[0] != 0 || encoderIncs[1] != 0 || encoderIncs[2] != 0 || encoderIncs[3] != 0)
-            {
-                isSettingsNeedUpdate = true;
-            }
+            EditSettingsBlock();
             break;
         default:
             for (size_t i = 0; i < 4; i++)
@@ -277,6 +276,7 @@ void ProcessEncoders()
                     paramSlots[paramIndex].need_update = true;
                 }
             }
+            UpdateParamSlots();
             break;
         }
     }

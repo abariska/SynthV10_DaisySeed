@@ -377,35 +377,6 @@ void UpdateParamSlots()
     }
 }
 
-void UpdateEncodersParams()
-{
-    if (isStoreMode)
-    {
-        EncoderChangeStore();
-        return;
-    }
-    if (currentPage == MAIN_PAGE)
-    {
-        UpdateMainSlots();
-    }
-    else if (currentPage == FX_PAGE)
-    {
-        EncoderChangeEffect();
-    }
-    else if (currentPage == MOD_MATRIX_PAGE)
-    {
-        EncoderChangeModMatrix();
-    }
-    else if (currentPage == SETTINGS_PAGE)
-    {
-        EncoderChangeSettings();
-    }
-    else
-    {
-        UpdateParamSlots();
-    }
-}
-
 void SetPageName(const char *name)
 {
     strcpy(page_name, name);
@@ -575,6 +546,7 @@ void EncoderChangeEffect()
 
 void EditModBlock()
 {
+    isModMatrixNeedUpdate = false;
     if (encoderIncs[0] != 0)
     {
         int dir = (encoderIncs[0] > 0) ? 1 : -1;
@@ -592,6 +564,7 @@ void EditModBlock()
         selModBlockIndex = value;
         DrawModMatrixBlock(prevModBlockIndex);
         encoderIncs[0] = 0;
+        isModMatrixNeedUpdate = true;
     }
 
     if (encoderIncs[1] != 0)
@@ -609,6 +582,7 @@ void EditModBlock()
         }
         currentPreset.modMtx[selModBlockIndex].modSource = static_cast<M>(mod);
         encoderIncs[1] = 0;
+        isModMatrixNeedUpdate = true;
     }
     if (encoderIncs[2] != 0)
     {
@@ -625,6 +599,7 @@ void EditModBlock()
         }
         currentPreset.modMtx[selModBlockIndex].modAmount = amount;
         encoderIncs[2] = 0;
+        isModMatrixNeedUpdate = true;
     }
     if (encoderIncs[3] != 0)
     {
@@ -660,24 +635,23 @@ void EditModBlock()
             target = (int)P::NONE;
         }
        
-        paramManager.SetModifier(static_cast<P>(oldTarget), 0.0f);
+        paramManager.SetModifier(static_cast<P>(oldTarget), 0.0f); 
+        SetAudioDirtyFlag(static_cast<P>(oldTarget));
         currentPreset.modMtx[selModBlockIndex].modTarget = static_cast<ParamUnitName>(target);
+        SetAudioDirtyFlag(static_cast<P>(target));
         encoderIncs[3] = 0;
+        isModMatrixNeedUpdate = true;
     }
-    DrawModMatrixBlock(selModBlockIndex);
-    isModMatrixNeedUpdate = false;
-}
-
-void EncoderChangeModMatrix()
-{
     if (isModMatrixNeedUpdate)
     {
-        EditModBlock();
+        DrawModMatrixBlock(selModBlockIndex);
+        isModMatrixNeedUpdate = false;
     }
 }
 
 void EditSettingsBlock()
 {
+    isSettingsNeedUpdate = false;
     if (encoderIncs[0] != 0)
     {
         int dir = (encoderIncs[0] > 0) ? 1 : -1;
@@ -695,6 +669,7 @@ void EditSettingsBlock()
         selSettingsBlockIndex = value;
         DrawSettingsBlock(prevSettingsBlockIndex);
         encoderIncs[0] = 0;
+        isSettingsNeedUpdate = true;
     }
 
     if (encoderIncs[3] != 0)
@@ -703,16 +678,12 @@ void EditSettingsBlock()
 
         paramManager.AdjustByIncrement(SETTINGS_PARAMS[selSettingsBlockIndex], dir);
         encoderIncs[3] = 0;
+        isSettingsNeedUpdate = true;
     }
-    DrawSettingsBlock(selSettingsBlockIndex);
-    isSettingsNeedUpdate = false;
-}
-
-void EncoderChangeSettings()
-{
     if (isSettingsNeedUpdate)
     {
-        EditSettingsBlock();
+        DrawSettingsBlock(selSettingsBlockIndex);
+        isSettingsNeedUpdate = false;
     }
 }
 

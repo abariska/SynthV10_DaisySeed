@@ -83,39 +83,32 @@ void ModProcess()
         float modAmount = currentPreset.modMtx[i].modAmount;
         int targetIndex = static_cast<int>(targetParam);
 
-        if (sourceIndex == 0 || targetIndex == 0 || modAmount == 0.0f) 
+        if (sourceIndex == 0 || targetIndex == 0) 
         {
-            continue;
+            modAmount = 0.0f;
         }
         if (paramManager.GetIsPerVoice(targetParam))
         {
             for (size_t v = 0; v < VOICE_NUM; ++v)
             {
+                float value = 0.0f;
                 if (modulators[sourceIndex].is_per_voice)
                 {
-                    float value = modulators[sourceIndex].value_per_voice[v] * modAmount;
-                    paramManager.SetModifierPerVoice(targetParam, v, value);
+                    value = modulators[sourceIndex].value_per_voice[v] * modAmount;
                 }
                 else
                 {
-                    float value = modulators[sourceIndex].value * modAmount;
-                    paramManager.SetModifier(targetParam, value);
+                    value = modulators[sourceIndex].value * modAmount;
                 }
+                paramManager.SetModifierPerVoice(targetParam, v, value);
             }
         }
         else
         {
-            if (modulators[sourceIndex].is_per_voice)
-            {
-                float value = modulators[sourceIndex].value_per_voice[0] * modAmount;
-                paramManager.SetModifier(targetParam, value);
-            }
-            else
-            {
-                float value = modulators[sourceIndex].value * modAmount;
-                paramManager.SetModifier(targetParam, value);
-            }
+            float value = modulators[sourceIndex].value * modAmount;
+            paramManager.SetModifier(targetParam, value);
         }
+        SetAudioDirtyFlag(targetParam);
     }
 }
 

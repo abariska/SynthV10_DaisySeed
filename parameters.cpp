@@ -280,6 +280,15 @@ float ParameterManager::GetValue(ParamUnitName name) const
     }
 }
 
+float ParameterManager::GetParamUpdate(ParamUnitName name) const
+{
+    int param_index = static_cast<int>(name);
+    if (dirty[param_index])
+    {
+        return GetValue(name);
+    }
+}
+
 int ParameterManager::GetInt(ParamUnitName name) const
 {
     int param_index = static_cast<int>(name);

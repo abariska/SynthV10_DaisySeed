@@ -32,13 +32,11 @@ extern ActiveRow currentActiveRow;
 
 void UpdateEncoderSwitches();
 void EditBlockParam(uint8_t blockIndex);
-void UpdateEncodersParams();
 void EncoderChangeEffect();
-void EncoderChangeModMatrix();
-void EncoderChangeSettings();
 void DrawModMatrixBlocks();
 void DrawModMatrixBlock(uint8_t blockIndex);
 void EditModBlock();
+void EditSettingsBlock();
 void DrawMainBlocks();
 void DrawParamBlocks();
 void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t textColor = WHITE, uint16_t bgColor = BLACK);
@@ -49,7 +47,8 @@ void ToggleActiveRow();
 void EncoderChangeStore();
 void UpdateStoreLed();
 void DrawFilterModeText(int mode);
-
+void UpdateMainSlots();
+void UpdateParamSlots();
 uint8_t GetActiveParamIndex(uint8_t encoderIndex); // Повертає індекс активного параметра для енкодера
 
 #endif
