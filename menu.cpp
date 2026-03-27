@@ -597,7 +597,7 @@ void EditModBlock()
     if (encoderIncs[1] != 0)
     {
         int dir = (encoderIncs[1] > 0) ? 1 : -1;
-        int mod = (int)currentPreset.modMtx[selModBlockIndex].GetModSource();
+        int mod = (int)currentPreset.modMtx[selModBlockIndex].modSource;
         mod += dir;
         if (mod >= static_cast<int>(M::COUNT_MOD_SOURCES) - 1)
         {
@@ -607,13 +607,13 @@ void EditModBlock()
         {
             mod = 0;
         }
-        currentPreset.modMtx[selModBlockIndex].SetModSource(static_cast<M>(mod));
+        currentPreset.modMtx[selModBlockIndex].modSource = static_cast<M>(mod);
         encoderIncs[1] = 0;
     }
     if (encoderIncs[2] != 0)
     {
         int dir = (encoderIncs[2] > 0) ? 1 : -1;
-        float amount = currentPreset.modMtx[selModBlockIndex].GetModAmount();
+        float amount = currentPreset.modMtx[selModBlockIndex].modAmount;
         amount += dir * 0.01f;
         if (amount > 1.0f)
         {
@@ -623,13 +623,13 @@ void EditModBlock()
         {
             amount = -1.0f;
         }
-        currentPreset.modMtx[selModBlockIndex].SetModAmount(amount);
+        currentPreset.modMtx[selModBlockIndex].modAmount = amount;
         encoderIncs[2] = 0;
     }
     if (encoderIncs[3] != 0)
     {
         int dir = (encoderIncs[3] > 0) ? 1 : -1;
-        int oldTarget = (int)currentPreset.modMtx[selModBlockIndex].GetModTarget();
+        int oldTarget = (int)currentPreset.modMtx[selModBlockIndex].modTarget;
         int target = oldTarget;
         target += dir;
         int shift = 0;
@@ -661,7 +661,7 @@ void EditModBlock()
         }
        
         paramManager.SetModifier(static_cast<P>(oldTarget), 0.0f);
-        currentPreset.modMtx[selModBlockIndex].SetModTarget((ParamUnitName)target);
+        currentPreset.modMtx[selModBlockIndex].modTarget = static_cast<ParamUnitName>(target);
         encoderIncs[3] = 0;
     }
     DrawModMatrixBlock(selModBlockIndex);

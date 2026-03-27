@@ -72,13 +72,13 @@ void InitQSPI()
     dsy_dma_invalidate_cache_for_buffer((uint8_t *)(0x90000000), PAGE_SIZE);
     uint32_t init_flag = *((uint32_t *)(0x90000000));
 
-    if (init_flag != 0xDEADBEEF)
+    if (init_flag != 0xDEADBEEC)
     {
         hw.qspi.Erase(0, FLASH_BLOCK_4KB);
 
         uint8_t page[PAGE_SIZE];
         memset(page, 0xFF, sizeof(page));
-        uint32_t marker = 0xDEADBEEF;
+        uint32_t marker = 0xDEADBEEC;
         memcpy(page, &marker, sizeof(marker));
 
         hw.qspi.Write(0, sizeof(page), page);
@@ -172,7 +172,7 @@ float ParameterManager::AdjustByIncrement(ParamUnitName name, int inc)
     int param_index = static_cast<int>(name);
     ParamUnit unit = desc[param_index].unit;
     ParamType type = desc[param_index].type;
-    SetDirty(name, true);
+    SetAudioDirtyFlag(name);
     if (type == ParamType::DISCRETE )
     {
         if (unit == ParamUnit::BOOL)
@@ -245,7 +245,7 @@ float ParameterManager::GetValue(ParamUnitName name) const
     float value = 0.0f;
     float m = desc[param_index].max;
     ParamUnit unit = desc[param_index].unit;
-    float mod_value = mod[param_index].mod_global;
+    float mod_value = (desc[param_index].flags & ~FLAG_PER_VOICE) ? mod[param_index].mod_global : 0.0f;
 
     switch (unit)
     {
@@ -392,9 +392,10 @@ void ApplyPreset(int presetNumber)
     {
         SynthVoiceReset(i);
     }
+    
     for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
     {
-        ModMatrixReset(i);
+        currentPreset.modMtx[i].ResetMods();
     }
 
     ResetModMatrixModulators();
@@ -404,7 +405,6 @@ void ApplyPreset(int presetNumber)
         ParamUnitName param = static_cast<ParamUnitName>(i);
         paramManager.SetNormalized(param, currentPreset.values[i]);
         paramManager.SetModifier(param, 0.0f);
-        paramManager.SetDirty(param, true);
     }
     DirtyFlagsToTrue();
     page_need_update = true;
@@ -427,7 +427,7 @@ void ResetModMatrixModulators()
         modulators[i].value = 1.0f;
         for (size_t j = 0; j < VOICE_NUM; j++)
         {
-            modulators[i].value_per_voice[j] = 1.0f;
+            modulators[i].value_per_voice[j] = 0.0f;
         }
     }
 }

@@ -15,7 +15,6 @@ enum class ParamUnitName;
 extern float GetFreqModTableValue(int index);
 void SetAudioDirtyFlag(ParamUnitName param);
 void SynthVoiceReset(uint8_t voice_num);
-void ModMatrixReset(uint8_t mod_matrix_num);
 void DirtyFlagsToTrue();
 void ResetModMatrixModulators();
 void InitSynthParams();
@@ -259,8 +258,8 @@ public:
     const char *GetFullLabel(ParamUnitName name) const { return desc[static_cast<int>(name)].full_label; }
     const char *GetShortLabel(ParamUnitName name) const { return desc[static_cast<int>(name)].short_label; }
     ParamType GetType(ParamUnitName name) const { return desc[static_cast<int>(name)].type; } 
-    void SetModifier(ParamUnitName name, float mod_value) { mod[static_cast<int>(name)].mod_global = mod_value; }
-    void SetModifierPerVoice(ParamUnitName name, int voice_index, float mod_value_per_voice) { mod[static_cast<int>(name)].mod_per_voice[voice_index] = mod_value_per_voice; }
+    void SetModifier(ParamUnitName name, float mod_value) { mod[static_cast<int>(name)].mod_global = mod_value + 1.0f; }
+    void SetModifierPerVoice(ParamUnitName name, int voice_index, float mod_value_per_voice) { mod[static_cast<int>(name)].mod_per_voice[voice_index] = mod_value_per_voice + 1.0f; }
     float SetNormalized(ParamUnitName name, float n);
     float SetPhysicalValue(ParamUnitName name, float v);
     void SetValue(ParamUnitName name, float value) { values[static_cast<int>(name)].physical = value; }
@@ -271,6 +270,7 @@ public:
     float GetValue(ParamUnitName name) const;
     bool GetUseInMain(ParamUnitName name) const { return desc[static_cast<int>(name)].flags & FLAG_USE_IN_MAIN ? true : false; }
     bool GetUseInMod(ParamUnitName name) const { return desc[static_cast<int>(name)].flags & FLAG_USE_IN_MOD ? true : false; }
+    bool GetIsPerVoice(ParamUnitName name) const { return desc[static_cast<int>(name)].flags & FLAG_PER_VOICE ? true : false; }
     float GetModifier(ParamUnitName name) const { return mod[static_cast<int>(name)].mod_global; }
     float GetModifierPerVoice(ParamUnitName name, int voice_index) const { return mod[static_cast<int>(name)].mod_per_voice[voice_index]; }
     bool GetDirty(ParamUnitName name) const { return dirty[static_cast<int>(name)]; }
@@ -333,76 +333,19 @@ struct Modulator
 };
 
 extern Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)];
-// Mod Matrix
-class ModMatrix
+
+struct ModMatrix
 {
-public:
-    ModMatrix()
-    {
-        ResetMods();
-    }
+    ModSource modSource;
+    ParamUnitName modTarget;
+    float modAmount;
 
-    void SetModSource(ModSource source) 
-    { 
-        modSourceIndex = source; 
-        isModPerVoice = modulators[static_cast<int>(source)].is_per_voice;
-    }
-    void SetModTarget(ParamUnitName target) 
-    { 
-        modTarget = target; 
-        isFreq = (paramManager.GetUnit(target) == ParamUnit::FREQ); 
-        isParamPerVoice = paramManager.GetUseInMod(target) ? true : false;
-    }
-    void SetModAmount(float amount) { modAmount = amount; }
-
-    float GetModAmount() const { return modAmount; }
-    ModSource GetModSource() const{ return modSourceIndex; }
-    float GetModSourceValue() const { return modulators[static_cast<int>(modSourceIndex)].value; }
-    float GetModSourceValuePerVoice(int voice_index) const { return modulators[static_cast<int>(modSourceIndex)].value_per_voice[voice_index]; }
-    const char *GetModSourceLabel() const { return modulators[static_cast<int>(modSourceIndex)].label; }
-    ParamUnitName GetModTarget() const { return modTarget; }
-    const char *GetModTargetLabel() const { return paramManager.GetFullLabel(modTarget); }
     void ResetMods() 
     {
-        modSourceIndex = ModSource::NONE;
+        modSource = ModSource::NONE;
         modTarget = ParamUnitName::NONE;
         modAmount = 0.0f;
     }
-
-    void RunMod()
-    {
-        if (isModPerVoice && isParamPerVoice)
-        {
-            float ratio = isFreq ? GetFreqModTableValue(modAmount * 12.0f) : 1.0f;
-            
-            for (size_t i = 0; i < VOICE_NUM; i++)
-            {   
-                float modValue = modulators[static_cast<int>(modSourceIndex)].value_per_voice[i] + 1.0f;
-                modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f : modValue;
-                modValue = modValue * modAmount;
-                if (isFreq) modValue *= ratio;
-                modulators[static_cast<int>(modSourceIndex)].value_per_voice[i] = modValue;
-                paramManager.SetModifierPerVoice(modTarget, i, modValue);
-            }
-        }
-        else
-        {
-            float modValue = modulators[static_cast<int>(modSourceIndex)].value + 1.0f;
-            modValue = (modValue < 0.0f) ? 0.0f : (modValue > 1.0f) ? 1.0f : modValue;
-            modValue = modValue * modAmount;
-            modulators[static_cast<int>(modSourceIndex)].value = modValue;
-            paramManager.SetModifier(modTarget, modValue);
-        }
-        SetAudioDirtyFlag(modTarget);
-    }
-    
-private:
-    ModSource modSourceIndex;
-    ParamUnitName modTarget;
-    float modAmount;
-    bool isFreq = false;
-    bool isParamPerVoice = false;
-    bool isModPerVoice = false;
 };
 
 struct Preset

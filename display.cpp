@@ -402,9 +402,9 @@ void DrawModMatrixBlock(uint8_t blockIndex)
     Paint_NewImage(mod_matrix_block_data[blockIndex].data, MOD_MATRIX_BLOCK_WIDTH, MOD_MATRIX_BLOCK_HEIGHT, 0, BLACK);
     Paint_Clear(BLACK);
 
-    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModSourceLabel(), 64, 128, 1, FONT_LIGHT_12, WHITE, BLACK);
-    Paint_NumCentered(currentPreset.modMtx[blockIndex].GetModAmount() * 100, 128, 192, 1, 0, FONT_LIGHT_12, WHITE, BLACK);
-    Paint_TextCentered(currentPreset.modMtx[blockIndex].GetModTargetLabel(), 192, 256, 1, FONT_LIGHT_12, WHITE, BLACK);
+    Paint_TextCentered(modulators[static_cast<int>(currentPreset.modMtx[blockIndex].modSource)].label, 64, 128, 1, FONT_LIGHT_12, WHITE, BLACK);
+    Paint_NumCentered(currentPreset.modMtx[blockIndex].modAmount * 100, 128, 192, 1, 0, FONT_LIGHT_12, WHITE, BLACK);
+    Paint_TextCentered(paramManager.GetFullLabel(static_cast<ParamUnitName>(currentPreset.modMtx[blockIndex].modTarget)), 192, 256, 1, FONT_LIGHT_12, WHITE, BLACK);
     if (blockIndex == selModBlockIndex)
     {
         uint8_t arrow_y = 8;
