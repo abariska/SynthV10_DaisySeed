@@ -184,7 +184,6 @@ void DrawOneParamBlock(uint8_t blockIndex, ParamUnitName target_param, uint16_t 
 
 void DrawParamBlocks()
 {
-
     for (size_t i = 0; i < NUM_PARAM_BLOCKS; i++)
     {
         if (paramSlots[i].target_param == ParamUnitName::NONE)
@@ -202,7 +201,6 @@ void DrawParamBlocks()
 
 void DrawMainBlocks()
 {
-
     for (size_t i = 0; i < NUM_MAIN_SLOTS; i++)
     {
         DrawOneParamBlock(i, currentPreset.mainSlots[i].target_param);
@@ -233,7 +231,6 @@ void ToggleActiveRow()
 
 void UpdateEncoderSwitches()
 {
-
     switch (currentPage)
     {
     case MAIN_PAGE:
@@ -549,7 +546,7 @@ void EditModBlock()
     isModMatrixNeedUpdate = false;
     if (encoderIncs[0] != 0)
     {
-        int dir = (encoderIncs[0] > 0) ? 1 : -1;
+        int dir = encoderIncs[0];
         int prevModBlockIndex = selModBlockIndex;
         int value = prevModBlockIndex;
         value += dir;
@@ -569,7 +566,7 @@ void EditModBlock()
 
     if (encoderIncs[1] != 0)
     {
-        int dir = (encoderIncs[1] > 0) ? 1 : -1;
+        int dir = encoderIncs[1];
         int mod = (int)currentPreset.modMtx[selModBlockIndex].modSource;
         mod += dir;
         if (mod >= static_cast<int>(M::COUNT_MOD_SOURCES) - 1)
@@ -586,7 +583,7 @@ void EditModBlock()
     }
     if (encoderIncs[2] != 0)
     {
-        int dir = (encoderIncs[2] > 0) ? 1 : -1;
+        int dir = encoderIncs[2];
         float amount = currentPreset.modMtx[selModBlockIndex].modAmount;
         amount += dir * 0.01f;
         if (amount > 1.0f)
@@ -603,7 +600,7 @@ void EditModBlock()
     }
     if (encoderIncs[3] != 0)
     {
-        int dir = (encoderIncs[3] > 0) ? 1 : -1;
+        int dir = encoderIncs[3];
         int oldTarget = (int)currentPreset.modMtx[selModBlockIndex].modTarget;
         int target = oldTarget;
         target += dir;
@@ -637,6 +634,10 @@ void EditModBlock()
        
         paramManager.SetModifier(static_cast<P>(oldTarget), 0.0f); 
         SetAudioDirtyFlag(static_cast<P>(oldTarget));
+        for (size_t v = 0; v < VOICE_NUM; v++)
+        {
+            paramManager.SetModifierPerVoice(static_cast<P>(oldTarget), v, 0.0f);
+        }
         currentPreset.modMtx[selModBlockIndex].modTarget = static_cast<ParamUnitName>(target);
         SetAudioDirtyFlag(static_cast<P>(target));
         encoderIncs[3] = 0;
@@ -654,7 +655,7 @@ void EditSettingsBlock()
     isSettingsNeedUpdate = false;
     if (encoderIncs[0] != 0)
     {
-        int dir = (encoderIncs[0] > 0) ? 1 : -1;
+        int dir = encoderIncs[0];
         int prevSettingsBlockIndex = selSettingsBlockIndex;
         int value = prevSettingsBlockIndex;
         value += dir;
@@ -674,7 +675,7 @@ void EditSettingsBlock()
 
     if (encoderIncs[3] != 0)
     {
-        int dir = (encoderIncs[3] > 0) ? 1 : -1;
+        int dir = encoderIncs[3];
 
         paramManager.AdjustByIncrement(SETTINGS_PARAMS[selSettingsBlockIndex], dir);
         encoderIncs[3] = 0;
@@ -724,7 +725,7 @@ void EncoderChangeStore()
 {
     if (encoderIncs[4] != 0)
     {
-        int dir = (encoderIncs[4] > 0) ? 1 : -1;
+        int dir = encoderIncs[4];
         int preset = currentPreset.number;
         preset += dir;
         if (preset < 0)

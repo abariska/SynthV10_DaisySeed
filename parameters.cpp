@@ -407,13 +407,17 @@ void ApplyPreset(int presetNumber)
         currentPreset.modMtx[i].ResetMods();
     }
 
-    ResetModMatrixModulators();
+    ResetModModulators();
 
     for (size_t i = 0; i < static_cast<int>(ParamUnitName::COUNT_PARAMS); i++)
     {
         ParamUnitName param = static_cast<ParamUnitName>(i);
         paramManager.SetNormalized(param, currentPreset.values[i]);
         paramManager.SetModifier(param, 0.0f);
+        for (size_t v = 0; v < VOICE_NUM; v++)
+        {
+            paramManager.SetModifierPerVoice(param, v, 0.0f);
+        }
     }
     DirtyFlagsToTrue();
     page_need_update = true;
@@ -429,7 +433,7 @@ Modulator modulators[static_cast<int>(ModSource::COUNT_MOD_SOURCES)] = {
     {ModSource::SWITCH_PEDAL, 0.0f, {0.0f}, "SW Pedal", false},
 };
 
-void ResetModMatrixModulators()
+void ResetModModulators()
 {
     for (size_t i = 0; i < static_cast<int>(ModSource::COUNT_MOD_SOURCES); i++)
     {

@@ -16,7 +16,7 @@ extern float GetFreqModTableValue(int index);
 void SetAudioDirtyFlag(ParamUnitName param);
 void SynthVoiceReset(uint8_t voice_num);
 void DirtyFlagsToTrue();
-void ResetModMatrixModulators();
+void ResetModModulators();
 void InitSynthParams();
 template <typename T>
 constexpr const T &clamp(const T &v, const T &lo, const T &hi)

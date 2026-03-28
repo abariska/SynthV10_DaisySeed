@@ -69,7 +69,7 @@ void SynthInit(float samplerate, int blocksize)
     }
     
     VoicePanningInit();
-    ResetModMatrixModulators();
+    ResetModModulators();
     EffectsInit(samplerate);
 }
 
