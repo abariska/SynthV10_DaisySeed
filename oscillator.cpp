@@ -26,7 +26,6 @@ static constexpr float kWaveGain[] = {
     0.8f, // WAVE_SIN
     0.95f, // WAVE_TRIANGLE
     1.0f, // WAVE_SAW
-    1.0f, // WAVE_SAW_UP
     0.6f, // WAVE_SQUARE
     0.8f  // WAVE_NOISE 
 };

@@ -22,6 +22,5 @@ void Timer1ms();
 void InitImages();
 void DrawIntroPage();
 void UpdateEncoderSwitches();
-void UpdateEncodersParams();
 
 #endif

@@ -73,8 +73,32 @@ void SynthInit(float samplerate, int blocksize)
     EffectsInit(samplerate);
 }
 
-void ModProcess()
+void ModSourcesProcess()
 {
+    lfo_value = lfo.Process();
+    // lfo_value = (lfo_value < 0.0f) ? 0.0f : (lfo_value > 1.0f) ? 1.0f : lfo_value;
+    modulators[static_cast<int>(M::LFO)].value = lfo_value;
+
+    float adsr_value = adsrModGlobal.Process(gate);
+    // adsr_value = (adsr_value < 0.0f) ? 0.0f : (adsr_value > 1.0f) ? 1.0f : adsr_value;
+    modulators[static_cast<int>(M::ADSR)].value = adsr_value;
+
+    float wheel_value = mod_wheel_value;
+    // wheel_value = (wheel_value < 0.0f) ? 0.0f : (wheel_value > 1.0f) ? 1.0f : wheel_value;
+    modulators[static_cast<int>(M::MOD_WHEEL)].value = wheel_value;
+
+    float at_value = aftertouch_value;
+    // at_value = (at_value < 0.0f) ? 0.0f : (at_value > 1.0f) ? 1.0f : at_value;
+    modulators[static_cast<int>(M::AFTERTOUCH)].value = at_value;
+
+    for (size_t v = 0; v < VOICE_NUM; ++v)
+    {
+        float adsr_value_per_voice = voice[v].adsrMod.Process(voice[v].gate);
+        // adsr_value_per_voice = (adsr_value_per_voice < 0.0f) ? 0.0f : (adsr_value_per_voice > 1.0f) ? 1.0f : adsr_value_per_voice;
+        modulators[static_cast<int>(M::ADSR)].value_per_voice[v] = adsr_value_per_voice;
+        float velocity_value_per_voice = voice[v].vel;
+        modulators[static_cast<int>(M::VELOCITY)].value_per_voice[v] = velocity_value_per_voice;
+    }
 
     for (size_t i = 0; i < MOD_MATRIX_NUM; ++i)
     {
@@ -110,32 +134,6 @@ void ModProcess()
         }
         SetAudioDirtyFlag(targetParam);
     }
-}
-
-void ModSourcesProcess()
-{
-    lfo_value = lfo.Process();
-    modulators[static_cast<int>(M::LFO)].value = (lfo_value < 0.0f) ? 0.0f : (lfo_value > 1.0f) ? 1.0f : lfo_value;
-
-    float adsr_value = adsrModGlobal.Process(gate);
-    adsr_value = (adsr_value < 0.0f) ? 0.0f : (adsr_value > 1.0f) ? 1.0f : adsr_value;
-    modulators[static_cast<int>(M::ADSR)].value = adsr_value;
-
-    float wheel_value = mod_wheel_value;
-    wheel_value = (wheel_value < 0.0f) ? 0.0f : (wheel_value > 1.0f) ? 1.0f : wheel_value;
-    modulators[static_cast<int>(M::MOD_WHEEL)].value = wheel_value;
-
-    float at_value = aftertouch_value;
-    at_value = (at_value < 0.0f) ? 0.0f : (at_value > 1.0f) ? 1.0f : at_value;
-    modulators[static_cast<int>(M::AFTERTOUCH)].value = at_value;
-
-    for (size_t v = 0; v < VOICE_NUM; ++v)
-    {
-        float adsr_value_per_voice = voice[v].adsrMod.Process(voice[v].gate);
-        adsr_value_per_voice = (adsr_value_per_voice < 0.0f) ? 0.0f : (adsr_value_per_voice > 1.0f) ? 1.0f : adsr_value_per_voice;
-        modulators[static_cast<int>(M::ADSR)].value_per_voice[v] = adsr_value_per_voice;
-    }
-    ModProcess();
 }
 
 void PushNote(uint8_t note)
@@ -494,8 +492,8 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
 {
     ModSourcesProcess();
 
-    static float voice_freq[VOICE_NUM] = {0.0f};
-    static float voice_amp[VOICE_NUM] = {0.0f};
+    static float voice_freq[VOICE_NUM];
+    static float voice_amp[VOICE_NUM];
 
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {
@@ -504,16 +502,16 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
             if (is_osc_dirty)
             {
                 float freq_osc_factor_value = cache_osc[oscId].freq_factor * pitch_bend_multiplier;
-                float amp_osc_factor_value = cache_osc[oscId].amp;
+                voice_freq[v] = voice[v].freq * freq_osc_factor_value;
+                voice_amp[v] = voice[v].vel * cache_osc[oscId].amp;
                 float pw_osc_factor_value = cache_osc[oscId].pw;
 
-                voice[v].osc[oscId].SetFreq(voice[v].freq * freq_osc_factor_value + (voice[v].freq * paramManager.GetModifierPerVoice(OSC_FREQ[oscId], v)));
-                voice[v].osc[oscId].SetAmp(amp_osc_factor_value * voice[v].vel + (amp_osc_factor_value * paramManager.GetModifierPerVoice(OSC_AMP[oscId], v)));
-                voice[v].osc[oscId].SetPw(pw_osc_factor_value + (pw_osc_factor_value * paramManager.GetModifierPerVoice(OSC_PWM[oscId], v)));
+                voice[v].osc[oscId].SetFreq(voice_freq[v] + (voice_freq[v] * paramManager.GetModifierPerVoice(OSC_FREQ[oscId], v)));
+                voice[v].osc[oscId].SetAmp((voice_amp[v] + ((100.0f - voice_amp[v]) * paramManager.GetModifierPerVoice(OSC_AMP[oscId], v))));
+                voice[v].osc[oscId].SetPw((pw_osc_factor_value + (100.0f - pw_osc_factor_value) * paramManager.GetModifierPerVoice(OSC_PWM[oscId], v)));
 
                 voice[v].osc[oscId].SetActive(cache_osc[oscId].active);
                 voice[v].osc[oscId].SetWaveform(cache_osc[oscId].waveform);
-                voice[v].osc[oscId].SetPw(cache_osc[oscId].pw);
                 voice[v].osc[oscId].SetPortamento(cache_global.portamento);
             }
             if (isOscSyncNeeded[oscId] || isModAffectsOscFreq > 0)
@@ -533,8 +531,8 @@ void VoiceProcess(float &out_sigL, float &out_sigR)
         {
             float filter_cutoff = cache_voice[v].filter_cutoff;
             float filter_resonance = cache_voice[v].filter_resonance;
-            voice[v].flt.SetFreq(filter_cutoff + (filter_cutoff * paramManager.GetModifierPerVoice(P::FILTER_CUTOFF, v)));
-            voice[v].flt.SetRes(filter_resonance + (filter_resonance * paramManager.GetModifierPerVoice(P::FILTER_RESONANCE, v)));
+            voice[v].flt.SetFreq(filter_cutoff + ((20000.0f - filter_cutoff) * paramManager.GetModifierPerVoice(P::FILTER_CUTOFF, v)));
+            voice[v].flt.SetRes(filter_resonance + ((100.0f - filter_resonance) * paramManager.GetModifierPerVoice(P::FILTER_RESONANCE, v)));
         }
         if (is_env_dirty)
         {
