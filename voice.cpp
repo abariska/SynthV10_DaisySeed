@@ -76,26 +76,22 @@ void SynthInit(float samplerate, int blocksize)
 void ModSourcesProcess()
 {
     lfo_value = lfo.Process();
-    // lfo_value = (lfo_value < 0.0f) ? 0.0f : (lfo_value > 1.0f) ? 1.0f : lfo_value;
     modulators[static_cast<int>(M::LFO)].value = lfo_value;
 
     float adsr_value = adsrModGlobal.Process(gate);
-    // adsr_value = (adsr_value < 0.0f) ? 0.0f : (adsr_value > 1.0f) ? 1.0f : adsr_value;
     modulators[static_cast<int>(M::ADSR)].value = adsr_value;
 
     float wheel_value = mod_wheel_value;
-    // wheel_value = (wheel_value < 0.0f) ? 0.0f : (wheel_value > 1.0f) ? 1.0f : wheel_value;
     modulators[static_cast<int>(M::MOD_WHEEL)].value = wheel_value;
 
     float at_value = aftertouch_value;
-    // at_value = (at_value < 0.0f) ? 0.0f : (at_value > 1.0f) ? 1.0f : at_value;
     modulators[static_cast<int>(M::AFTERTOUCH)].value = at_value;
 
     for (size_t v = 0; v < VOICE_NUM; ++v)
     {
         float adsr_value_per_voice = voice[v].adsrMod.Process(voice[v].gate);
-        // adsr_value_per_voice = (adsr_value_per_voice < 0.0f) ? 0.0f : (adsr_value_per_voice > 1.0f) ? 1.0f : adsr_value_per_voice;
         modulators[static_cast<int>(M::ADSR)].value_per_voice[v] = adsr_value_per_voice;
+        
         float velocity_value_per_voice = voice[v].vel;
         modulators[static_cast<int>(M::VELOCITY)].value_per_voice[v] = velocity_value_per_voice;
     }
@@ -105,11 +101,11 @@ void ModSourcesProcess()
         ParamUnitName targetParam = currentPreset.modMtx[i].modTarget;
         int sourceIndex = static_cast<int>(currentPreset.modMtx[i].modSource); 
         float modAmount = currentPreset.modMtx[i].modAmount;
-        int targetIndex = static_cast<int>(targetParam);
 
-        if (sourceIndex == 0 || targetIndex == 0) 
+        if (fabsf(modAmount) < 1e-5f) 
         {
-            modAmount = 0.0f;
+            currentPreset.modMtx[i].modAmount = 0.0f;
+            continue;
         }
         if (paramManager.GetIsPerVoice(targetParam))
         {

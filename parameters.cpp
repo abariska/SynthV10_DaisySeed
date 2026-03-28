@@ -401,11 +401,6 @@ void ApplyPreset(int presetNumber)
     {
         SynthVoiceReset(i);
     }
-    
-    for (size_t i = 0; i < MOD_MATRIX_NUM; i++)
-    {
-        currentPreset.modMtx[i].ResetMods();
-    }
 
     ResetModModulators();
 
